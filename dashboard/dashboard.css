@@ -1,0 +1,229 @@
+body {
+  font-size: .875rem;
+}
+
+.feather {
+  width: 16px;
+  height: 16px;
+  vertical-align: text-bottom;
+}
+
+/*
+ * Sidebar
+ */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  /* rtl:raw:
+  right: 0;
+  */
+  bottom: 0;
+  /* rtl:remove */
+  left: 0;
+  z-index: 100;
+  /* Behind the navbar */
+  padding: 48px 0 0;
+  /* Height of navbar */
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+@media (max-width: 767.98px) {
+  .sidebar {
+    top: 5rem;
+  }
+}
+
+.sidebar-sticky {
+  position: relative;
+  top: 0;
+  height: calc(100vh - 48px);
+  padding-top: .5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Scrollable contents if viewport is shorter than content. */
+}
+
+.sidebar .nav-link {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.sidebar .nav-link:hover {
+  font-weight: 500;
+  color: #333;
+}
+
+.sidebar .nav-link .feather {
+  margin-right: 4px;
+  color: #727272;
+}
+
+.sidebar .nav-link.active {
+  color: #2470dc;
+}
+
+.sidebar .nav-link:hover .feather,
+.sidebar .nav-link.active .feather {
+  color: inherit;
+}
+
+.sidebar-heading {
+  font-size: .75rem;
+  text-transform: uppercase;
+}
+
+/*
+ * Navbar
+ */
+
+.navbar-brand {
+  padding-top: .75rem;
+  padding-bottom: .75rem;
+  font-size: 1rem;
+  background-color: rgba(0, 0, 0, .25);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
+}
+
+.navbar .navbar-toggler {
+  top: .25rem;
+  right: 1rem;
+}
+
+.navbar .form-control {
+  padding: .75rem 1rem;
+  border-width: 0;
+  border-radius: 0;
+}
+
+.form-control-dark {
+  color: #fff;
+  background-color: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .1);
+}
+
+.form-control-dark:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
+}
+
+
+
+
+
+/* Card */
+.card-in {
+  background-color: #ebebeb;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.card-btn {
+  background-color: #becff5;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.service-card {
+  padding-top: 15px;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  min-height: 650px;
+}
+
+/* Número de ticket */
+.service-card .ticket-number {
+  font-size: 1.5rem;
+  z-index: 2;
+}
+
+/* Imagen */
+.service-card .equipo-img {
+  width: 550px;
+  padding-left: 30px;
+  left: -55%;
+  position: relative;
+  object-fit: contain;
+  max-height: 250px;
+}
+
+/* Serial */
+.service-card .serial-number {
+  position: absolute;
+  border-radius: 10px;
+  top: 200px !important;
+  text-align: start !important;
+  font-family: monospace;
+  font-size: 1.1rem;
+  background-color: #cdd6ff;
+}
+
+/* Nombre vertical */
+.service-card .model-vertical {
+  position: absolute;
+  top: 20px;
+  right: 0px;
+  height: 40%;
+  writing-mode: vertical-rl;
+  font-weight: bold;
+  color: var(--bs-primary);
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: left;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* Marca vertical */
+.service-card .model-vertical-marca {
+  position: absolute;
+  top: 70px;
+  right: 15px;
+  writing-mode: vertical-rl;
+  transform: rotate(90deg);
+  font-weight: bold;
+  color: var(--bs-primary);
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Pasos */
+.progress-steps .step {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: #ddd;
+  border-radius: 50%;
+  margin-top: 20px;
+}
+
+.progress-steps .step.active {
+  background: var(--bs-primary);
+}
+
+/* Barra de progreso fina debajo */
+.progress-bar-custom {
+  height: 10px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-custom .progress-fill {
+  height: 100%;
+  background: var(--bs-primary);
+}
+
+/* Íconos de proceso */
+.process-icon img {
+  width: 90px;
+  margin-bottom: 0.25rem;
+}
+
+.process-icon small {
+  display: block;
+  font-size: 0.75rem;
+}
