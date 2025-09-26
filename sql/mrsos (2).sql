@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-09-2025 a las 20:42:37
+-- Tiempo de generación: 26-09-2025 a las 03:09:15
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -80,14 +80,14 @@ CREATE TABLE `cuentas` (
   `cuId` int(5) NOT NULL,
   `clId` int(5) NOT NULL,
   `pcId` int(5) NOT NULL,
-  `usIdIR` int(5) NOT NULL
+  `usId` int(5) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `cuentas`
 --
 
-INSERT INTO `cuentas` (`cuId`, `clId`, `pcId`, `usIdIR`) VALUES
+INSERT INTO `cuentas` (`cuId`, `clId`, `pcId`, `usId`) VALUES
 (1, 2, 2, 1003),
 (2, 2, 3, 1003),
 (3, 2, 4, 1003),
@@ -332,7 +332,8 @@ INSERT INTO `sede_usuario` (`suId`, `csId`, `usId`, `suRol`, `suEstatus`) VALUES
 (1, 6, 2001, 'AC', 'Activo'),
 (2, 1, 1001, 'AC', 'Activo'),
 (3, 1, 1002, 'UC', 'Activo'),
-(4, 4, 2002, 'UC', 'Activo');
+(4, 4, 2002, 'UC', 'Activo'),
+(5, 5, 178379, 'AC', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -410,9 +411,9 @@ INSERT INTO `ticket_soporte` (`tiId`, `clId`, `csId`, `usId`, `eqId`, `peId`, `t
 (1, 1, 1, 1001, 2, 1, 'Muestra para pruebas MR1', 'Abierto', 'logs', 'Servicio', '--', '3', '2025-08-08', '2025-05-15 18:42:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, '2025-05-15 18:42:00', 'Jonh Due', '555-55-55-55', 'example@correo.com', 1001, 'Activo'),
 (5, 1, 1, 1001, 47, 2, 'Muestra para pruebas MR2', 'Abierto', 'meet', 'Preventivo', '--', '1', '2025-08-02', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre Flores', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo'),
 (6, 1, 1, 1001, 47, 2, 'Muestra para pruebas MR3', 'Abierto', 'fecha asignada', 'Extra', '--', '2', '2025-08-02', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre Flores', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo'),
-(7, 2, 5, 2001, 3, 3, 'Prueba de ticket Puebla', 'Abierto', 'asignacion fecha cliente', 'Servicio', '--', '3', '2025-08-08', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Nailea FO', '5534846421', 'nailea@enel.com.mx', 1002, 'Activo'),
+(7, 2, 5, 2001, 3, 3, 'Prueba de ticket Puebla', 'Abierto', 'asignacion fecha ingeniero', 'Servicio', '--', '3', '2025-08-08', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, 'ingeniero', 'en espera confirmacion cliente', NULL, NULL, 'Nailea FO', '5534846421', 'nailea@enel.com.mx', 1002, 'Activo'),
 (8, 2, 4, 2001, 44, 4, 'Prueba de ticket Monterrey', 'Abierto', 'encuesta satisfaccion', 'Preventivo', '--', '2', '2025-08-12', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre', '7847474', 'prueba@prueba.com', 1002, 'Activo'),
-(9, 2, 6, 2001, 47, 5, 'Prueba de ticket Miyana', 'Abierto', 'asignacion fecha cliente', 'Extra', '--', '1', '2025-08-12', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Nailea O', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo');
+(9, 2, 6, 2001, 47, 5, 'Prueba de ticket Miyana', 'Abierto', 'asignacion fecha ingeniero', 'Extra', '--', '1', '2025-08-12', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, 'ingeniero', 'en espera confirmacion cliente', NULL, NULL, 'Nailea O', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo');
 
 -- --------------------------------------------------------
 
@@ -436,7 +437,7 @@ CREATE TABLE `usuarios` (
   `usNotificaciones` varchar(15) NOT NULL,
   `clId` int(5) NOT NULL,
   `usConfirmado` varchar(15) NOT NULL,
-  `usEstatus` enum('Activo','Inactivo','NewPass','Error') NOT NULL DEFAULT 'Activo',
+  `usEstatus` enum('Activo','Inactivo','NewPass','Error','Eliminado') NOT NULL DEFAULT 'Activo',
   `usUsername` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -446,11 +447,12 @@ CREATE TABLE `usuarios` (
 
 INSERT INTO `usuarios` (`usId`, `usNombre`, `usAPaterno`, `usAMaterno`, `usRol`, `usCorreo`, `usPass`, `usResetToken`, `usResetTokenExpira`, `usTelefono`, `usTokenTelefono`, `usImagen`, `usNotificaciones`, `clId`, `usConfirmado`, `usEstatus`, `usUsername`) VALUES
 (1000, 'Miguel', 'García', 'Contreras', 'MRA', 'miguel@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'MiguelGC'),
-(1001, 'Andre Gonzalo', 'Flores', 'Cabrera', 'MRSA', 'andre.flores@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5534846421, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'AndreFC47'),
+(1001, 'Andre Gonzalo', 'Flores', 'Cabrera', 'MRA', 'andre.flores@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5534846421, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'AndreFC47'),
 (1002, 'Luis', 'Tostado', 'De los Santos', 'MRA', 'luis.tostado@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'LuisTS'),
 (1003, 'Alfredo', 'Meza', 'Cara', 'MRV', 'alfredo.meza@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'AlfredoME'),
 (2001, 'Nailea', 'Fragoso', 'Osorio', 'AC', 'nailea@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 2, 'Si', 'Activo', 'NaileaFO'),
-(2002, 'Raymundo', 'Leonel', 'Arga', 'UC', 'ray@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 0, 'a', 2, 'Si', 'Activo', 'RayAG');
+(2002, 'Raymundo', 'Leonel', 'Arga', 'AC', 'ray@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 0, 'a', 2, 'Si', 'Activo', 'RayAG'),
+(178379, 'Bruce', 'Wayne', 'M.', 'UC', 'andre@gmail.com', '$2y$10$Py2f3ceu9GWwGliHnmixDOM1o/oebJ8KwWIAz9N9hzQfTPg0uAfcO', 0, '0000-00-00 00:00:00', 5534846421, '', 0, '', 2, '', 'Eliminado', 'BruceWM');
 
 --
 -- Índices para tablas volcadas
@@ -476,7 +478,7 @@ ALTER TABLE `cliente_sede`
 ALTER TABLE `cuentas`
   ADD PRIMARY KEY (`cuId`),
   ADD KEY `clId` (`clId`),
-  ADD KEY `usIdIR` (`usIdIR`),
+  ADD KEY `usIdIR` (`usId`),
   ADD KEY `pcId` (`pcId`);
 
 --
@@ -627,7 +629,7 @@ ALTER TABLE `refaccion`
 -- AUTO_INCREMENT de la tabla `sede_usuario`
 --
 ALTER TABLE `sede_usuario`
-  MODIFY `suId` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `suId` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `ticket_archivos`
@@ -645,7 +647,7 @@ ALTER TABLE `ticket_soporte`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `usId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2003;
+  MODIFY `usId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=617370;
 
 --
 -- Restricciones para tablas volcadas
@@ -661,7 +663,7 @@ ALTER TABLE `cliente_sede`
 -- Filtros para la tabla `cuentas`
 --
 ALTER TABLE `cuentas`
-  ADD CONSTRAINT `cuentas_ibfk_2` FOREIGN KEY (`usIdIR`) REFERENCES `usuarios` (`usId`),
+  ADD CONSTRAINT `cuentas_ibfk_2` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`),
   ADD CONSTRAINT `cuentas_ibfk_3` FOREIGN KEY (`pcId`) REFERENCES `polizascliente` (`pcId`),
   ADD CONSTRAINT `cuentas_ibfk_4` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`);
 
