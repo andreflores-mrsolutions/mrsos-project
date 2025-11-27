@@ -17,115 +17,6 @@ function cerrarOffcanvas(id = "offcanvasTicket") {
   oc.hide();
 }
 
-$(document).ready(function () {
-  function contieneInyeccion(str) {
-    const pattern =
-      /<|>|script|onerror|alert|select|insert|delete|update|union|drop|--|;|['"]/gi;
-    return pattern.test(str);
-  }
-
-  $("#login-form").on("submit", function (e) {
-    e.preventDefault(); // Evita el envío por defecto
-
-    const usId = $("#usId").val().trim();
-    const usPass = $("#usPass").val().trim();
-
-    // Validación de campos vacíos
-    if (!usId || !usPass) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos vacíos",
-        text: "Por favor completa ambos campos.",
-      });
-      return;
-    }
-
-    // Validación contra inyecciones
-    if (contieneInyeccion(usId) || contieneInyeccion(usPass)) {
-      Swal.fire({
-        icon: "error",
-        title: "Entrada no válida",
-        text: "Tu información contiene caracteres o palabras no permitidas.",
-      });
-      return;
-    }
-
-    // TODO: Aquí irá el fetch o $.ajax() a login.php
-    $.ajax({
-      url: "../php/login.php",
-      method: "POST",
-      data: {
-        usId: usId,
-        usPass: usPass,
-      },
-      dataType: "json", // 👈 Esto es importante
-      success: function (response) {
-        console.log("success: ", response.success);
-        console.log("user: ", response.user);
-        if (response.success) {
-          location.href = "../sos.php";
-        } else {
-          Swal.fire("Error", "Usuario o contraseña incorrectos", "error");
-        }
-      },
-      error: function (xhr, status, error) {
-        console.error("AJAX error:", status, error);
-        Swal.fire("Error", "No se pudo conectar con el servidor", "error");
-      },
-    });
-
-    // Opcionalmente: this.submit(); para seguir con envío normal
-  });
-
-  $("#reset-p-form").on("submit", function (e) {
-    e.preventDefault(); // Evita el envío por defecto
-    const email = $("#email").val().trim();
-
-    // Validación de campos vacíos
-    if (!email) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos vacíos",
-        text: "Por favor completa ambos campos.",
-      });
-      return;
-    }
-
-    // Validación contra inyecciones
-    if (contieneInyeccion(email)) {
-      Swal.fire({
-        icon: "error",
-        title: "Entrada no válida",
-        text: "Tu información contiene caracteres o palabras no permitidas.",
-      });
-      return;
-    }
-
-    // TODO: Aquí irá el fetch o $.ajax() a login.php
-    $.ajax({
-      url: "../php/recuperar_password.php",
-      method: "POST",
-      data: {
-        usEmail: email,
-      },
-      success: function (response) {
-        if (response.success) {
-          Swal.fire({
-            icon: "warning",
-            title: "Correo Enviado",
-            text: "En tu correo has recibido la solicitud de cambio de Contraseña.",
-          });
-          return;
-        } else {
-          Swal.fire("Error", "El email no coincide con el registrado", "error");
-        }
-      },
-    });
-
-    // Opcionalmente: this.submit(); para seguir con envío normal
-  });
-});
-
 //Todo: Datos sos.php
 // Supuesto fetch desde backend
 $(document).ready(function () {
@@ -182,7 +73,8 @@ function repaintDetalleProceso(nuevoProceso) {
   if ($steps) {
     $steps.innerHTML = PROCESOS.map(
       (_, i) =>
-        `<span class="small ${i < paso ? "text-success" : "text-muted"
+        `<span class="small ${
+          i < paso ? "text-success" : "text-muted"
         }" style="font-size:.75em;">●</span>`
     ).join("");
   }
@@ -190,81 +82,13 @@ function repaintDetalleProceso(nuevoProceso) {
 
 /** (Opcional) refrescar listas/tablas sin recargar toda la página */
 function refreshListados() {
-  if (typeof cargarTicketsPorSede === "function") cargarTicketsPorSede(); // los bloques por sede
+  if (typeof cargarTicketsPorSede === "function") cargarTodosTickets(); // los bloques por sede
 }
 
-//TODO: Cards tablas
-
-$(document).ready(function () {
-  $.ajax({
-    url: "../php/get_tickets.php",
-    type: "GET",
-    dataType: "json",
-    success: function (data) {
-      if (data.length > 0) {
-        let container = $("#ticketCardsContainer");
-        data.forEach((ticket) => {
-          const card = `
-          
-                    <div class="col mx-auto">
-                        <div class="card mb-4 rounded-4 shadow p-2 mb-4 bg-white overflow-hidden card-ticket">
-                            <div class="position-relative text-center">
-                                <img src="https://www.xfusion.com/wp-content/uploads/2023/04/1288H-V7-mb.png" alt="Equipo" class="equipos-card">
-                            </div>
-                            <div class="card-body" style="font-family: TTNorms;">
-                                <div class="row">
-                                    <div class="col-5 col-sm-5">
-                                        <ul class="list-unstyled text-end mt-3 mb-4">
-                                            <li class="mt-2">
-                                                <img src="img/Tickets/${ticket.tiProceso
-            }.png" alt="Status ${ticket.tiEstatus
-            }" class="ticket-card mt-5 mx-auto">
-                                            </li>
-                                            <li class="mt-2"><b>Estatus:</b></li>
-                                            <li>${ticket.tiEstatus}</li>
-                                        </ul>
-                                    </div>
-                                    <div class="col-7 col-sm-7">
-                                        <h4 class="card-title text-end">${ticket.eqModelo
-            }</h4>
-                                        <ul class="list-unstyled text-end mt-3 mb-4 ps-4">
-                                            <li class="mt-2"><b>Folio:</b></li>
-                                            <li>${ticket.tiId}</li>
-                                            <li class="mt-2"><b>Tipo de Servicio:</b></li>
-                                            <li>${ticket.tiDescripcion}</li>
-                                            <li class="mt-2"><b>SN:</b></li>
-                                            <li>${ticket.peSN}</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="row" style="align-items: end;">
-                                    <div class="col-6">
-                                        <ul class="list-unstyled text-end">
-                                            <button type="button" class="btn w-100 btn-card">Ver más..</button>
-                                        </ul>
-                                    </div>
-                                    <div class="col-6">
-                                        <ul class="list-unstyled text-end">
-                                            <li><b>Marca:</b></li>
-                                            <img src="img/Marcas/${ticket.maNombre.toLowerCase()}.png" alt="${ticket.maNombre
-            }" style="width:120px;">
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-          $("#bloqueTickets").removeClass("d-none");
-          container.append(card);
-        });
-      }
-    },
-  });
-});
 $(document).ready(function () {
   // Cargar los tickets al inicio y cuando cambian filtros
 
-  cargarTicketsPorSede();
+  cargarTodosTickets();
   $("#filtroEstado, #filtroMarca, #filtroProceso, #filtroTipoEquipo").change(
     cargarTicketsPorSede
   );
@@ -286,12 +110,12 @@ $(document).ready(function () {
     $("#filtroProceso").val("");
     $("#filtroTipoEquipo").val("");
 
-    cargarTicketsPorSede();
+    cargarTodosTickets();
   });
 
   // Botón recargar
   $("#btnRecargar").click(function () {
-    cargarTicketsPorSede();
+    cargarTodosTickets();
     cargarEstadisticas();
   });
 });
@@ -320,7 +144,7 @@ function guardarFecha(ticketId) {
           icon: "success",
         });
         $(`#modalFecha_${ticketId}`).modal("hide");
-        cargarTicketsPorSede(); // Recargar para actualizar
+        cargarTodosTickets(); // Recargar para actualizar
       } else if (response.error) {
         Swal.fire({
           icon: "error",
@@ -357,7 +181,8 @@ const PROCESOS_12 = [
   "revision inicial",
   "logs",
   "meet",
-  "asignacion fecha",
+  "asignacion fecha cliente",
+  "asignacion fecha ingeniero", // mismo paso
   "fecha asignada",
   "espera ventana",
   "espera visita",
@@ -411,22 +236,23 @@ function renderDetalleTicket(data) {
   // --- Vista principal ---
   let html = `
     <div class="text-center">
-      <img src="../img/Equipos/${(data.maNombre || "").toLowerCase()}/${data.eqModelo
-    }.png"
+      <img src="../img/Equipos/${(data.maNombre || "").toLowerCase()}/${
+    data.eqModelo
+  }.png"
            alt="Equipo" class="img-fluid mb-3" style="max-height:200px;">
     </div>
     <h5>${data.eqModelo}</h5>
     <p><b>SN:</b> ${data.peSN || "—"}</p>
     <div class="d-flex align-items-center">
       <img src="../img/Marcas/${(data.maNombre || "").toLowerCase()}.png"
-           alt="${data.maNombre || ""
-    }" style="width:50px; height:auto; margin-right:10px;">
+           alt="${
+             data.maNombre || ""
+           }" style="width:50px; height:auto; margin-right:10px;">
       <span>${data.maNombre || ""}</span>
     </div>
     <hr>
 
-    <!-- 🔹 AQUI vamos a inyectar el bloque de MEET -->
-    <div id="meetAnchor" class="mb-3"></div>
+    
 
     <p><b>Descripción:</b><br>${data.tiDescripcion || "—"}</p>
     <p><b>Estado:</b> ${data.tiEstatus || "—"}</p>
@@ -434,27 +260,43 @@ function renderDetalleTicket(data) {
     <div class="progress mb-2">
       <div class="progress-bar" role="progressbar"
            style="width:${progresoPorcentaje}%;" aria-valuenow="${progreso}"
-           aria-valuemin="0" aria-valuemax="${PROCESOS_12.length
-    }">${progreso}/${PROCESOS_12.length}</div>
+           aria-valuemin="0" aria-valuemax="${
+             PROCESOS_12.length
+           }">${progreso}/${PROCESOS_12.length}</div>
     </div>
     <div class="d-flex justify-content-between">
       ${PROCESOS_12.map(
-      (p, i) =>
-        `<span class="small ${i < progreso ? "text-success" : "text-muted"
-        }" style="font-size:0.75em;">●</span>`
-    ).join("")}
+        (p, i) =>
+          `<span class="small ${
+            i < progreso ? "text-success" : "text-muted"
+          }" style="font-size:0.75em;">●</span>`
+      ).join("")}
     </div>
     <hr>
-    <p><b>Nivel de Criticidad:</b> <span class="${badgeColor}">${"Nivel " + (data.tiNivelCriticidad || "—")
-    }</span></p>
+    <p><b>Nivel de Criticidad:</b> <span class="${badgeColor}">${
+    "Nivel " + (data.tiNivelCriticidad || "—")
+  }</span></p>
     <p><b>Fecha de Creación:</b> ${fmtDate(data.tiFechaCreacion)}</p>
     <p><b>Fecha/Hora de Visita:</b> ${fmtDateTime(data.tiVisita)}</p>
+    
+    <!-- 🔹 AQUI vamos a inyectar el bloque de MEET -->
+    <hr>
+    <p class="">
+      <a class="" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample" style="color: black;">
+        Solicitar un Meet <i class="bi bi-chevron-down"></i>
+      </a>
+    </p>
+    <div class="collapse" id="collapseExample">
+      <div id="meetAnchor" class="mb-3"></div>
+    </div>
+    <hr>
+    
   `;
 
   // 1) LOGS
   if (procN === "logs") {
     html += `
-      <hr>
+      
       <div class="card border-0" style="background:#f8f9fb">
         <div class="card-body p-3">
           <h6 class="mb-3">Subir logs</h6>
@@ -464,8 +306,9 @@ function renderDetalleTicket(data) {
                      accept=".log,.txt,.zip,.tar,.gz,.7z,.rar, text/plain, application/zip, application/x-7z-compressed, application/x-rar-compressed">
             </div>
             <div class="col-12 col-md-4 d-grid">
-              <button class="btn btn-primary" onclick="uploadLogs(${data.tiId
-      })">
+              <button class="btn btn-primary" onclick="uploadLogs(${
+                data.tiId
+              })">
                 Subir logs
               </button>
             </div>
@@ -474,12 +317,14 @@ function renderDetalleTicket(data) {
 
           <div class="d-flex flex-wrap gap-2 mt-3">
             <button class="btn btn-outline-secondary"
-                    onclick="openHelpLogs('${data.maNombre || ""}', '${data.eqModelo || ""
-      }')">
+                    onclick="openHelpLogs('${data.maNombre || ""}', '${
+      data.eqModelo || ""
+    }')">
               ¿Cómo extraer los logs?
             </button>
-            <button class="btn btn-outline-info" onclick="pedirAyudaCorreo(${data.tiId
-      })">
+            <button class="btn btn-outline-info" onclick="pedirAyudaCorreo(${
+              data.tiId
+            })">
               Pedir ayuda por correo
             </button>
           </div>
@@ -498,7 +343,7 @@ function renderDetalleTicket(data) {
   // 2) ASIGNACIÓN DE FECHA (cliente)
   if (procN === "asignacion fecha cliente") {
     html += `
-      <hr>
+      
       <div class="card border-0" style="background:#f8f9fb">
         <div class="card-body p-3">
           <h6 class="mb-3">Asignación de visita</h6>
@@ -533,19 +378,22 @@ function renderDetalleTicket(data) {
     procN === "encuesta de satisfaccion"
   ) {
     html += `
-      <hr>
+      
       <div class="d-grid">
-        <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalEncuesta_${data.tiId
-      }">
+        <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalEncuesta_${
+          data.tiId
+        }">
           Responder encuesta de satisfacción
         </button>
       </div>
 
-      <div class="modal fade" id="modalEncuesta_${data.tiId
+      <div class="modal fade" id="modalEncuesta_${
+        data.tiId
       }" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-          <form class="modal-content" onsubmit="enviarEncuesta(event, ${data.tiId
-      })">
+          <form class="modal-content" onsubmit="enviarEncuesta(event, ${
+            data.tiId
+          })">
             <div class="modal-header">
               <h5 class="modal-title">Encuesta de satisfacción</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -555,35 +403,37 @@ function renderDetalleTicket(data) {
                 <label class="form-label d-block mb-2">1) ¿Cómo calificas el servicio recibido?</label>
                 <div class="d-flex justify-content-between px-1">
                   ${[
-        { v: 5, t: "Excelente", e: "😄" },
-        { v: 4, t: "Bueno", e: "🙂" },
-        { v: 3, t: "Regular", e: "😐" },
-        { v: 2, t: "Malo", e: "🙁" },
-        { v: 1, t: "Muy malo", e: "😣" },
-      ]
-        .map(
-          (x) => `
+                    { v: 5, t: "Excelente", e: "😄" },
+                    { v: 4, t: "Bueno", e: "🙂" },
+                    { v: 3, t: "Regular", e: "😐" },
+                    { v: 2, t: "Malo", e: "🙁" },
+                    { v: 1, t: "Muy malo", e: "😣" },
+                  ]
+                    .map(
+                      (x) => `
                     <label class="text-center" style="cursor:pointer;">
                       <input type="radio" name="enc_smile_${data.tiId}" value="${x.v}" class="form-check-input d-block mx-auto mb-1">
                       <div style="font-size:1.6rem; line-height:1;">${x.e}</div>
                       <small class="d-block">${x.t}</small>
                     </label>
                   `
-        )
-        .join("")}
+                    )
+                    .join("")}
                 </div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label">2) ¿Qué mejorarías del servicio de MR?</label>
-                <textarea class="form-control" id="enc_mejora_${data.tiId
-      }" rows="3" maxlength="600"></textarea>
+                <textarea class="form-control" id="enc_mejora_${
+                  data.tiId
+                }" rows="3" maxlength="600"></textarea>
               </div>
 
               <div class="mb-0">
                 <label class="form-label">3) ¿Qué tal te pareció la plataforma y qué cambiarías?</label>
-                <textarea class="form-control" id="enc_plataforma_${data.tiId
-      }" rows="3" maxlength="600"></textarea>
+                <textarea class="form-control" id="enc_plataforma_${
+                  data.tiId
+                }" rows="3" maxlength="600"></textarea>
               </div>
             </div>
 
@@ -602,7 +452,11 @@ function renderDetalleTicket(data) {
   cont.innerHTML = html;
 
   // 🔹 Siempre pinto el bloque Meet (visible como estado); editable solo si procN==='meet'
-  cargarBloqueMeet(data.tiId, { editable, targetId: "meetAnchor" });
+  // Después (usa la API expuesta por modal_meet.js)
+  window.MRSOS_MEET?.cargarBloqueMeet(data.tiId, {
+    editable,
+    targetId: "meetAnchor",
+  });
 }
 
 // ====== Abrir detalle (sin cambios de fondo) ======
@@ -619,8 +473,9 @@ function abrirDetalle(tiId) {
     .then((r) => r.json())
     .then((json) => {
       if (!json?.success) {
-        body.innerHTML = `<p class="text-danger">${json?.error || "No se pudo cargar el detalle."
-          }</p>`;
+        body.innerHTML = `<p class="text-danger">${
+          json?.error || "No se pudo cargar el detalle."
+        }</p>`;
         return;
       }
       renderDetalleTicket(json.ticket);
@@ -651,7 +506,7 @@ function uploadLogs(tiId) {
           icon: "success",
         });
         fi.value = "";
-        cargarTicketsPorSede();
+        cargarTodosTickets();
         cerrarOffcanvas("offcanvasTicket");
       } else {
         alert(res.error || "No fue posible subir los logs.");
@@ -666,7 +521,7 @@ function openHelpLogs(marca, modelo) {
 }
 function pedirAyudaCorreo(tiId) {
   const pref = document.getElementById(`meetPref_${tiId}`)?.value?.trim() || "";
-  fetch("../php/solicitar_ayuda_logs.php", {
+  fetch("../php/solicitar_ayuda.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tiId, preferenciaMeet: pref }),
@@ -726,7 +581,7 @@ function dejarFechaAlIngeniero(ticketId) {
             const inst = bootstrap.Modal.getInstance(m);
             inst && inst.hide();
           });
-        } catch (_) { }
+        } catch (_) {}
 
         // Notifica y recarga listados
         if (typeof mostrarToast === "function") {
@@ -736,7 +591,7 @@ function dejarFechaAlIngeniero(ticketId) {
         }
 
         // Tu refresco habitual
-        if (typeof cargarTicketsPorSede === "function") cargarTicketsPorSede();
+        if (typeof cargarTicketsPorSede === "function") cargarTodosTickets();
         if (typeof cargarTickets === "function") cargarTickets();
       } else {
         const msg = res?.error || "No se pudo dejar la fecha al ingeniero.";
@@ -853,151 +708,6 @@ function enviarEncuesta(e, tiId) {
 //             </div>
 //           </div>`;
 
-//TODO: Estadisticas Mes
-let areaChartRef, donutChartRef, barChartRef;
-
-$(document).ready(function () {
-  // cargarTickets();
-  cargarEstadisticas();
-
-  $("#filtroEstado, #filtroMarca, #filtroProceso, #filtroTipoEquipo").change(
-    function () {
-      // cargarTickets();
-      cargarEstadisticas(); // si quieres que también afecte estadísticas según filtros, quita esto si no
-    }
-  );
-
-  $("#resetFiltros").on("click", function () {
-    $("#filtro-form")[0].reset();
-    // cargarTickets();
-    cargarEstadisticas();
-  });
-
-  $("#btnRecargar").on("click", function () {
-    // cargarTickets();
-    cargarEstadisticas();
-  });
-});
-
-// Cargar por defecto: mes actual
-
-let areaChart, donutTipo, donutEstatus;
-
-function initCharts() {
-  const areaCtx = document.getElementById('areaChart').getContext('2d');
-  areaChart = new Chart(areaCtx, {
-    type: 'line',
-    data: { labels: [], datasets: [{
-      data: [], fill: true,
-      backgroundColor: 'rgba(115,96,255,0.2)',
-      borderColor: 'rgba(115,96,255,1)',
-      tension: 0.35, pointRadius: 0
-    }]},
-    options: { plugins:{legend:{display:false}}, scales:{x:{display:true}, y:{display:true}} }
-  });
-
-  const tipoCtx = document.getElementById('donutTipo').getContext('2d');
-  donutTipo = new Chart(tipoCtx, {
-    type: 'doughnut',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: ['#7360ff','#a29bfe','#b2bec3','#dfe6e9'] }] },
-    options: { cutout: '65%', plugins: { legend: { display: false } } }
-  });
-
-  const estCtx = document.getElementById('donutEstatus').getContext('2d');
-  donutEstatus = new Chart(estCtx, {
-    type: 'doughnut',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: ['#28a745','#6c757d','#0d6efd','#adb5bd'] }] },
-    options: { cutout: '65%', plugins: { legend: { display: false } } }
-  });
-}
-
-function updateArea(labels, data) {
-  areaChart.data.labels = labels || [];
-  areaChart.data.datasets[0].data = data || [];
-  areaChart.update();
-}
-
-function updateDonutTipo(map) {
-  const labels = ['Servicio','Preventivo','Extra','Otros'];
-  donutTipo.data.labels = labels;
-  donutTipo.data.datasets[0].data = labels.map(l => (map && map[l]) ? map[l] : 0);
-  donutTipo.update();
-}
-
-function updateDonutEstatus(map) {
-  const labels = ['Abierto','Cancelado','Finalizado','Otro'];
-  donutEstatus.data.labels = labels;
-  donutEstatus.data.datasets[0].data = labels.map(l => (map && map[l]) ? map[l] : 0);
-  donutEstatus.update();
-}
-
-function poblarSelectSedes(lista, csIdActual = null) {
-  const sel = document.getElementById('selSede');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Todas las sedes</option>';
-  (lista || []).forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.csId;
-    opt.textContent = s.csNombre;
-    sel.appendChild(opt);
-  });
-  if (csIdActual) sel.value = String(csIdActual);
-}
-
-function cargarEstadisticas({ ym=null, lastDays=30, csId=null, clId=null } = {}) {
-  const qs = new URLSearchParams();
-  if (ym) qs.set('ym', ym);
-  if (lastDays) qs.set('lastDays', lastDays);
-  if (csId) qs.set('csId', csId);
-  if (clId) qs.set('clId', clId); // para MRA
-
-  fetch(`../php/estadisticas_mes.php${qs.toString() ? '?' + qs.toString() : ''}`)
-    .then(r => r.json())
-    .then(res => {
-      if (!res?.success) throw new Error(res?.error || 'Error');
-
-      // charts
-      updateArea(res.labels, res.data);
-      updateDonutTipo(res.porTipo);
-      updateDonutEstatus(res.porEstatus);
-
-      // sedes accesibles (para el select)
-      poblarSelectSedes(res.sedes, res.csId || null);
-    })
-    .catch(err => {
-      console.error(err);
-      updateArea([], []);
-      updateDonutTipo({Servicio:0,Preventivo:0,Extra:0,Otros:0});
-      updateDonutEstatus({Abierto:0,Cancelado:0,Finalizado:0,Otro:0});
-      poblarSelectSedes([]);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initCharts();
-  // Carga por defecto últimos 30 días
-  cargarEstadisticas({ lastDays: 30 });
-
-  document.getElementById('btnUlt30')?.addEventListener('click', () => {
-    const csId = document.getElementById('selSede')?.value || '';
-    cargarEstadisticas({ lastDays: 30, csId: csId || null });
-  });
-
-  document.getElementById('btnMesAplicar')?.addEventListener('click', () => {
-    const ym   = document.getElementById('mesFiltro')?.value || null;
-    const csId = document.getElementById('selSede')?.value || '';
-    cargarEstadisticas({ ym, lastDays: null, csId: csId || null });
-  });
-
-  document.getElementById('selSede')?.addEventListener('change', (e) => {
-    // Mantén el mismo rango actual (si prefieres 30 días al cambiar sede, cambia esta lógica)
-    const ym = document.getElementById('mesFiltro')?.value || null;
-    const csId = e.target.value || null;
-    cargarEstadisticas({ ym, lastDays: ym ? null : 30, csId });
-  });
-});
-
-
 //TODO
 // Helpers de badges
 function badgeTipoClase(tipo) {
@@ -1037,24 +747,26 @@ function renderTicketsPorSede(sedesArr) {
         .map(
           (t) => `
       <tr>
-        <td><span class="badge ${badgeEstatusClase(t.tiEstatus)}">${t.tiEstatus || ""
-            }</span></td>
+        <td><span class="badge ${badgeEstatusClase(t.tiEstatus)}">${
+            t.tiEstatus || ""
+          }</span></td>
         <td>${t.eqModelo || ""}${t.eqVersion ? " " + t.eqVersion : ""}</td>
         <td class="d-none d-sm-table-cell">
           <img src="../img/Marcas/${(
-              t.maNombre || ""
-            ).toLowerCase()}.png" style="height:20px;" alt="${t.maNombre || ""}">
+            t.maNombre || ""
+          ).toLowerCase()}.png" style="height:20px;" alt="${t.maNombre || ""}">
         </td>
         <td class="d-none d-md-table-cell">${t.peSN || ""}</td>
-        <td class="d-none d-lg-table-cell"><span class="badge bg-light text-dark">${t.tiProceso || ""
-            }</span></td>
+        <td class="d-none d-lg-table-cell"><span class="badge bg-light text-dark">${
+          t.tiProceso || ""
+        }</span></td>
         <td class="d-none d-lg-table-cell"><span class="badge ${badgeTipoClase(
-              t.tiTipoTicket
-            )}">${t.tiTipoTicket || ""}</span></td>
+          t.tiTipoTicket
+        )}">${t.tiTipoTicket || ""}</span></td>
         <td class="d-none d-md-table-cell">${t.tiExtra || ""}</td>
         <td><a href="#" onclick="abrirDetalle(${Number(
-              t.tiId
-            )})" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTicket">Ver más</a></td>
+          t.tiId
+        )})" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTicket">Ver más</a></td>
       </tr>
     `
         )
@@ -1094,51 +806,37 @@ function renderTicketsPorSede(sedesArr) {
 function cargarTicketsPorSede(params = {}) {
   const qs = new URLSearchParams();
   // MRA: opcional clId y/o csId
-  if (window.SESSION?.rol === 'MRA') {
-    if (params.clId) qs.set('clId', params.clId);
-    if (params.csId) qs.set('csId', params.csId);
+  if (window.SESSION?.rol === "MRA") {
+    if (params.clId) qs.set("clId", params.clId);
+    if (params.csId) qs.set("csId", params.csId);
   }
-  fetch(`../php/obtener_tickets_sedes.php${qs.toString() ? '?' + qs.toString() : ''}`)
-    .then(r => r.json())
-    .then(json => {
+  fetch(
+    `../php/obtener_tickets_sedes.php${
+      qs.toString() ? "?" + qs.toString() : ""
+    }`
+  )
+    .then((r) => r.json())
+    .then((json) => {
       if (!json?.success) {
-        document.getElementById('wrapTicketsSedes').innerHTML =
-          `<p class="text-danger">${json?.error || 'No se pudieron cargar los tickets por sede.'}</p>`;
+        document.getElementById(
+          "wrapTicketsSedes"
+        ).innerHTML = `<p class="text-danger">${
+          json?.error || "No se pudieron cargar los tickets por sede."
+        }</p>`;
         return;
       }
       renderTicketsPorSede(json.sedes || []);
     })
     .catch(() => {
-      document.getElementById('wrapTicketsSedes').innerHTML =
-        `<p class="text-danger">Error al cargar los tickets por sede.</p>`;
+      document.getElementById(
+        "wrapTicketsSedes"
+      ).innerHTML = `<p class="text-danger">Error al cargar los tickets por sede.</p>`;
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  cargarTicketsPorSede(); // por defecto, según el rol/sede del usuario
+document.addEventListener("DOMContentLoaded", () => {
+  cargarTodosTickets(); // por defecto, según el rol/sede del usuario
 });
-
-
-//TODO: Logout
-
-// Logout robusto con delegación
-document.addEventListener('click', function (e) {
-  const a = e.target.closest('#btnLogout');
-  if (!a) return;
-
-  e.preventDefault();
-
-  const hrefAjax = a.dataset.href || (a.getAttribute('href') + '?ajax=1');
-  const redirect = a.dataset.redirect || '../login/login.php';
-
-  fetch(hrefAjax, {
-    method: 'GET',               // si prefieres, usa 'POST' y ajusta logout.php
-    credentials: 'same-origin'
-  })
-  .catch(() => {})               // aunque falle, intentamos redirigir
-  .finally(() => { window.location.href = redirect; });
-});
-
 
 //TODO MEET
 // =======================
@@ -1160,591 +858,333 @@ function chipMeetColor(estado) {
   }
 }
 
-// Render del bloque Meet
-// data: { tiMeetActivo, tiMeetPlataforma, tiMeetLink }
-// opts: { editable: boolean }
-function renderMeetBlock(data = {}, opts = {}) {
-  const { editable = false } = opts;
+// TODO Elimina el sistema de Tickets
+// en main.js (DOMContentLoaded)
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.SESSION && window.SESSION.rol === "EC") {
+    const btn = document.getElementById("btnNuevoTicket");
+    if (btn) btn.classList.add("d-none");
+  }
+});
 
-  const estado = data.tiMeetActivo || "";
-  const plat = data.tiMeetPlataforma || "--";
-  const link = data.tiMeetLink || "";
+// =======================
+// Vista Tabla / Cards (persistencia)
+// =======================
+const VIEW_KEY = "mrs_tickets_view";
+let CURRENT_VIEW = localStorage.getItem(VIEW_KEY) || "table";
 
-  const chip = estado
-    ? `<span class="badge ${chipMeetColor(
-      estado
-    )} text-capitalize">${estado}</span>`
-    : `<span class="badge bg-secondary">sin meet</span>`;
+function setView(mode) {
+  CURRENT_VIEW = mode === "cards" ? "cards" : "table";
+  localStorage.setItem(VIEW_KEY, CURRENT_VIEW);
+  // Actualiza estilos activos del toggle
+  document.querySelectorAll("#viewToggle [data-mode]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === CURRENT_VIEW);
+  });
+}
 
-  const linkHtml = link
-    ? `<a href="${link}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
-         <i class="bi bi-box-arrow-up-right"></i> Abrir
-       </a>`
-    : `<span class="text-muted">Sin enlace</span>`;
+// Inicializa toggle
+document.addEventListener("DOMContentLoaded", () => {
+  // Si existe el toggle en la página
+  document.querySelectorAll("#viewToggle [data-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setView(btn.dataset.mode);
+      cargarTodosTickets(); // repintar
+    });
+  });
+  setView(CURRENT_VIEW);
+});
 
-  // Botones se ocultan si !editable
-  const clsBtn = editable ? "" : "d-none";
+// =======================
+// Normalizadores/re-utilizables
+// =======================
+function safe(s) {
+  return s == null ? "" : String(s);
+}
+function joinModelo(eqModelo, eqVersion) {
+  const m = safe(eqModelo).trim();
+  const v = safe(eqVersion).trim();
+  return m + (v ? " " + v : "");
+}
+function fmtFechaHoraLocal(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso.replace(" ", "T"));
+  return isNaN(d) ? iso : d.toLocaleString();
+}
+
+// Reusa tus helpers existentes:
+/// badgeEstatusClase(estatus)
+/// badgeTipoClase(tipo)
+/// abrirDetalle(tiId)
+
+
+
+  
+// =======================
+// Render: Cards
+// =======================
+function renderTicketCard(t) {
+  const cliente = safe(t.clNombre || t.cliente || "");
+  const persona = safe(t.persona || t.contacto || t.usuario || "");
+  const estadoBadge = badgeEstatusClase(t.tiEstatus);
+  const procesoBadge = "badge mrs-badge-soft"; // proceso como pill suave
+  const modelo = joinModelo(t.eqModelo, t.eqVersion);
+  const fechaVisita = fmtFechaHoraLocal(t.tiVisita);
+  const sede = t.csNombre || "—";
+  const codigoTicket = `${(sede || "GEN").substring(0, 3).toLowerCase()}-${
+    t.tiId
+  }`;
 
   return `
+  <div class="mrs-card">
+    <div class="mrs-card-header">
+      <div class="d-flex align-items-start justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-person text-muted"></i>
+          <h6 class="mb-0">${persona || cliente || "—"}</h6>
+        </div>
+        <span class="badge ${estadoBadge}">${safe(t.tiEstatus) || "—"}</span>
+      </div>
+      <span class="badge bg-dark mt-1   ">${t.tiProceso || "—"}</span>
+    </div>
+    <div class="mrs-card-content">
+    
+      <div class="d-flex align-items-center gap-2 text-muted mb-1">
+        <i class="bi bi-ticket"></i><span class="small">${
+          codigoTicket || "—"
+        }</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 text-muted mb-1">
+        <i class="bi bi-wrench"></i><span class="small">${modelo || "—"}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 text-muted mb-1">
+        <i class="bi bi-calendar-event"></i>
+        <span class="small">${fechaVisita}</span>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 text-muted mb-3">
+        <i class="bi bi-123"></i>
+        <span class="small">${t.peSN || ""}</span>
+      </div>
+
+        <button class="btn btn-primary btn-sm"
+          onclick="abrirDetalle(${Number(t.tiId)})"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasTicket">
+          Ver más
+        </button>
+      </div>
+    </div>
+  </div>
+`;
   
-    <div class="meet-block border rounded p-3 mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>Reunión (Meet)</strong>
-        ${chip}
-      </div>
+}
 
-      <div class="row g-2 align-items-center">
-        <div class="col-12 col-md-4">
-          <small class="text-muted d-block">Plataforma</small>
-          <div>${plat}</div>
-        </div>
-        <div class="col-12 col-md-8">
-          <small class="text-muted d-block">Enlace</small>
-          <div>${linkHtml}</div>
-        </div>
-      </div>
+// =======================
+// Render: Tabla (reusa tu tabla por sede)
+// =======================
+function renderTablaSede(s) {
+  const filas = (s.tickets || [])
+    .map(
+      (t) => `
+    <tr>
+      <td><span class="badge ${badgeEstatusClase(t.tiEstatus)}">${
+        t.tiEstatus || ""
+      }</span></td>
+      <td>${joinModelo(t.eqModelo, t.eqVersion)}</td>
+      <td class="d-none d-sm-table-cell">
+        <img src="../img/Marcas/${(t.maNombre || "").toLowerCase()}.png"
+             style="height:20px;" alt="${t.maNombre || ""}">
+      </td>
+      <td class="d-none d-md-table-cell">${t.peSN || ""}</td>
+      <td class="d-none d-lg-table-cell">
+        <span class="badge bg-light text-dark">${t.tiProceso || ""}</span>
+      </td>
+      <td class="d-none d-lg-table-cell">
+        <span class="badge ${badgeTipoClase(t.tiTipoTicket)}">${
+        t.tiTipoTicket || ""
+      }</span>
+      </td>
+      <td class="d-none d-md-table-cell">${t.tiExtra || ""}</td>
+      <td>
+        <a href="#" onclick="abrirDetalle(${Number(t.tiId)})"
+           data-bs-toggle="offcanvas" data-bs-target="#offcanvasTicket">Ver más</a>
+      </td>
+    </tr>
+  `
+    )
+    .join("");
 
-      <div class="mt-3 d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-sm btn-primary ${clsBtn}" id="btnSolicitarMeet">
-          <i class="bi bi-person-video3"></i> Solicitar
-        </button>
-        <button type="button" class="btn btn-sm btn-success ${clsBtn}" id="btnEstablecerMeet">
-          <i class="bi bi-camera-video"></i> Establecer
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-danger ${clsBtn}" id="btnCancelarMeet">
-          <i class="bi bi-x-circle"></i> Cancelar
-        </button>
-
-        <!-- Botones informativos (siempre visibles) -->
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAyudaLogs">
-          <i class="bi bi-question-circle"></i> Videos de ayuda
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSolicitarAyuda">
-          <i class="bi bi-envelope"></i> Solicitar ayuda
-        </button>
-      </div>
+  return `
+    <div class="d-flex align-items-center gap-3 my-3">
+      <h6 class="mb-0 border-bottom">${s.csNombre || "Sin sede"}</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-borderless mb-0">
+        <thead class="d-none d-lg-table-header-group">
+          <tr>
+            <th>Estado</th>
+            <th>Equipo</th>
+            <th class="d-none d-sm-table-cell">Marca</th>
+            <th class="d-none d-md-table-cell">SN</th>
+            <th class="d-none d-lg-table-cell">Estatus</th>
+            <th class="d-none d-lg-table-cell">Tipo de ticket</th>
+            <th class="d-none d-md-table-cell">Extras</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
     </div>
   `;
 }
 
-// Carga y pinta el bloque Meet dentro del offcanvas
-// opts: { editable: boolean }
-function cargarBloqueMeet(tiId, opts = {}) {
-  const { editable = false, targetId = "offcanvasContent" } = opts;
-  return $.getJSON("../php/meet_get.php", { ticketId: tiId }).then((res) => {
-    if (!res?.success) return;
-    const target =
-      document.getElementById(targetId) ||
-      document.getElementById("offcanvasContent");
-    target.innerHTML = renderMeetBlock(res.data || {}, { editable });
-    wireMeetButtons(tiId, res.data || {}, { editable });
-  });
+function renderCardsSede(s) {
+  const cards = (s.tickets || []).map((t) => renderTicketCard(t)).join("");
+  return `
+    <div class="d-flex align-items-center gap-3 my-3">
+      <h6 class="mb-0 border-bottom">${s.csNombre || "Sin sede"}</h6>
+    </div>
+    <div class="mrs-grid">${cards}</div>
+  `;
 }
 
-// En tu wireMeetButtons(tiId, meetData, { editable }) ya mostras el modal en modo cliente/ingeniero.
-// Solo asegúrate de llamar a esto dentro de wireMeetButtons, después de mostrar el modal:
-function prepararModalMeet(tiId, editable) {
-  // Guarda si es editable (proceso 'meet') para re-render
-  $("#formMeet").data("editable", !!editable);
-  $("#meet_ticketId").val(tiId);
-
-  // Al hacer click en los botones de envío, fijamos el "modo" apropiado
-  $('#formMeet [data-rol="cliente"]')
-    .off("click.setModo")
-    .on("click.setModo", function () {
-      $("#meet_modo").val("solicitar_cliente");
-    });
-  $('#formMeet [data-rol="ingeniero"]')
-    .off("click.setModo")
-    .on("click.setModo", function () {
-      $("#meet_modo").val("establecer_ingeniero");
-    });
+// =======================
+// Render: Cliente → Sedes
+// =======================
+function renderCliente(client, mode) {
+  const title = client.clNombre || client.cliente || "Sin cliente";
+  const sedes = Array.isArray(client.sedes) ? client.sedes : [];
+  const bloques = sedes
+    .map((s) => (mode === "cards" ? renderCardsSede(s) : renderTablaSede(s)))
+    .join("");
+  return `
+    <div class="my-4">
+      <h5 class="mb-2">${title}</h5>
+      ${bloques || '<p class="text-muted">Sin tickets en sus sedes.</p>'}
+    </div>
+  `;
 }
 
-// Handler único del submit del modal
-$(document)
-  .off("submit", "#formMeet")
-  .on("submit", "#formMeet", function (e) {
-    e.preventDefault();
+// =======================
+// Render: todos los clientes
+// =======================
+function renderTicketsClientes(clientes, mode = CURRENT_VIEW) {
+  const wrap = document.getElementById("wrapTicketsClientes");
+  if (!wrap) return;
 
-    const tiId = $("#meet_ticketId").val();
-    const modo = $("#meet_modo").val() || "solicitar_cliente"; // fallback
-    const plat = $("#meet_plataforma").val();
-    const link = $("#meet_link").val();
-    const fecha = $("#meet_fecha").val(); // YYYY-MM-DD (o '')
-    const hora = $("#meet_hora").val(); // HH:MM (o '')
-    const editable = $("#formMeet").data("editable") === true;
-
-    $.post(
-      "../php/meet_actualizar.php",
-      {
-        ticketId: tiId,
-        modo: modo, // 'solicitar_cliente' | 'establecer_ingeniero'
-        plataforma: plat || "",
-        link: link || "",
-        fecha: fecha,
-        hora: hora,
-
-      },
-      function (r) {
-        if (r && r.success) {
-          // Cierra el modal
-          const modal = bootstrap.Modal.getInstance(
-            document.getElementById("modalMeet")
-          );
-          modal && modal.hide();
-
-          // Refresca bloque Meet dentro del detalle
-          cargarBloqueMeet(tiId, { editable, targetId: "meetAnchor" });
-
-          // (Opcional) refrescar listado por sede
-          // cargarTicketsPorSede();
-        } else {
-          alert(r?.error || "No se pudo actualizar la reunión.");
-        }
-      },
-      "json"
-    ).fail(() => {
-      alert("Error de red al actualizar la reunión.");
-    });
-  });
-
-// Ata eventos a los botones (si editable)
-function wireMeetButtons(tiId, meetData, opts = {}) {
-  const editable = !!opts.editable;
-
-  // Siempre: ayuda (videos)
-  $("#btnAyudaLogs")
-    .off("click")
-    .on("click", () => {
-      // Ajusta ruta si tu página de ayuda es otra
-      window.open("../ayuda/videos_logs.php", "_blank", "noopener");
-    });
-
-  // Siempre: solicitar ayuda (correo)
-  $("#btnSolicitarAyuda")
-    .off("click")
-    .on("click", () => {
-      $.post(
-        "../php/solicitar_ayuda.php",
-        { ticketId: tiId },
-        (r) => {
-          if (r?.success) {
-            alert("Solicitud enviada al ingeniero a cargo.");
-          } else {
-            alert(r?.error || "No se pudo enviar la solicitud.");
-          }
-        },
-        "json"
-      );
-    });
-
-  if (!editable) {
-    // No enlazar acciones de edición si no es el paso "meet"
-    $("#btnSolicitarMeet").off("click");
-    $("#btnEstablecerMeet").off("click");
-    $("#btnCancelarMeet").off("click");
+  const arr = Array.isArray(clientes) ? clientes : [];
+  if (!arr.length) {
+    wrap.innerHTML =
+      '<p class="text-muted mb-0">No hay tickets para mostrar.</p>';
     return;
   }
 
-  // Solicitar (modo cliente)
-  // Modo CLIENTE
-  function prefillMeetModal(meetData) {
-    // plataforma/link ya los rellenas; agrega:
-    if (meetData.tiMeetFecha) {
-      const d = new Date(meetData.tiMeetFecha.replace(" ", "T"));
-      if (!isNaN(d.getTime())) {
-        // yyyy-mm-dd
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        // hh:mm
-        const hh = String(d.getHours()).padStart(2, "0");
-        const mi = String(d.getMinutes()).padStart(2, "0");
-        $("#meet_fecha").val(`${yyyy}-${mm}-${dd}`);
-        $("#meet_hora").val(`${hh}:${mi}`);
-      } else {
-        $("#meet_fecha").val("");
-        $("#meet_hora").val("");
-      }
-    } else {
-      $("#meet_fecha").val("");
-      $("#meet_hora").val("");
-    }
+  wrap.innerHTML = arr.map((c) => renderCliente(c, mode)).join("");
+}
+
+// =======================
+// FETCH: obtener todos agrupado por cliente→sedes
+// =======================
+function normalizeToClientes(payload) {
+  // Esperado: {success:true, clientes:[{clId, clNombre, sedes:[{csId, csNombre, tickets:[]}, ...]}]}
+  // Fallback (cuando backend retorna solo sedes): {success:true, sedes:[...]}
+  if (Array.isArray(payload?.clientes)) return payload.clientes;
+  if (Array.isArray(payload?.sedes)) {
+    return [
+      {
+        clId: 0,
+        clNombre: "Sin cliente",
+        sedes: payload.sedes,
+      },
+    ];
   }
-
-  $("#btnSolicitarMeet")
-    .off("click")
-    .on("click", () => {
-      $("#meet_ticketId").val(tiId);
-      $("#meet_modo").val("solicitar");
-      $("#meet_plataforma").val(meetData.tiMeetPlataforma || "");
-      $("#meet_link").val(meetData.tiMeetLink || "");
-      prefillMeetModal(meetData); // <- fecha/hora
-      new bootstrap.Modal(document.getElementById("modalMeet")).show();
-    });
-
-  $("#btnEstablecerMeet")
-    .off("click")
-    .on("click", () => {
-      $("#meet_ticketId").val(tiId);
-      $("#meet_modo").val("establecer");
-      $("#meet_plataforma").val(meetData.tiMeetPlataforma || "");
-      $("#meet_link").val(meetData.tiMeetLink || "");
-      prefillMeetModal(meetData); // <- fecha/hora
-      new bootstrap.Modal(document.getElementById("modalMeet")).show();
-    });
-
-  // Cancelar meet
-  $("#btnCancelarMeet")
-    .off("click")
-    .on("click", () => {
-      $.post(
-        "../php/meet_actualizar.php",
-        { ticketId: tiId, modo: "cancelar" },
-        (r) => {
-          if (r?.success) {
-            // Re-cargar bloque y (si quieres) refrescar listado
-            cargarBloqueMeet(tiId, { editable: true });
-            // cargarTicketsPorSede();
-          } else {
-            alert(r?.error || "No se pudo cancelar el meet");
-          }
-        },
-        "json"
-      );
-    });
+  return [];
 }
 
-// Videos de ayuda (abre tu página de ayuda según marca/equipo)
-$("#btnAyudaLogs")
-  .off("click")
-  .on("click", () => {
-    // Ejemplo: abre una página de ayuda con filtros por marca/equipo
-    window.open(`ayuda_videos.php?tiId=${tiId}`, "_blank");
-  });
-
-// Notificar ayuda por correo (puedes hacer un endpoint que use PHPMailer)
-$("#btnSolicitarAyuda")
-  .off("click")
-  .on("click", () => {
-    $.post(
-      "../php/notificar_ayuda.php",
-      { ticketId: tiId },
-      (r) => {
-        if (r?.success) alert("Se notificó al ingeniero de apoyo.");
-        else alert(r?.error || "No se pudo enviar la notificación.");
-      },
-      "json"
-    );
-  });
-
-// Submit del modal
-$("#formMeet")
-  .off("submit")
-  .on("submit", function (e) {
-    e.preventDefault();
-    const tiId = $("#meet_ticketId").val();
-    const modo = $("#meet_modo").val(); // solicitar | establecer
-    const plat = $("#meet_plataforma").val();
-    const link = $("#meet_link").val();
-    const fecha = $("#meet_fecha").val(); // YYYY-MM-DD (o '')
-    const hora = $("#meet_hora").val(); // HH:MM (o '')
-
-    $.post(
-      "../php/meet_actualizar.php",
-      {
-        ticketId: tiId,
-        modo,
-        plataforma: plat,
-        link,
-        fecha,
-        hora,
-      },
-      function (r) {
-        if (r?.success) {
-          const modal = bootstrap.Modal.getInstance(
-            document.getElementById("modalMeet")
-          );
-          modal && modal.hide();
-          typeof mostrarToast === "function"
-            ? mostrarToast("success", "Meet actualizado.")
-            : alert("Meet actualizado.");
-
-          // refresca bloque
-          if (typeof cargarBloqueMeet === "function") cargarBloqueMeet(tiId);
-          // (opcional) refrescar lista por sede
-          // if (typeof cargarTicketsPorSede === 'function') cargarTicketsPorSede();
-        } else {
-          typeof mostrarToast === "function"
-            ? mostrarToast(
-              "error",
-              r?.error || "No se pudo actualizar el Meet."
-            )
-            : alert(r?.error || "No se pudo actualizar el Meet.");
-        }
-      },
-      "json"
-    ).fail(() => {
-      typeof mostrarToast === "function"
-        ? mostrarToast("error", "Error de red.")
-        : alert("Error de red.");
-    });
-  });
-
-// TODO: Solicitar Ayuda
-// Mostrar/ocultar campos de Meet dentro del modal
-$(document)
-  .off("change", "#ayuda_meet")
-  .on("change", "#ayuda_meet", function () {
-    $("#ayuda_meet_wrap").toggleClass("d-none", !this.checked);
-  });
-
-// Abre el modal con el ticket actual
-function abrirModalAyuda(tiId) {
-  $("#ayuda_ticketId").val(tiId);
-  $("#ayuda_mensaje").val("");
-  $("#ayuda_meet").prop("checked", false).trigger("change");
-  $("#ayuda_plataforma").val("");
-  $("#ayuda_link").val("");
-
-  new bootstrap.Modal(document.getElementById("modalAyuda")).show();
-}
-
-// Conecta el botón del bloque Meet
-// (llama esto dentro de wireMeetButtons después de construir el bloque)
-function wireSolicitarAyudaButton(tiId) {
-  $("#btnSolicitarAyuda")
-    .off("click")
-    .on("click", function () {
-      abrirModalAyuda(tiId);
-    });
-}
-
-// Enviar el formulario
-$(document)
-  .off("submit", "#formAyuda")
-  .on("submit", "#formAyuda", function (e) {
-    e.preventDefault();
-
-    const tiId = $("#ayuda_ticketId").val();
-    const msg = $("#ayuda_mensaje").val().trim();
-    const pedir = $("#ayuda_meet").is(":checked") ? 1 : 0;
-    const plat = $("#ayuda_plataforma").val();
-    const link = $("#ayuda_link").val();
-
-    if (!tiId || !msg) {
-      typeof mostrarToast === "function"
-        ? mostrarToast("error", "Completa el mensaje.")
-        : alert("Completa el mensaje.");
-      return;
-    }
-
-    $.post(
-      "../php/solicitar_ayuda.php",
-      {
-        ticketId: tiId,
-        mensaje: msg,
-        solicitar_meet: pedir,
-        plataforma: plat || "",
-        link: link || "",
-      },
-      function (r) {
-        if (r?.success) {
-          const modal = bootstrap.Modal.getInstance(
-            document.getElementById("modalAyuda")
-          );
-          modal && modal.hide();
-
-          typeof mostrarToast === "function"
-            ? mostrarToast("success", "Solicitud enviada al ingeniero.")
-            : alert("Solicitud enviada.");
-
-          // Refresca bloque Meet del detalle (si estás en el offcanvas)
-          if (typeof cargarBloqueMeet === "function") {
-            cargarBloqueMeet(tiId);
-          }
-          // (Opcional) refrescar listado por sede:
-          // if (typeof cargarTicketsPorSede === 'function') cargarTicketsPorSede();
-        } else {
-          typeof mostrarToast === "function"
-            ? mostrarToast(
-              "error",
-              r?.error || "No se pudo enviar la solicitud."
-            )
-            : alert(r?.error || "No se pudo enviar la solicitud.");
-        }
-      },
-      "json"
-    ).fail(() => {
-      typeof mostrarToast === "function"
-        ? mostrarToast("error", "Error de red.")
-        : alert("Error de red.");
-    });
-  });
-function fmtDateTimeLocal(dtStr) {
-  if (!dtStr) return "—";
-  const d = new Date(dtStr.replace(" ", "T")); // simple parse
-  if (isNaN(d.getTime())) return dtStr;
-  return d.toLocaleString(); // o tu propio formateador
-}
-
-function renderMeetBlock(data) {
-  const estado = data.tiMeetActivo || null;
-  const plat = data.tiMeetPlataforma || "--";
-  const link = data.tiMeetLink || "";
-  const when = data.tiMeetFecha ? fmtDateTimeLocal(data.tiMeetFecha) : "—";
-
-  const chip = estado
-    ? `<span class="badge ${chipMeetColor(estado)}">${estado}</span>`
-    : `<span class="badge bg-secondary">sin meet</span>`;
-
-  const linkHtml = link
-    ? `<a href="${link}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> Abrir</a>`
-    : `<span class="text-muted">Sin enlace</span>`;
-
-  return `
-    <div class="border rounded p-3 mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>Reunión (Meet)</strong>
-        ${chip}
-      </div>
-
-      <div class="row g-3 align-items-center">
-        <div class="col-12 col-md-4">
-          <small class="text-muted">Plataforma</small>
-          <div>${plat}</div>
-        </div>
-        <div class="col-12 col-md-4">
-          <small class="text-muted">Fecha/Hora</small>
-          <div>${when}</div>
-        </div>
-        <div class="col-12 col-md-4">
-          <small class="text-muted">Enlace</small>
-          <div>${linkHtml}</div>
-        </div>
-      </div>
-
-      <div class="mt-3 d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-sm btn-primary" id="btnSolicitarMeet">
-          <i class="bi bi-person-video3"></i> Solicitar
-        </button>
-        <button type="button" class="btn btn-sm btn-success" id="btnEstablecerMeet">
-          <i class="bi bi-camera-video"></i> Establecer
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-danger" id="btnCancelarMeet">
-          <i class="bi bi-x-circle"></i> Cancelar
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAyudaLogs">
-          <i class="bi bi-question-circle"></i> Videos de ayuda
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSolicitarAyuda">
-          <i class="bi bi-envelope"></i> Solicitar ayuda
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-
-
-function cardHoja(item) {
-  // Marca / modelo
-  const marcaImg = item.maNombre ? `../img/Marcas/${item.maNombre.toLowerCase()}.png` : '';
-  const titulo = `${item.eqModelo || 'Equipo'} ${item.eqVersion || ''}`.trim();
-
-  const descargable = !!item.disponible && !!item.url;
-
-  return `
-      <div class="col-12 col-sm-6 col-md-4">
-        <div class="card h-100 ${descargable ? '' : 'border-0'}" style="${descargable ? '' : 'background:#f8f9fb'}">
-          <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="badge bg-light text-dark">Ticket #${item.tiId}</span>
-              <span class="badge ${item.disponible ? 'bg-success' : 'bg-secondary'}">
-                ${item.disponible ? 'Disponible' : 'Pendiente'}
-              </span>
-            </div>
-
-            <div class="d-flex align-items-center gap-2 mb-2">
-              ${marcaImg ? `<img src="${marcaImg}" style="height:22px" alt="${item.maNombre}">` : ''}
-              <strong>${titulo || '—'}</strong>
-            </div>
-
-            <div class="small text-muted mb-1"><i class="bi bi-geo-alt"></i> ${item.csNombre || 'General'}</div>
-            <div class="small text-muted mb-2"><i class="bi bi-calendar"></i> ${item.tiFecha || '—'}</div>
-
-            <div class="d-flex align-items-center justify-content-between mt-3">
-              <span class="badge bg-light text-dark">${item.eqTipoEquipo || '—'}</span>
-              <span class="badge ${item.tiEstatus === 'Finalizado' ? 'bg-primary' : 'bg-light text-dark'}">${item.tiEstatus}</span>
-            </div>
-          </div>
-
-          <div class="card-footer bg-transparent border-0">
-            ${descargable
-      ? `<a href="${item.url}" class="btn btn-outline-primary w-100" download>
-                    <i class="bi bi-download"></i> Descargar hoja de servicio
-                 </a>`
-      : `<button class="btn btn-outline-secondary w-100" disabled>
-                    <i class="bi bi-file-earmark"></i> Hoja no disponible
-                 </button>`
-    }
-          </div>
-        </div>
-      </div>
-    `;
-}
-
-function cargarHojasServicio() {
-  const desde = document.getElementById('hsDesde').value || '';
-  const hasta = document.getElementById('hsHasta').value || '';
-  const tipo = document.getElementById('hsTipoEquipo').value || '';
-
+function cargarTodosTickets(params = {}) {
   const qs = new URLSearchParams();
-  if (desde) qs.set('desde', desde);
-  if (hasta) qs.set('hasta', hasta);
-  if (tipo) qs.set('tipoEquipo', tipo);
+  // Si en tu backend hay filtros opcionales:
+  // if (params.estado) qs.set('estado', params.estado);
+  // if (params.marca)  qs.set('marca',  params.marca);
 
-  // Si eres MRA y quieres ver todas, no pases clId. 
-  // Si deseas filtrar por cliente/sede desde aquí: qs.set('clId', NNN); qs.set('csId', NNN);
+  // Endpoint recomendado (nuevo): obtener_todos_tickets.php
+  // Si aún no lo tienes, temporalmente intenta con obtener_tickets_sedes.php (devuelve todas)
+  const urlPrincipal = `../php/pruebas.php`;
+  const urlFallback = `../php/pruebas.php`;
 
-  fetch(`../php/obtener_hojas_servicio.php${qs.toString() ? '?' + qs.toString() : ''}`, { cache: 'no-store' })
-    .then(r => r.json())
-    .then(json => {
-      const wrap = document.getElementById('wrapHojas');
-      if (!json?.success) {
-        wrap.innerHTML = `<div class="col-12"><div class="alert alert-danger">${json?.error || 'No se pudo cargar.'}</div></div>`;
-        return;
-      }
-      const items = json.items || [];
-      if (!items.length) {
-        wrap.innerHTML = `<div class="col-12"><p class="text-muted">Sin resultados.</p></div>`;
-        return;
-      }
-      wrap.innerHTML = items.map(cardHoja).join('');
+  fetch(qs.toString() ? `${urlPrincipal}?${qs}` : urlPrincipal, {
+    cache: "no-store",
+  })
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((json) => {
+      if (!json?.success)
+        throw new Error(json?.error || "Respuesta no exitosa");
+      const clientes = normalizeToClientes(json);
+      renderTicketsClientes(clientes, CURRENT_VIEW);
     })
     .catch(() => {
-      document.getElementById('wrapHojas').innerHTML =
-        `<div class="col-12"><div class="alert alert-danger">Error de red.</div></div>`;
+      // Fallback automático al endpoint existente por sede
+      fetch(qs.toString() ? `${urlFallback}?${qs}` : urlFallback, {
+        cache: "no-store",
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          const clientes = normalizeToClientes(json);
+          renderTicketsClientes(clientes, CURRENT_VIEW);
+        })
+        .catch(() => {
+          const wrap = document.getElementById("wrapTicketsClientes");
+          if (wrap)
+            wrap.innerHTML = `<p class="text-danger">Error al cargar tickets.</p>`;
+        });
     });
 }
 
-document.getElementById('hsBtnFiltrar')?.addEventListener('click', cargarHojasServicio);
-document.getElementById('hsBtnReset')?.addEventListener('click', () => {
-  document.getElementById('hsDesde').value = '';
-  document.getElementById('hsHasta').value = '';
-  document.getElementById('hsTipoEquipo').value = '';
-  cargarHojasServicio();
+// Arranque
+document.addEventListener("DOMContentLoaded", () => {
+  cargarTodosTickets();
 });
 
-document.addEventListener('DOMContentLoaded', cargarHojasServicio);
 
-// TODO Elimina el sistema de Tickets
-// en main.js (DOMContentLoaded)
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.SESSION && window.SESSION.rol === 'EC') {
-    const btn = document.getElementById('btnNuevoTicket');
-    if (btn) btn.classList.add('d-none');
+
+
+
+
+  // Pega tu VAPID PUBLIC KEY en Base64URL (exactamente como la entrega VAPID::createVapidKeys())
+  const VAPID_PUBLIC = "TU_PUBLIC_KEY";
+
+  async function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
   }
-});
+
+  async function enableWebPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return alert('Push no soportado');
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') return;
+
+  const reg = await navigator.serviceWorker.register('/service-worker.js');
+  const subscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: await urlB64ToUint8Array(VAPID_PUBLIC)
+  });
+
+  await fetch('../php/save_subscription.php', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ subscription })
+    // La cookie de sesión viaja sola; PHP sabrá quién eres y pondrá el usId
+  });
+
+  alert('Notificaciones activadas');
+}
+
+  // Llama esto en un botón o al cargar el admin
+  document.addEventListener('DOMContentLoaded', () => {
+    // O muestra un botón: <button onclick="enableWebPush()">Activar notificaciones</button>
+    // enableWebPush();
+  });
 

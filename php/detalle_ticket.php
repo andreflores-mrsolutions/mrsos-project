@@ -49,12 +49,12 @@ JOIN marca m          ON m.maId = e.maId
 LEFT JOIN polizascliente pc ON pc.pcId = pe.pcId
 LEFT JOIN cliente_sede  cs ON cs.csId = t.csId
 
-WHERE t.tiId = ? AND t.clId = ?
+WHERE t.tiId = ?
 LIMIT 1
 ";
 
 $stmt = $conectar->prepare($sql);
-$stmt->bind_param('ii', $tiId, $clId);
+$stmt->bind_param('i', $tiId);
 $stmt->execute();
 $res = $stmt->get_result();
 $ticket = $res->fetch_assoc();

@@ -120,7 +120,8 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
 
   <!-- JS -->
-  <script src="../js/main.js"></script>
+  <script src="../js/hojas_servicio.js"></script>
+  <script src="../js/logout.js"></script>
   <!-- /JS -->
   <style>
     body {

@@ -1,4 +1,4 @@
-@import url('../fonts/TT-Norms-Fonts/TTNorms-Regular.otf');
+@import url("../fonts/TT-Norms-Fonts/TTNorms-Regular.otf");
 
 @font-face {
   font-family: mistral;
@@ -7,19 +7,18 @@
 }
 
 @font-face {
-  font-family: 'TTNorms';
-  src: url('../fonts/TT-Norms-Fonts/TTNorms-Regular.otf') format('opentype');
+  font-family: "TTNorms";
+  src: url("../fonts/TT-Norms-Fonts/TTNorms-Regular.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'TTNorms';
-  src: url('../fonts/TT-Norms-Fonts/TTNorms-Bold.otf') format('opentype');
+  font-family: "TTNorms";
+  src: url("../fonts/TT-Norms-Fonts/TTNorms-Bold.otf") format("opentype");
   font-weight: bold;
   font-style: normal;
 }
-
 
 :root {
   --surface-color: #4e6da5;
@@ -35,12 +34,14 @@
 
   /* Sobreescribir el color primary de Bootstrap */
   --bs-primary: var(--base-color);
-  --bs-primary-rgb: 32, 15, 76; /* RGB de #200f4c */
+  --bs-primary-rgb: 32, 15, 76;
+  /* RGB de #200f4c */
 }
 
 /* Puedes también definir colores adicionales si quieres más personalizados */
 :root {
-  --bs-secondary: #6c757d; /* Por si quieres también cambiar secondary */
+  --bs-secondary: #6c757d;
+  /* Por si quieres también cambiar secondary */
   --bs-success: #198754;
   --bs-danger: #dc3545;
   --bs-warning: #ffc107;
@@ -49,10 +50,8 @@
   --bs-dark: #212529;
 }
 
-
-
 body {
-  font-family: 'TTNorms';
+  font-family: "TTNorms";
 }
 
 a {
@@ -78,9 +77,11 @@ a:hover {
   text-shadow: none;
   /* Prevent inheritance from `body` */
 }
-.btn-outline-primary{
+
+.btn-outline-primary {
   border-color: #200f4c !important;
 }
+
 .btn-primary {
   background-color: #200f4c !important;
   border-color: #200f4c !important;
@@ -93,7 +94,6 @@ a:hover {
 .text-primary {
   color: #200f4c !important;
 }
-
 
 .btn-card {
   background-color: var(--base-color);
@@ -108,7 +108,6 @@ a:hover {
   /* Prevent inheritance from `body` */
 }
 
-
 .btn-card-bg-dark {
   background-color: var(--base-color-w);
   color: var(--base-color);
@@ -122,32 +121,29 @@ a:hover {
   /* Prevent inheritance from `body` */
 }
 
-
 /*
  * Base structure
  */
 
-
 .cover-container {
   max-width: 42em;
 }
-
 
 /*
  * Header
  */
 
 .nav-masthead .nav-link {
-  padding: .25rem 0;
+  padding: 0.25rem 0;
   font-weight: 700;
-  color: rgba(255, 255, 255, .5);
+  color: rgba(255, 255, 255, 0.5);
   background-color: transparent;
-  border-bottom: .25rem solid transparent;
+  border-bottom: 0.25rem solid transparent;
 }
 
 .nav-masthead .nav-link:hover,
 .nav-masthead .nav-link:focus {
-  border-bottom-color: rgba(255, 255, 255, .25);
+  border-bottom-color: rgba(255, 255, 255, 0.25);
 }
 
 .nav-masthead .nav-link+.nav-link {
@@ -158,7 +154,6 @@ a:hover {
   color: var(--base-color);
   border-bottom-color: var(--base-color);
 }
-
 
 /* 1200px min*/
 @media screen and (min-width: 1270px) {
@@ -186,13 +181,11 @@ a:hover {
   }
 }
 
-
 /* dropdowns tickets */
 .dropdown-item:hover {
   background-color: var(--base-color);
   color: var(--base-color-w);
 }
-
 
 /* Sidebar dashboard */
 /* Estilos del Sidebar */
@@ -222,6 +215,7 @@ a:hover {
   text-decoration: none;
   transition: background 0.3s;
 }
+
 .sidebar .nav-link:hover {
   display: flex;
   align-items: center;
@@ -231,10 +225,11 @@ a:hover {
   transition: background 0.3s;
 }
 
-.username{
+.username {
   color: #fff;
 }
-.username:hover{
+
+.username:hover {
   color: #333333;
 }
 
@@ -277,8 +272,6 @@ a:hover {
   right: -40px;
 }
 
-
-
 /* Login */
 
 .gradient-custom-2 {
@@ -286,7 +279,11 @@ a:hover {
   background: #9790fc;
 
   /* Chrome 10-25, Safari 5.1-6 */
-  background: -webkit-linear-gradient(to right, #245aee, #3641d8, #3936dd, #201f63);
+  background: -webkit-linear-gradient(to right,
+      #245aee,
+      #3641d8,
+      #3936dd,
+      #201f63);
 
   /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
   background: linear-gradient(to right, #3824ee, #3641d8, #3641dd, #4c45b4);
@@ -300,8 +297,8 @@ a:hover {
 
 @media (min-width: 769px) {
   .gradient-custom-2 {
-    border-top-right-radius: .3rem;
-    border-bottom-right-radius: .3rem;
+    border-top-right-radius: 0.3rem;
+    border-bottom-right-radius: 0.3rem;
   }
 }
 
@@ -451,58 +448,56 @@ a:hover {
 /* Card severidad */
 
 .severidad-card {
-    border-width: 2px;
-    transition: transform 0.2s, box-shadow 0.2s;
+  border-width: 2px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .severidad-card[data-severidad="1"] {
-    border-color: red;
+  border-color: red;
 }
 
 .severidad-card[data-severidad="2"] {
-    border-color: orange;
+  border-color: orange;
 }
 
 .severidad-card[data-severidad="3"] {
-    border-color: green;
+  border-color: green;
 }
 
 .severidad-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    cursor: pointer;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
-
-
-
 
 .offcanvas-header {
-    background: linear-gradient(90deg, #232547, #16172e);
+  background: linear-gradient(90deg, #232547, #16172e);
 }
+
 #formOffcanvasPassword input {
-    border-radius: 8px;
+  border-radius: 8px;
 }
+
 #formOffcanvasPassword button {
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
-
-
 
 /* Card base (reutiliza el tuyo si ya existe) */
 .service-card {
   border-radius: 1rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   background: #fff;
-  
+
   position: relative;
 }
 
 /* “N° de equipo” / tipo en la esquina */
-.service-card .ticket-number { /* puedes renombrar a equipment-badge si quieres */
+.service-card .ticket-number {
+  /* puedes renombrar a equipment-badge si quieres */
   font-size: 1rem;
   z-index: 2;
-  border-radius: 0 .5rem .5rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
 }
 
 /* Imagen */
@@ -512,7 +507,6 @@ a:hover {
   left: -55%;
   position: relative;
   object-fit: contain;
-  
 }
 
 /* Serial */
@@ -529,15 +523,16 @@ a:hover {
   position: absolute;
   top: 0;
   right: 10px;
-  
+
   writing-mode: vertical-rl;
   font-weight: 700;
   color: var(--bs-primary);
-  padding: .5rem;
-  background: rgba(255,255,255,.85);
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.85);
   text-align: center;
   font-size: 1rem;
-  line-height: 1; /* sin interlineado extra */
+  line-height: 1;
+  /* sin interlineado extra */
 }
 
 /* Marca vertical (logo rotado) */
@@ -546,34 +541,34 @@ a:hover {
   top: 90px;
   right: 0;
   transform: rotate(90deg);
-  background: rgba(255,255,255,.85);
-  padding: .25rem .5rem;
-  border-radius: .25rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
 }
 
 /* Chips inferiores */
 .eq-chips .badge {
-  margin-right: .5rem;
+  margin-right: 0.5rem;
 }
-
-
 
 /* Card Mis equipos */
 
 /* Card base (reutiliza el tuyo si ya existe) */
 .service-card1 {
   border-radius: 1rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   background: #fff;
-  min-height: 520px; /* un poco más baja que tickets */
+  min-height: 520px;
+  /* un poco más baja que tickets */
   position: relative;
 }
 
 /* “N° de equipo” / tipo en la esquina */
-.service-card1 .ticket-number { /* puedes renombrar a equipment-badge si quieres */
+.service-card1 .ticket-number {
+  /* puedes renombrar a equipment-badge si quieres */
   font-size: 1rem;
   z-index: 2;
-  border-radius: 0 .5rem .5rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
 }
 
 /* Imagen */
@@ -604,11 +599,12 @@ a:hover {
   writing-mode: vertical-rl;
   font-weight: 700;
   color: var(--bs-primary);
-  padding: .5rem;
-  background: rgba(255,255,255,.85);
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.85);
   text-align: center;
   font-size: 1rem;
-  line-height: 1; /* sin interlineado extra */
+  line-height: 1;
+  /* sin interlineado extra */
 }
 
 /* Marca vertical (logo rotado) */
@@ -617,55 +613,837 @@ a:hover {
   top: 90px;
   right: 0;
   transform: rotate(90deg);
-  background: rgba(255,255,255,.85);
-  padding: .25rem .5rem;
-  border-radius: .25rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
 }
 
 /* Chips inferiores */
 .eq-chips .badge {
-  margin-right: .5rem;
+  margin-right: 0.5rem;
 }
 
 /* Hojas de Servicio */
 /* Variante deshabilitada para hojas no disponibles */
 .menu-card.disabled {
-  opacity: .6;
+  opacity: 0.6;
   pointer-events: none;
 }
+
 .menu-card .doc-icon {
   font-size: 1.6rem;
 }
+
 .menu-card .brand-img {
   height: 18px;
   vertical-align: middle;
 }
 
+/* Tema azul integrado para sidebar/offcanvas */
+.mr-side {
+  background: linear-gradient(180deg, #0d6efd 0%, rgb(15, 15, 48) 100%);
+  color: #fff;
+  min-height: 100%;
+}
+
+.mr-side .brand img {
+  width: 180px;
+}
+
+.mr-side .section-title {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+  margin-top: 1.5rem;
+}
+
+.mr-side .nav .nav-link {
+  color: #e9f2ff;
+  border-radius: 0.65rem;
+  padding: 0.625rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mr-side .nav .nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.mr-side .nav .nav-link.active {
+  background: #fff;
+  color: rgb(15, 15, 48);
+  font-weight: 600;
+}
+
+.mr-side .dropdown-menu {
+  --bs-dropdown-bg: rgb(15, 15, 48);
+  --bs-dropdown-border-color: rgba(255, 255, 255, 0.2);
+  --bs-dropdown-link-color: #e9f2ff;
+  --bs-dropdown-link-hover-bg: rgba(255, 255, 255, 0.15);
+  --bs-dropdown-link-hover-color: #fff;
+  --bs-dropdown-divider-bg: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.mr-side .dropdown-item i {
+  margin-right: 0.5rem;
+}
+
+.mr-side .close-btn {
+  color: #fff;
+  opacity: 0.9;
+}
+
+.mr-side .close-btn:hover {
+  opacity: 1;
+}
+
+/* Dark side of the moon */
+
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 1) Asegura que el body realmente cambie de color y cubra toda la vista */
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--bg-primary, #f8f9fa);
+  color: var(--text-primary, #212529);
+}
+
+/* TODO: DARK SIDE OF THE MOON */
+/* 2) Tema oscuro: variables base + ¡forzar! el fondo del body */
+body.dark-mode {
+  /* Paleta oscura MR */
+  --bg-primary: #0e1525;
+  --bg-secondary: #182033;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #ffffff;
+  --accent-secondary: #60a5fa;
+  --border-light: #1e293b;
+
+  /* Bootstrap tokens clave (propagan el tema) */
+  --bs-body-bg: var(--bg-primary);
+  --bs-body-color: var(--text-primary);
+  --bs-border-color: var(--border-light);
+  --bs-card-bg: var(--bg-secondary);
+  --bs-card-color: var(--text-primary);
+  --bs-dropdown-bg: #101728;
+  --bs-dropdown-link-color: var(--text-primary);
+  --bs-dropdown-link-hover-bg: rgba(255, 255, 255, 0.08);
+  --bs-nav-link-color: var(--text-secondary);
+  --bs-nav-link-hover-color: var(--text-primary);
+  --bs-offcanvas-bg: var(--bg-secondary);
+  --bs-modal-bg: var(--bg-secondary);
+
+  /* ¡Forzar el fondo del body aún si algo antes lo fijó! */
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 3) Componentes comunes que suelen tapar el body con blanco */
+body.dark-mode .card,
+body.dark-mode .offcanvas,
+body.dark-mode .modal-content,
+body.dark-mode .dropdown-menu,
+body.dark-mode .navbar,
+body.dark-mode .list-group,
+body.dark-mode .form-control,
+body.dark-mode .btn-light {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-light) !important;
+}
+
+/* Contenedores base */
+body.dark-mode .container,
+body.dark-mode .container-fluid,
+body.dark-mode .row,
+body.dark-mode main {
+  background-color: transparent !important;
+  /* que deje ver el body */
+  color: var(--text-primary) !important;
+}
+
+/* Links y estados */
+body.dark-mode a,
+body.dark-mode .nav-link {
+  color: var(--accent) !important;
+}
+
+body.dark-mode a:hover,
+body.dark-mode .nav-link:hover {
+  color: var(--accent-secondary) !important;
+}
+
+/* 4) Sidebar.css usa sus propias variables (mapeamos a oscuro) */
+body.dark-mode {
+  --bg--primary: var(--bg-secondary);
+  --bg--active: rgba(59, 130, 246, 0.12);
+  --bg--hover: rgba(59, 130, 246, 0.1);
+  --bg--focus: rgba(59, 130, 246, 0.16);
+
+  --gray--primary: #9aa7b9;
+  --gray--secondary: #e2e8f0;
+
+  --dark--primary: #0e1525;
+  --dark--secondary: #182033;
+
+  --accent--primary: var(--accent);
+  --accent--secondary: var(--accent-secondary);
+}
+
+/* 5) Si tienes navbars/headers con fondo blanco explícito */
+body.dark-mode .bg-white,
+body.dark-mode .bg-light {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* 6) Botón luna bordeado: que se vea bien en ambos temas */
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark-mode .btn-outline-secondary {
+  color: var(--text-primary) !important;
+  border-color: var(--border-light) !important;
+}
+
+body.dark-mode .main {
+  background: #383e77;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #fff;
+}
+
+body.dark-mode .menu-card {
+  flex: 1;
+  min-width: 120px;
+  background: #383e77;
+  border-radius: 0.5rem;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+}
+
+/* === TABLAS GENERADAS POR JS (dark mode) === */
+body.dark-mode .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-primary);
+}
+
+body.dark-mode .table thead th {
+  color: var(--text-secondary);
+  border-bottom-color: var(--border-light);
+}
+
+body.dark-mode .table tbody td {
+  border-top-color: var(--border-light);
+}
+
+/* Badges dentro de la tabla */
+/* Caso 1: los que vienen como "bg-light text-dark" (Estatus columna) */
+body.dark-mode .table .badge.bg-light,
+body.dark-mode .badge.bg-light {
+  background-color: rgba(226, 232, 240, 0.1) !important;
+  /* gris muy tenue */
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+/* Caso 2: clases que retornan badgeEstatusClase / badgeTipoClase (ej. bg-success, bg-warning...) */
+body.dark-mode .badge.bg-success {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #18e3a3 !important;
+}
+
+body.dark-mode .badge.bg-warning {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #ffce59 !important;
+}
+
+body.dark-mode .badge.bg-danger {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  color: #ffa3a3 !important;
+}
+
+body.dark-mode .badge.bg-info {
+  background-color: rgba(14, 165, 233, 0.18) !important;
+  color: #7cd3ff !important;
+}
+
+body.dark-mode .badge.bg-secondary {
+  background-color: rgba(148, 163, 184, 0.18) !important;
+  color: #cbd5e1 !important;
+}
+
+/* Link "Ver más" dentro de la tabla */
+body.dark-mode .table a {
+  color: var(--accent) !important;
+}
+
+body.dark-mode .table a:hover {
+  color: var(--accent-secondary) !important;
+}
+
+/* Encabezado de sección con línea tenue (h6 con border-bottom) */
+body.dark-mode h6.border-bottom {
+  border-bottom-color: var(--border-light) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Columna de marca (imagen de logo): sin invertir, solo borde opcional si lo deseas */
+/* body.dark-mode td img { filter: none; } */
+
+/* === OFFCANVAS HEADER === */
+/* Opción A: mantener tu inline style y sobrescribir en dark (requiere !important) */
+body.dark-mode .offcanvas-header {
+  background: var(--bg-secondary) !important;
+}
+
+body.dark-mode .offcanvas-header .offcanvas-title {
+  color: var(--text-primary) !important;
+}
+
+body.dark-mode .offcanvas-header .btn-close {
+  filter: invert(1) grayscale(100%);
+  /* que se vea en fondo oscuro */
+  opacity: 0.8;
+}
+
+/* Opción B (mejor): SIN inline style -> usa una clase "bg-surface" reutilizable */
+.bg-surface {
+  background: #f8f9fb;
+}
+
+body.dark-mode .bg-surface {
+  background: var(--bg-secondary) !important;
+}
+
+/* TODO White Moon */
+body {
+  background: rgb(231, 231, 246);
+  color: var(--text-primary, #1e293b);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Sidebar */
+#sidebar,
+#offcanvasSidebar {
+  min-height: 100vh;
+  background: rgb(15, 15, 48);
+  color: #fff;
+}
+
+#sidebar .nav-link,
+#offcanvasSidebar .nav-link {
+  color: #bbb;
+}
+
+#sidebar .nav-link.active,
+#sidebar .nav-link:hover,
+#offcanvasSidebar .nav-link.active,
+#offcanvasSidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .offcanvas-lg {
+    display: none;
+  }
+}
+
+/* Main container */
+.main {
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* Top bar icons */
+.top-icons .bi {
+  font-size: 1.25rem;
+  color: #555;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+/* Menu cards */
+.menu-card {
+  flex: 1;
+  min-width: 120px;
+  background: #f8f9fb;
+  border-radius: 0.5rem;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+}
+
+.menu-card:hover {
+  flex: 1;
+  min-width: 120px;
+  background: rgba(44, 32, 139, 0.5);
+  border-radius: 0.5rem;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.3s;
+}
+
+.menu-card.active {
+  background: rgb(44, 32, 139);
+  color: #fff;
+}
+
+.menu-card .bi {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Statistic cards */
+.stat-card {
+  background: #f8f9fb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Después de Bootstrap */
+.offcanvas-backdrop {
+  z-index: 1040;
+  /* valor por defecto del backdrop */
+}
+
+.modal-backdrop {
+  --bs-backdrop-zindex: initial;
+}
+
+.offcanvas {
+  z-index: 1050;
+  /* un punto más alto que el backdrop */
+}
+
+/* Cards admin
+
+ Grid responsivo para cards */
+.mrs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .mrs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .mrs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Card */
+.mrs-card {
+  background: var(--bg-secondary, #fff);
+  color: var(--text-primary, #1f2937);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
+  border-radius: 1rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.mrs-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.mrs-card-header {
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.mrs-card-content {
+  padding: 0 1.25rem 1rem;
+}
+
+.mrs-card .text-muted {
+  color: var(--text-secondary, #6b7280) !important;
+}
+
+.mrs-badge-soft {
+  background: rgba(226, 232, 240, 0.35);
+  color: var(--text-primary, #1f2937);
+  border: 1px solid var(--border-light, #e5e7eb);
+}
+
+.modal-header {
+  border-bottom: none !important;
+}
+
+.mrs-ing-card {
+  background: var(--bg-secondary, #fff);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.mrs-ing-card .img {
+  width: 104px;
+  /* height: 64px; */
+  border-radius: 10px;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+
+.mrs-ing-badge {
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border: 1px solid var(--bs-border-color);
+}
 
 
 
-  /* Tema azul integrado para sidebar/offcanvas */
-  .mr-side {
-    background: linear-gradient(180deg, #0d6efd 0%, rgb(15, 15, 48) 100%);
-    color: #fff;
-    min-height: 100%;
+
+#modalAnalisis .modal-content {
+  padding: 1.25rem;
+}
+
+@media (min-width: 992px) {
+  #modalAnalisis .modal-content {
+    padding: 0;
   }
-  .mr-side .brand img { width: 180px; }
-  .mr-side .section-title {
-    font-size: .8rem; letter-spacing: .08em; opacity: .85; margin-top: 1.5rem;
+}
+
+
+
+/* ====== Landing MR SoS (usa paleta existente) ====== */
+/* Colores base ya definidos:
+   --base-color: #200f4c;  (también mapea a --bs-primary)  */
+/* Modo oscuro: el body.dark-mode ya define --bg-primary, --bg-secondary, --text-primary, etc. */
+
+.mrs-hero {
+  /* Claro: hero suave con tu color principal y fondo claro */
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(32, 15, 76, .15), transparent),
+    linear-gradient(135deg, #ffffff, #f8f9fb 60%, #eef2ff);
+  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.mrs-hero-badge {
+  background: rgba(32, 15, 76, .08);
+  color: var(--base-color);
+  border: 1px solid rgba(32, 15, 76, .15);
+}
+
+/* KPIs */
+.mrs-kpi {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.mrs-kpi-title {
+  font-size: .9rem;
+  color: #6c757d
+}
+
+.mrs-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937
+}
+
+/* Cards de beneficios */
+.mrs-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 1rem;
+  padding: 1.1rem;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.mrs-card:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+  transform: translateY(-2px);
+}
+
+.mrs-icon {
+  font-size: 1.6rem;
+  color: var(--base-color);
+}
+
+/* Pasos y progress */
+.mrs-step {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--base-color);
+  color: #fff;
+  font-weight: 700;
+  margin-right: .75rem;
+}
+
+.mrs-progress {
+  background: #f7f9fc;
+  border: 1px dashed rgba(0, 0, 0, .08);
+}
+
+/* CTA y Novedades */
+.mrs-cta {
+  background: linear-gradient(180deg, rgba(32, 15, 76, .06), #fff);
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.mrs-news {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+/* ====== Dark mode (hereda de tus variables) ====== */
+body.dark-mode .mrs-hero {
+  background:
+    radial-gradient(1100px 380px at 50% -10%, rgba(96, 165, 250, .15), transparent),
+    linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
+  color: var(--text-primary) !important;
+  border-color: var(--bs-border-color, var(--border-light));
+}
+
+body.dark-mode .mrs-hero-badge {
+  background: rgba(96, 165, 250, .12);
+  color: var(--accent);
+  border-color: rgba(96, 165, 250, .25);
+}
+
+body.dark-mode .mrs-kpi,
+body.dark-mode .mrs-card,
+body.dark-mode .mrs-cta,
+body.dark-mode .mrs-news {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+body.dark-mode .mrs-kpi-title {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .mrs-kpi-value {
+  color: var(--text-primary);
+}
+
+body.dark-mode .mrs-progress {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+}
+
+body.dark-mode .text-muted {
+  color: var(--text-secondary) !important;
+}
+
+/* Enlace primario ya usa tu --bs-primary (mapeado a --base-color) */
+
+
+
+/* ====== Sección "Soluciones TI Integrales" ====== */
+.mrs-hero-corp{
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+.mrs-hero-corp h2{
+  letter-spacing: -.02em;
+}
+.mrs-hero-corp .lead{
+  max-width: 52ch;
+}
+
+/* Pastillas de beneficios (25 años, mexicana, partners) */
+.mrs-pill{
+  background: #ffffff;
+  border-radius: 999px;
+  padding: .45rem .9rem;
+  border: 1px solid rgba(0,0,0,.06);
+}
+.mrs-pill-icon{
+  color: var(--base-color);
+}
+
+/* Imagen y tarjeta flotante 500+ */
+.mrs-hero-corp-img-wrap{
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.mrs-hero-corp-img{
+  max-height: 400px;
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+}
+.mrs-stat-floating{
+  position: absolute;
+  bottom: 1.8rem;
+  left: 1.8rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+/* ====== Sección "Quiénes Somos" ====== */
+.mrs-about-img{
+  width: 100%;
+  object-fit: cover;
+}
+.mrs-quote{
+  background: #f5f7fb;
+  border: 1px solid rgba(0,0,0,.04);
+}
+
+/* Tarjetas Misión/Visión/Valores/Equipo */
+.mrs-info-card{
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 1.15rem 1.1rem;
+}
+.mrs-info-icon{
+  color: var(--base-color);
+}
+
+/* ====== Dark mode para estas secciones ====== */
+body.dark-mode .mrs-hero-corp .lead,
+body.dark-mode .mrs-hero-corp p,
+body.dark-mode .mrs-about p,
+body.dark-mode .mrs-about .text-muted{
+  color: var(--text-secondary) !important;
+}
+
+body.dark-mode .mrs-pill,
+body.dark-mode .mrs-stat-floating,
+body.dark-mode .mrs-info-card{
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+body.dark-mode .mrs-quote{
+  background: rgba(148,163,184,.12);
+  border-color: var(--border-light);
+}
+
+body.dark-mode .mrs-hero-corp-img,
+body.dark-mode .mrs-about-img{
+  /* deja la foto igual, solo ajustamos el halo del shadow si quieres luego */
+}
+
+@media (max-width: 991.98px){
+  .mrs-stat-floating{
+    left: 1rem;
+    bottom: 1rem;
   }
-  .mr-side .nav .nav-link {
-    color: #e9f2ff; border-radius: .65rem; padding: .625rem .75rem;
-    display:flex; align-items:center; gap:.5rem;
-  }
-  .mr-side .nav .nav-link:hover { background: rgba(255,255,255,.15); color:#fff; }
-  .mr-side .nav .nav-link.active { background:#fff; color:rgb(15, 15, 48); font-weight:600; }
-  .mr-side .dropdown-menu {
-    --bs-dropdown-bg: rgb(15, 15, 48); --bs-dropdown-border-color: rgba(255,255,255,.2);
-    --bs-dropdown-link-color: #e9f2ff; --bs-dropdown-link-hover-bg: rgba(255,255,255,.15);
-    --bs-dropdown-link-hover-color:#fff; --bs-dropdown-divider-bg: rgba(255,255,255,.25);
-    box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  }
-  .mr-side .dropdown-item i { margin-right:.5rem; }
-  .mr-side .close-btn { color:#fff; opacity:.9; }
-  .mr-side .close-btn:hover { opacity:1; }
+}
+
+
+/* Banda desde "¿Por qué usar MR SoS?" hasta el footer */
+:root{
+  --bg-band-light: #f9fafb;
+  /* un tono distinto al body en oscuro (puedes cambiarlo si quieres) */
+  --bg-band-dark: #050818;
+}
+
+.mrs-band-why{
+  background: var(--bg-band-light);
+}
+
+/* Modo oscuro: tono diferente al fondo general */
+body.dark-mode .mrs-band-why{
+  background: var(--bg-band-dark);
+}
+
+body.dark-mode .mrs-band-why .text-muted{
+  color: var(--text-secondary) !important;
+}
+
+
+/* ===== DARK MODE SWITCH ===== */
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.theme-switch input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cfd5df;
+  border-radius: 999px;
+  transition: background-color .25s ease;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.05);
+}
+
+/* “Botón” con icono dentro */
+.slider::before {
+  content: "🌙";
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  font-size: 12px;
+  transition: transform .25s ease, background-color .25s ease, color .25s ease;
+  color: #fbbf24; /* amarillo suave */
+}
+
+/* Estado ON (dark-mode) */
+.theme-switch input:checked + .slider {
+  background-color: var(--base-color);
+}
+
+.theme-switch input:checked + .slider::before {
+  transform: translateX(20px);
+  content: "☀️";
+  color: #facc15;
+}

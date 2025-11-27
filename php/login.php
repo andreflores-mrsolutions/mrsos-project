@@ -2,37 +2,56 @@
 include "conexion.php";
 session_start();
 
-$usId = $_POST["usId"];
-$usPass = $_POST["usPass"];
+header('Content-Type: application/json; charset=utf-8');
 
-$stmt = $conectar->prepare("SELECT * FROM usuarios WHERE usId = ? AND usEstatus = 'Activo'");
+$usId   = $_POST["usId"] ?? '';
+$usPass = $_POST["usPass"] ?? '';
+
+if ($usId === '' || $usPass === '') {
+    echo json_encode(['success' => false, 'message' => 'Faltan datos']);
+    exit;
+}
+
+$stmt = $conectar->prepare("SELECT * FROM usuarios WHERE usId = ?");
 $stmt->bind_param("s", $usId);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    echo "0";
+    echo json_encode(['success' => false, 'message' => 'Usuario o contraseña incorrectos']);
     exit;
 }
 
 $user = $result->fetch_object();
 
-// Validar la contraseña
-if (!password_verify($usPass, $user->usPass)) {
-    echo "0";
+// OJO: en la BD no existe 'Eliminado', tus estados son Activo/Inactivo/NewPass/Error :contentReference[oaicite:0]{index=0}
+if ($user->usEstatus === 'Inactivo' || $user->usEstatus === 'Error') {
+    echo json_encode(['success' => false, 'message' => 'Cuenta inactiva, contacta a soporte.']);
     exit;
 }
-// $row = datos del usuario
-if ($row['usEstatus'] === 'NewPass') {
-  // deja sesión mínima y redirige a “cambio de contraseña”
-  $_SESSION['usId']   = (int)$row['usId'];
-  $_SESSION['usRol']  = $row['usRol'];
-  $_SESSION['forzarCambioPass'] = true;
-  header('Location: cambiar_password.php');
-  exit;
+
+// Validar la contraseña
+if (!password_verify($usPass, $user->usPass)) {
+    echo json_encode(['success' => false, 'message' => 'Usuario o contraseña incorrectos']);
+    exit;
 }
 
-// Si todo está bien: iniciar sesión
+/* ========== 1) Forzar cambio de contraseña ========== */
+if ($user->usEstatus === 'NewPass') {
+    // Sesión mínima para identificar al usuario en la pantalla de cambio
+    $_SESSION['usId']              = (int)$user->usId;
+    $_SESSION['usRol']             = $user->usRol;
+    $_SESSION['forzarCambioPass']  = true;
+
+    echo json_encode([
+        'success'          => true,
+        'forceChangePass'  => true,
+        'message'          => 'Debes actualizar tu contraseña'
+    ]);
+    exit;
+}
+
+/* ========== 2) Login normal ========== */
 $_SESSION['usId']             = $user->usId;
 $_SESSION['usNombre']         = $user->usNombre;
 $_SESSION['usAPaterno']       = $user->usAPaterno;
@@ -49,5 +68,8 @@ $_SESSION['usConfirmado']     = $user->usConfirmado;
 $_SESSION['usEstatus']        = $user->usEstatus;
 $_SESSION['usUsername']       = $user->usUsername;
 
-echo json_encode(["success" => true, "user" => $user->usNombre]);
-
+echo json_encode([
+    'success'         => true,
+    'forceChangePass' => false,
+    'user'            => $user->usNombre
+]);

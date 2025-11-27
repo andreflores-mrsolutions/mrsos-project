@@ -1,5 +1,6 @@
 <?php
 // headers.php (parte superior)
+$theme = $_COOKIE['mrs_theme'] ?? 'light';
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . "/../php/conexion.php"; // ajusta la ruta si aplica
 
@@ -101,6 +102,11 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <!-- SweetAlert -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#0e1525">
+  <link rel="apple-touch-icon" href="/img/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -116,120 +122,18 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
   <!-- css -->
   <link href="../css/style.css" rel="stylesheet">
-
-
-
   <!-- JS -->
   <script src="../js/main.js"></script>
+  <script src="../js/dashboard.js"></script>
+  <script src="../js/tickets/modal_meet.js"></script>
+  <script src="../js/logout.js"></script>
   <!-- /JS -->
   <style>
-    body {
-      background: rgb(231, 231, 246);
-    }
 
-    /* Sidebar */
-    #sidebar,
-    #offcanvasSidebar {
-      min-height: 100vh;
-      background: rgb(15, 15, 48);
-      color: #fff;
-    }
-
-    #sidebar .nav-link,
-    #offcanvasSidebar .nav-link {
-      color: #bbb;
-    }
-
-    #sidebar .nav-link.active,
-    #sidebar .nav-link:hover,
-    #offcanvasSidebar .nav-link.active,
-    #offcanvasSidebar .nav-link:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-
-    @media(min-width:768px) {
-      .offcanvas-lg {
-        display: none;
-      }
-    }
-
-    /* Main container */
-    .main {
-      background: #fff;
-      border-radius: .5rem;
-      padding: 1rem;
-      margin: 1rem 0;
-    }
-
-    /* Top bar icons */
-    .top-icons .bi {
-      font-size: 1.25rem;
-      color: #555;
-      margin-left: 1rem;
-      cursor: pointer;
-    }
-
-    /* Menu cards */
-    .menu-card {
-      flex: 1;
-      min-width: 120px;
-      background: #f8f9fb;
-      border-radius: .5rem;
-      text-align: center;
-      padding: .75rem .5rem;
-      cursor: pointer;
-    }
-
-    .menu-card:hover {
-      flex: 1;
-      min-width: 120px;
-      background: rgba(44, 32, 139, 0.5);
-      border-radius: .5rem;
-      text-align: center;
-      padding: .75rem .5rem;
-      cursor: pointer;
-      color: #fff;
-      transition: background 0.3s;
-    }
-
-    .menu-card.active {
-      background: rgb(44, 32, 139);
-      color: #fff;
-    }
-
-    .menu-card .bi {
-      font-size: 1.5rem;
-      margin-bottom: .5rem;
-    }
-
-    /* Statistic cards */
-    .stat-card {
-      background: #f8f9fb;
-      border-radius: .5rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    /* Después de Bootstrap */
-    .offcanvas-backdrop {
-      z-index: 1040;
-      /* valor por defecto del backdrop */
-    }
-
-    .modal-backdrop {
-      --bs-backdrop-zindex: initial;
-    }
-
-
-    .offcanvas {
-      z-index: 1050;
-      /* un punto más alto que el backdrop */
-    }
   </style>
 </head>
 
-<body>
+<body class="<?php echo ($theme === 'dark') ? 'dark-mode' : ''; ?>">
 
   <div class="container-fluid">
     <div class="row gx-0">
@@ -255,6 +159,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
           <li class="nav-item">
             <a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Configuración</a>
           </li>
+
 
           <!-- Dropdown -->
           <li class="nav-item dropdown">
@@ -319,7 +224,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Configuración</a>
+              <a class="nav-link" href="configuracion.php" modalAsignacion><i class="bi bi-gear"></i> Configuración</a>
             </li>
 
             <!-- Dropdown (mismo contenido que el sidebar) -->
@@ -402,7 +307,13 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               <a id="btnRecargar"><i class="bi bi-arrow-clockwise mx-2"></i></a>
               <i class="bi bi-bell mx-2"></i>
               <i class="bi bi-question-circle mx-2"></i>
+
+              <!-- NUEVO: Botón tema (luna) -->
+              <button id="btnThemeDesktop" class="btn btn-outline-secondary btn-icon mx-2" title="Modo oscuro">
+                <i class="bi bi-moon"></i>
+              </button>
             </div>
+
 
             <!-- Dropdown general en sm- -->
             <div class="dropdown d-md-none me-2">
@@ -414,8 +325,16 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                 <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-clockwise me-2"></i>Refrescar</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-bell me-2"></i>Notificaciones</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Ayuda</a></li>
+
+                <!-- NUEVO: Tema -->
+                <li>
+                  <a id="btnThemeMobile" class="dropdown-item" href="#" role="button">
+                    <i class="bi bi-moon me-2"></i><span>Cambiar a modo oscuro</span>
+                  </a>
+                </li>
               </ul>
             </div>
+
 
             <!-- Perfil -->
             <div class="nav-item dropdown">
@@ -475,57 +394,45 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               <button id="btnRecargar" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-clockwise"></i> Recargar Tickets
               </button>
+              <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnalisis">
+                Launch demo modal
+              </button>
+              <div class="d-flex gap-2 my-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="enableWebPush()">Activar notificaciones</button>
+                <button class="btn btn-outline-success btn-sm" onclick="probarPush()">Probar push</button>
+              </div> -->
+              <script>
+                function probarPush() {
+                  const usIdActual = window.USUARIO_ACTUAL_ID || 2001;
+                  if (!usIdActual) {
+                    alert('Define USUARIO_ACTUAL_ID');
+                    return;
+                  }
+                  fetch('../php/send_push_test.php?usId=' + usIdActual)
+                    .then(r => r.json())
+                    .then(j => alert(JSON.stringify(j)))
+                    .catch(e => alert('Error: ' + e.message));
+                }
+              </script>
+
               <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 
               </div>
           </div>
           <h5>Incidentes Recientes</h5>
-          <div class="table-responsive">
-            <table class="table table-borderless mb-0">
-              <!-- <thead>
-          <tr>
-            <th>Estado</th>
-            <th>Equipo</th>
-            <th class="d-none d-sm-table-cell">Marca</th>
-            <th class="d-none d-md-table-cell">SN</th>
-            <th class="d-none d-lg-table-cell">Estatus</th>
-            <th class="d-none d-lg-table-cell">Tipo de ticket</th>
-            <th class="d-none d-md-table-cell">Extras</th>
-          </tr>
-        </thead> -->
-              <!-- Tickets por sede (máx. 3 por sede) -->
-              <tbody id="wrapTicketsSedes">
-                <!-- Loader -->
-                <div id="loader" class="text-center my-4" style="display:none;">
-                  <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
-                </div>
-
-
-
-
-                <!-- <tr>
-                  <td><span class="badge bg-success">Activo</span></td>
-                  <td>PowerEdge R750 15G</td>
-                  <td class="d-none d-sm-table-cell"><img src="../../img/Marcas/dell.png" style="height:20px;" alt="cliente"></td>
-                  <td class="d-none d-md-table-cell">2106195YSAXEP2000009</td>
-                  <td class="d-none d-lg-table-cell"><span class="badge bg-light text-dark">Logs</span></td>
-                  <td class="d-none d-lg-table-cell"><span class="badge bg-primary">Servicio</span></td>
-                  <td class="d-none d-md-table-cell">Meet</td>
-                  <td><a href="#">Ver más</a></td>
-                </tr>
-                <tr>
-                  <td><span class="badge bg-success">Activo</span></td>
-                  <td>FusionServer 2288H V6</td>
-                  <td class="d-none d-sm-table-cell"><img src="../../img/Marcas/xFusion.png" style="height:20px;" alt="cliente"></td>
-                  <td class="d-none d-md-table-cell">2106195YSAXEP2000008</td>
-                  <td class="d-none d-lg-table-cell"><span class="badge bg-light text-dark">En camino</span></td>
-                  <td class="d-none d-lg-table-cell"><span class="badge bg-secondary">Preventivo</span></td>
-                  <td class="d-none d-md-table-cell">--</td>
-                  <td><a href="#">Ver más</a></td>
-                </tr> -->
-              </tbody>
-            </table>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="btn-group" id="viewToggle">
+              <button type="button" class="btn btn-outline-secondary btn-sm active" data-mode="table">
+                <i class="bi bi-table"></i> Tabla
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-mode="cards">
+                <i class="bi bi-grid-3x3-gap"></i> Cards
+              </button>
+            </div>
           </div>
+
+          <!-- Aquí pintamos todo (clientes -> sedes -> tickets) -->
+          <div id="wrapTicketsClientes"></div>
 
         </div>
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasTicket" aria-labelledby="offcanvasTicket"
@@ -614,11 +521,11 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                 <!-- dentro del form del modalMeet -->
                 <div class="row g-2">
                   <div class="col-12 col-md-6">
-                    <label class="form-label mb-1">Fecha del meet</label>
+                    <!-- <label class="form-label mb-1">Fecha del meet</label> -->
                     <input type="date" id="meet_fecha" name="fecha" class="form-control">
                   </div>
                   <div class="col-12 col-md-6">
-                    <label class="form-label mb-1">Hora</label>
+                    <!-- <label class="form-label mb-1">Hora</label> -->
                     <input type="time" id="meet_hora" name="hora" class="form-control">
                   </div>
                 </div>
@@ -644,57 +551,6 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
         </div>
 
 
-        <!-- Modal: Solicitar ayuda -->
-        <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog">
-            <form id="formAyuda" class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Solicitar ayuda del ingeniero</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-              </div>
-
-              <div class="modal-body">
-                <input type="hidden" id="ayuda_ticketId" name="ticketId">
-
-                <div class="mb-3">
-                  <label for="ayuda_mensaje" class="form-label">Describe el problema o la ayuda que necesitas</label>
-                  <textarea id="ayuda_mensaje" name="mensaje" class="form-control" rows="4" maxlength="1000" required></textarea>
-                </div>
-
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" value="1" id="ayuda_meet" name="solicitar_meet">
-                  <label class="form-check-label" for="ayuda_meet">
-                    También solicitar una reunión (Meet)
-                  </label>
-                </div>
-
-                <div id="ayuda_meet_wrap" class="border rounded p-2 d-none">
-                  <div class="mb-2">
-                    <label for="ayuda_plataforma" class="form-label mb-1">Plataforma</label>
-                    <select id="ayuda_plataforma" name="plataforma" class="form-select form-select-sm">
-                      <option value="">Selecciona…</option>
-                      <option value="Google">Google</option>
-                      <option value="Teams">Teams</option>
-                      <option value="Zoom">Zoom</option>
-                      <option value="Otro">Otro</option>
-                    </select>
-                  </div>
-                  <div class="mb-0">
-                    <label for="ayuda_link" class="form-label mb-1">Enlace (opcional)</label>
-                    <input id="ayuda_link" name="link" type="url" class="form-control form-control-sm" placeholder="https://…">
-                    <div class="form-text">Si no tienes enlace, puedes dejarlo vacío.</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
         <!-- Bootstrap JS Bundle -->
 
 
@@ -710,3 +566,157 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
 </html>
+
+<script>
+  // --- Helpers de cookie ---
+  function setCookie(name, value, days = 365) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+  }
+
+  function getCookie(name) {
+    const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  }
+
+  // --- Estado inicial: cookie > prefers-color-scheme > light ---
+  (function initTheme() {
+    const cookieTheme = getCookie('mrs_theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initial = cookieTheme || (prefersDark ? 'dark' : 'light');
+    applyTheme(initial, {
+      save: false
+    });
+  })();
+
+  function applyTheme(mode, {
+    save = true
+  } = {}) {
+    const isDark = (mode === 'dark');
+    document.body.classList.toggle('dark-mode', isDark);
+    if (save) setCookie('mrs_theme', isDark ? 'dark' : 'light');
+
+    // Sincroniza iconos Desktop + Mobile
+    const deskBtn = document.getElementById('btnThemeDesktop');
+    const mobBtn = document.getElementById('btnThemeMobile');
+
+    if (deskBtn) {
+      const i = deskBtn.querySelector('i');
+      if (i) {
+        i.classList.remove('bi-moon', 'bi-moon-fill');
+        i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
+      }
+      deskBtn.title = isDark ? 'Modo claro' : 'Modo oscuro';
+    }
+
+    if (mobBtn) {
+      const i = mobBtn.querySelector('i');
+      const label = mobBtn.querySelector('span');
+      if (i) {
+        i.classList.remove('bi-moon', 'bi-moon-fill');
+        i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
+      }
+      if (label) {
+        label.textContent = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+      }
+    }
+  }
+
+  // --- Eventos de toggle ---
+  document.addEventListener('DOMContentLoaded', () => {
+    const deskBtn = document.getElementById('btnThemeDesktop');
+    const mobBtn = document.getElementById('btnThemeMobile');
+
+    const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+    applyTheme(current, {
+      save: false
+    });
+
+    if (deskBtn) {
+      deskBtn.addEventListener('click', () => {
+        const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    }
+
+    if (mobBtn) {
+      mobBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+        applyTheme(next);
+
+        // Cerrar el dropdown en móviles si está abierto (Bootstrap)
+        const dropdownEl = document.getElementById('moreActions');
+        if (dropdownEl) {
+          const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
+          if (bsDropdown) bsDropdown.hide();
+        }
+      });
+    }
+  });
+</script>
+
+<!-- Modal: Análisis de ingeniero -->
+<div class="modal fade justify-content-center" id="modalAnalisis" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body justify-content-center">
+        <img src="../img/asignacion.png" class="d-flex mx-auto mb-2" style="height: 150px;" alt="Análisis">
+        <h1 class="modal-title text-center"><b>Análisis</b></h1>
+        <h6 class="text-muted text-center mb-4">
+          Añade un análisis al ticket. (Si faltan datos, escribe “Faltan datos”).
+        </h6>
+
+        <div class="mb-3">
+          <label for="tiAnalisisDesc" class="form-label">Descripción del análisis</label>
+          <textarea class="form-control" id="tiAnalisisDesc"
+            placeholder="Describe el análisis preliminar/final del problema"
+            rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-center border-0">
+        <button class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" id="btnGuardarAnalisis"
+          data-next-proceso="logs">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal: Asignación de ingeniero -->
+<div class="modal fade" id="modalAsignacion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <h1 class="modal-title text-center"><b>Asignación</b></h1>
+        <h5 class="text-muted text-center mb-3">Es momento de asignar un ingeniero, elige la mejor opción</h5>
+
+        <!-- Grupos por Tier -->
+        <div id="wrapIngenieros">
+          <!-- Aquí se pintan los tiers y las cards -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancelar</button>
+        <button id="btnContinuarAsignacion" class="btn btn-success d-none">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

@@ -1,233 +1,233 @@
 <?php
-// php/obtener_tickets_sedes.php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-header('Content-Type: application/json');
-require_once 'conexion.php';
+declare(strict_types=1);
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
 session_start();
 
-/**
- * Sesión
- */
-$rolSesion  = $_SESSION['usRol']  ?? null;   // 'MRA' | 'AC' | 'UC' | 'EC'
-$clIdSesion = $_SESSION['clId'] ?? null;
-$usIdSesion = $_SESSION['usId'] ?? null;
+try {
+  /* =========================
+   * 1) CONEXIÓN (ajusta a tu entorno)
+   * ========================= */
+  $DB_HOST = '127.0.0.1';
+  $DB_NAME = 'mrsos';
+  $DB_USER = 'root';
+  $DB_PASS = '';
+  $DB_CHARSET = 'utf8mb4';
 
-// MRA puede ver otro cliente con ?clId=
-$clId = ($rolSesion === 'MRA' && isset($_GET['clId']))
-  ? (int)$_GET['clId']
-  : (int)$clIdSesion;
+  $dsn = "mysql:host={$DB_HOST};dbname={$DB_NAME};charset={$DB_CHARSET}";
+  $pdo = new PDO($dsn, $DB_USER, $DB_PASS, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+  ]);
 
-if (!$clId) {
-  echo json_encode(['success'=>false,'error'=>'No autenticado / cliente no definido']);
-  exit;
-}
+  /* =========================
+   * 2) SESIÓN / ROL
+   * =========================
+   * Esperamos (idealmente) en sesión: usId, usRol, clId
+   * Si faltan usRol y/o clId, se consultan de la tabla usuarios.
+   */
+  $sessionUsId  = isset($_SESSION['usId'])  ? (int)$_SESSION['usId']  : 0;
+  $sessionRol   = $_SESSION['usRol']  ?? null;
+  $sessionClId  = isset($_SESSION['clId'])  ? (int)$_SESSION['clId']  : null;
 
-$csIdFiltro = isset($_GET['csId']) ? (int)$_GET['csId'] : null;
-
-/**
- * Sedes permitidas según rol
- */
-/**
- * Sedes permitidas según rol
- * - MRA: ve todo; si pasa ?csId filtra esa sede.
- * - AC: ve TODAS las sedes del cliente (ignora usuario_sede). Si pasa ?csId filtra esa sede.
- * - UC/EC: solo sus sedes de usuario_sede. Si el cliente no maneja sedes, no filtra por sede.
- */
-$allowedCs   = [];
-$filterBySede = false;
-
-if ($rolSesion === 'MRA') {
-  if ($csIdFiltro) {
-    $allowedCs = [$csIdFiltro];
-    $filterBySede = true;
-  } else {
-    $filterBySede = false; // todas
+  if ($sessionUsId <= 0) {
+    throw new Exception('Sesión inválida (usId no definido).');
   }
 
-} elseif ($rolSesion === 'AC') {
-  if ($csIdFiltro) {
-    $allowedCs = [$csIdFiltro];
-    $filterBySede = true;  // AC puede filtrar a una sede concreta
-  } else {
-    $filterBySede = false; // AC ve TODAS las sedes del cliente (no limitar por sede)
+  if ($sessionRol === null || $sessionClId === null) {
+    $stmtU = $pdo->prepare("SELECT usRol, clId FROM usuarios WHERE usId = :uid LIMIT 1");
+    $stmtU->execute([':uid' => $sessionUsId]);
+    $u = $stmtU->fetch();
+    if (!$u) throw new Exception('Usuario no encontrado.');
+    $sessionRol  = $sessionRol  ?? $u['usRol'];
+    $sessionClId = $sessionClId ?? (int)$u['clId'];
   }
 
-} else { // UC / EC
-  // sedes asignadas al usuario
-  $sql = "SELECT csId FROM sede_usuario WHERE usId=? AND suEstatus = 'Activo'";
-  $st  = $conectar->prepare($sql);
-  $st->bind_param("i", $usIdSesion);
-  $st->execute();
-  $res = $st->get_result();
-  while ($r = $res->fetch_assoc()) $allowedCs[] = (int)$r['csId'];
-  $st->close();
+  /* =========================
+   * 3) FILTROS OPCIONALES (GET)
+   * =========================
+   * estado:      tiEstatus           (Abierto|Pospuesto|Cerrado)
+   * proceso:     tiProceso
+   * tipo:        tiTipoTicket        (Servicio|Preventivo|Extra)
+   * cliente:     clId
+   * sede:        csId
+   * q:           búsqueda texto      (tiDescripcion, peSN, eqModelo, eqVersion)
+   * date_from:   tiFechaCreacion >=  YYYY-MM-DD
+   * date_to:     tiFechaCreacion <=  YYYY-MM-DD
+   * limit/offset: paginación opcional
+   */
+  $estado   = $_GET['estado']   ?? null;
+  $proceso  = $_GET['proceso']  ?? null;
+  $tipo     = $_GET['tipo']     ?? null;
+  $cliente  = isset($_GET['cliente']) ? (int)$_GET['cliente'] : null;
+  $sede     = isset($_GET['sede'])    ? (int)$_GET['sede']    : null;
+  $q        = $_GET['q']        ?? null;
+  $dateFrom = $_GET['date_from'] ?? null;
+  $dateTo   = $_GET['date_to']   ?? null;
+  $limit    = isset($_GET['limit'])  ? max(1, (int)$_GET['limit'])  : 0;      // 0 = sin límite
+  $offset   = isset($_GET['offset']) ? max(0, (int)$_GET['offset']) : 0;
 
-  // ¿El cliente maneja sedes?
-  $st = $conectar->prepare("SELECT 1 FROM cliente_sede WHERE clId=? LIMIT 1");
-  $st->bind_param("i", $clId);
-  $st->execute();
-  $st->store_result();
-  $tieneSedes = $st->num_rows > 0;
-  $st->close();
+  $where = [];
+  $params = [];
 
-  // Para UC/EC solo filtras por sede si el cliente maneja sedes y hay sedes asignadas
-  $filterBySede = $tieneSedes && !empty($allowedCs);
+  // Filtros “explícitos” de la URL (se combinan con visibilidad por rol)
+  if ($estado)  { $where[] = 't.tiEstatus = :estado';         $params[':estado']  = $estado; }
+  if ($proceso) { $where[] = 't.tiProceso = :proceso';        $params[':proceso'] = $proceso; }
+  if ($tipo)    { $where[] = 't.tiTipoTicket = :tipo';        $params[':tipo']    = $tipo; }
+  if ($cliente) { $where[] = 't.clId = :cliente';             $params[':cliente'] = $cliente; }
+  if ($sede)    { $where[] = 't.csId = :sede';                $params[':sede']    = $sede; }
 
-  // Si además llegó ?csId, intersección rápida (por seguridad)
-  if ($filterBySede && $csIdFiltro) {
-    if (in_array($csIdFiltro, $allowedCs, true)) {
-      $allowedCs = [$csIdFiltro];
-    } else {
-      // no tiene permiso para esa sede -> vacía (no devolverá nada)
-      $allowedCs = [-1];
-    }
+  if ($dateFrom) { $where[] = 't.tiFechaCreacion >= :df';     $params[':df']      = $dateFrom; }
+  if ($dateTo)   { $where[] = 't.tiFechaCreacion <= :dt';     $params[':dt']      = $dateTo; }
+
+  if ($q) {
+    // Búsqueda sencilla en descripción, SN y modelo/version
+    $where[] = '(t.tiDescripcion LIKE :q OR pe.peSN LIKE :q OR e.eqModelo LIKE :q OR e.eqVersion LIKE :q)';
+    $params[':q'] = '%'.$q.'%';
   }
-}
 
-/**
- * Armado de filtros
- */
-$where = [];
-$types = "";
-$params = [];
+  /* =========================
+   * 4) RESTRICCIÓN POR ROL (VISIBILIDAD)
+   * =========================
+   * - AC: solo su cliente (t.clId = sessionClId)
+   * - UC: solo sedes asignadas al usuario (sede_usuario)
+   * - Otros (MRA/MRSA/MRV...): sin restricción extra
+   */
+  $visibilityJoin  = '';
+  $visibilityWhere = '';
 
-// cliente (en ticket o en poliza del equipo)
-$where[] = "(t.clId=? OR pc.clId=?)";
-$types  .= "ii";
-$params[] = $clId;
-$params[] = $clId;
-
-// sede (cuando corresponde)
-// Usamos COALESCE(t.csId, pc.csId) como sede efectiva
-if ($filterBySede) {
-  $placeholders = implode(',', array_fill(0, count($allowedCs), '?'));
-  $where[] = "COALESCE(t.csId, pc.csId) IN ($placeholders)";
-  $types   .= str_repeat('i', count($allowedCs));
-  array_push($params, ...$allowedCs);
-}
-
-// Si además MRA pasó ?csId=, ya está cubierto arriba
-
-$whereSQL = count($where) ? "WHERE ".implode(' AND ', $where) : "";
-
-/**
- * Consulta:
- *  - Trae hasta 3 tickets por sede (ROW_NUMBER() en MySQL 8)
- *  - El nombre de la sede
- *  - Datos suficientes para pintar la tabla
- */
-$sql = "
-WITH t_base AS (
-  SELECT
-    t.tiId, t.tiEstatus, t.tiProceso, t.tiTipoTicket, t.tiExtra, t.tiFechaCreacion,
-    e.eqModelo, e.eqVersion, m.maNombre,
-    COALESCE(pe.peSN, pe_eq.peSN) AS peSN,
-    COALESCE(t.csId, pc.csId) AS csId
-  FROM ticket_soporte t
-  LEFT JOIN polizasequipo pe    ON pe.peId = t.peId
-  LEFT JOIN polizasequipo pe_eq ON (t.peId IS NULL AND pe_eq.eqId = t.eqId)
-  LEFT JOIN equipos e           ON e.eqId  = COALESCE(pe.eqId, pe_eq.eqId, t.eqId)
-  LEFT JOIN marca m             ON m.maId  = e.maId
-  LEFT JOIN polizascliente pc   ON pc.pcId = COALESCE(pe.pcId, pe_eq.pcId)
-  $whereSQL
-),
-t_rank AS (
-  SELECT
-    tb.*,
-    ROW_NUMBER() OVER (PARTITION BY tb.csId ORDER BY tb.tiFechaCreacion DESC, tb.tiId DESC) AS rn
-  FROM t_base tb
-)
-SELECT
-  c.csId, c.csNombre,
-  tr.tiId, tr.tiEstatus, tr.tiProceso, tr.tiTipoTicket, tr.tiExtra, tr.tiFechaCreacion,
-  tr.eqModelo, tr.eqVersion, tr.maNombre, tr.peSN
-FROM t_rank tr
-LEFT JOIN cliente_sede c ON c.csId = tr.csId
-WHERE tr.rn <= 3
-ORDER BY c.csNombre ASC, tr.tiFechaCreacion DESC, tr.tiId DESC
-";
-
-$stmt = $conectar->prepare($sql);
-if (!$stmt) {
-  echo json_encode(['success'=>false,'error'=>'Prepare error: '.$conectar->error]);
-  exit;
-}
-if ($types !== "") {
-  $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$res = $stmt->get_result();
-
-// Reagrupar por sede
-$bySede = [];
-while ($row = $res->fetch_assoc()) {
-  $sid = (int)($row['csId'] ?? 0);
-  $sname = $row['csNombre'] ?? 'Sin sede';
-  if (!isset($bySede[$sid])) {
-    $bySede[$sid] = ['csId'=>$sid, 'csNombre'=>$sname, 'tickets'=>[]];
+  if ($sessionRol === 'AC') {
+    // Fija clId del usuario AC, ignora cualquier clId de GET que no coincida
+    $where[] = 't.clId = :visClId';
+    $params[':visClId'] = (int)$sessionClId;
+  } elseif ($sessionRol === 'UC') {
+    // Limitar a sedes donde el usuario UC está asignado (sede_usuario activo)
+    // Usamos EXISTS para no romper la agrupación ni la paginación
+    $where[] = 'EXISTS (SELECT 1 FROM sede_usuario su
+                        WHERE su.csId = t.csId
+                          AND su.usId = :visUsId
+                          AND su.suEstatus = "Activo")';
+    $params[':visUsId'] = (int)$sessionUsId;
   }
-  $bySede[$sid]['tickets'][] = [
-    'tiId' => (int)$row['tiId'],
-    'tiEstatus' => $row['tiEstatus'],
-    'tiProceso' => $row['tiProceso'],
-    'tiTipoTicket' => $row['tiTipoTicket'],
-    'tiExtra' => $row['tiExtra'],
-    'tiFechaCreacion' => $row['tiFechaCreacion'],
-    'eqModelo' => $row['eqModelo'],
-    'eqVersion' => $row['eqVersion'],
-    'maNombre' => $row['maNombre'],
-    'peSN' => $row['peSN'],
-  ];
-}
-$stmt->close();
+  // Nota: si quisieras que EC vea "solo sus propios tickets", aquí pondrías otra rama.
 
-// Si no hay sedes (cliente sin sedes) podemos devolver una "falsa sede"
-$sedes = array_values($bySede);
-if (empty($sedes) && $rolSesion !== 'MRA') {
-  // intenta devolver 0:Sin sede con top 3 general
-  $sql2 = "
+  $whereSql = $where ? ('WHERE '.implode(' AND ', $where)) : '';
+
+  /* =========================
+   * 5) CONSULTA
+   * ========================= */
+  $sql = "
     SELECT
-      t.tiId, t.tiEstatus, t.tiProceso, t.tiTipoTicket, t.tiExtra, t.tiFechaCreacion,
-      e.eqModelo, e.eqVersion, m.maNombre, COALESCE(pe.peSN, pe_eq.peSN) AS peSN
+      c.clId, c.clNombre,
+      cs.csId, cs.csNombre,
+      t.tiId, t.tiEstatus, t.tiProceso, t.tiTipoTicket, t.tiExtra,
+      t.tiVisita, t.tiFechaCreacion,
+      t.tiNombreContacto, t.tiNumeroContacto, t.tiCorreoContacto,
+      e.eqModelo, e.eqVersion,
+      m.maNombre,
+      pe.peSN
     FROM ticket_soporte t
-    LEFT JOIN polizasequipo pe    ON pe.peId = t.peId
-    LEFT JOIN polizasequipo pe_eq ON (t.peId IS NULL AND pe_eq.eqId = t.eqId)
-    LEFT JOIN equipos e           ON e.eqId  = COALESCE(pe.eqId, pe_eq.eqId, t.eqId)
-    LEFT JOIN marca m             ON m.maId  = e.maId
-    LEFT JOIN polizascliente pc   ON pc.pcId = COALESCE(pe.pcId, pe_eq.pcId)
-    WHERE (t.clId=? OR pc.clId=?)
-    ORDER BY t.tiFechaCreacion DESC, t.tiId DESC
-    LIMIT 3
+      INNER JOIN clientes c       ON c.clId = t.clId
+      LEFT  JOIN cliente_sede cs  ON cs.csId = t.csId
+      LEFT  JOIN polizasequipo pe ON pe.peId = t.peId
+      LEFT  JOIN equipos e        ON e.eqId = t.eqId
+      LEFT  JOIN marca m          ON m.maId = e.maId
+    {$whereSql}
+    ORDER BY c.clNombre ASC, cs.csNombre ASC, t.tiFechaCreacion DESC, t.tiId DESC
   ";
-  $st2 = $conectar->prepare($sql2);
-  $st2->bind_param('ii', $clId, $clId);
-  $st2->execute();
-  $r2 = $st2->get_result();
-  $tmp = [];
-  while ($w = $r2->fetch_assoc()) {
-    $tmp[] = [
-      'tiId'=>(int)$w['tiId'],
-      'tiEstatus'=>$w['tiEstatus'],
-      'tiProceso'=>$w['tiProceso'],
-      'tiTipoTicket'=>$w['tiTipoTicket'],
-      'tiExtra'=>$w['tiExtra'],
-      'tiFechaCreacion'=>$w['tiFechaCreacion'],
-      'eqModelo'=>$w['eqModelo'],
-      'eqVersion'=>$w['eqVersion'],
-      'maNombre'=>$w['maNombre'],
-      'peSN'=>$w['peSN'],
+
+  // Paginación server-side (opcional)
+  if ($limit > 0) {
+    $sql .= " LIMIT :limit OFFSET :offset";
+  }
+
+  $stmt = $pdo->prepare($sql);
+  foreach ($params as $k => $v) {
+    $type = PDO::PARAM_STR;
+    if (is_int($v)) $type = PDO::PARAM_INT;
+    $stmt->bindValue($k, $v, $type);
+  }
+  if ($limit > 0) {
+    $stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+  }
+  $stmt->execute();
+
+  $rows = $stmt->fetchAll();
+
+  /* =========================
+   * 6) AGRUPACIÓN Cliente → Sedes
+   * ========================= */
+  $clientesMap = []; // clId => ['clId','clNombre','sedes' => [ csId => {...} ]]
+  foreach ($rows as $r) {
+    $clId = (int)$r['clId'];
+    $csId = $r['csId'] !== null ? (int)$r['csId'] : 0; // 0 para "Sin sede"
+
+    if (!isset($clientesMap[$clId])) {
+      $clientesMap[$clId] = [
+        'clId'     => $clId,
+        'clNombre' => $r['clNombre'] ?? 'Sin cliente',
+        'sedes'    => []
+      ];
+    }
+
+    if (!isset($clientesMap[$clId]['sedes'][$csId])) {
+      $clientesMap[$clId]['sedes'][$csId] = [
+        'csId'     => $csId,
+        'csNombre' => $r['csNombre'] ?? 'Sin sede',
+        'tickets'  => []
+      ];
+    }
+
+    // Normaliza fechas (evita "0000-00-00 00:00:00")
+    $tiVisita = $r['tiVisita'];
+    if ($tiVisita === '0000-00-00 00:00:00' || $tiVisita === '0000-00-00') {
+      $tiVisita = null;
+    }
+
+    $clientesMap[$clId]['sedes'][$csId]['tickets'][] = [
+      'tiId'             => (int)$r['tiId'],
+      'tiEstatus'        => $r['tiEstatus'],
+      'tiProceso'        => $r['tiProceso'],
+      'tiTipoTicket'     => $r['tiTipoTicket'],
+      'tiExtra'          => $r['tiExtra'],
+      'tiVisita'         => $tiVisita,
+      'eqModelo'         => $r['eqModelo'],
+      'eqVersion'        => $r['eqVersion'],
+      'maNombre'         => $r['maNombre'],
+      'peSN'             => $r['peSN'],
+      'clNombre'         => $r['clNombre'],
+      'csNombre'         => $r['csNombre'],
+      // Datos de contacto (si los necesita el front)
+      'persona'          => $r['tiNombreContacto'],
+      'contacto'         => $r['tiNumeroContacto'],
+      'correo'           => $r['tiCorreoContacto'],
+      // Info útil extra
+      'tiFechaCreacion'  => $r['tiFechaCreacion'],
+      'clId'             => $clId,
+      'csId'             => $csId
     ];
   }
-  $st2->close();
-  if ($tmp) {
-    $sedes = [[ 'csId'=>0, 'csNombre'=>'Sin sede', 'tickets'=>$tmp ]];
-  }
-}
 
-echo json_encode([
-  'success'=>true,
-  'clId'=>$clId,
-  'rol'=>$rolSesion,
-  'sedes'=>$sedes
-]);
+  // Pasa sedes de map a array indexado para el JSON final
+  $clientes = [];
+  foreach ($clientesMap as $cl) {
+    $sedesArr = array_values($cl['sedes']); // descarta las keys de mapa
+    $cl['sedes'] = $sedesArr;
+    $clientes[] = $cl;
+  }
+
+  echo json_encode([
+    'success'  => true,
+    'clientes' => $clientes,
+    'count'    => count($rows)
+  ], JSON_UNESCAPED_UNICODE);
+
+} catch (Throwable $e) {
+  http_response_code(500);
+  echo json_encode([
+    'success' => false,
+    'error'   => 'Error interno: '.$e->getMessage()
+  ], JSON_UNESCAPED_UNICODE);
+}

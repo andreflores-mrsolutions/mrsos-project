@@ -34,7 +34,8 @@ if (!empty($_SESSION['usId'])) {
     <!-- /Ajax - JQuery -->
 
     <!-- JS -->
-    <script src="../js/main.js"></script>
+    <script src="../js/login.js"></script>
+
     <!-- /JS -->
 
 
@@ -52,7 +53,7 @@ if (!empty($_SESSION['usId'])) {
                                 <div class="text-center">
                                     <img src="../img/logo MR.webp" style="width: 125px;" class="mb-3" alt="logo">
                                     <h4 class="mt-1 mb-5 pb-1">Inicia sesión para poder acceder</h4>
-                                    
+
                                 </div>
 
                                 <form id="login-form">
@@ -82,7 +83,7 @@ if (!empty($_SESSION['usId'])) {
                                         <form id="reset-p-form">
                                             <p>Reseteo de password, ingrese el número de Usuario:</p>
                                             <div class="form-outline mb-4">
-                                                <label class="form-label" for="udId">Número de Usuario:</label>
+                                                <label class="form-label" for="usId">Número de Usuario:</label>
                                                 <input type="number" name="usId" id="udId" class="form-control" placeholder="0000" required />
                                             </div>
                                             <div class="form-outline mb-4">
@@ -91,11 +92,12 @@ if (!empty($_SESSION['usId'])) {
                                             </div>
 
                                             <div class="text-center pt-1 mb-5 pb-1">
-                                                <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-block fa-lg gradient-custom-2 p-3" type="submit">
+                                                <button class="btn btn-primary btn-block fa-lg gradient-custom-2 p-3" type="submit" id="btn-reset-pass">
                                                     Resetear Contraseña
                                                 </button>
                                             </div>
                                         </form>
+
                                     </div>
                                 </div>
                             </div>
