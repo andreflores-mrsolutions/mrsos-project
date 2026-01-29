@@ -319,7 +319,7 @@ a:hover {
 }
 
 .ticket-card {
-  width: 100px;
+  /* width: 100px; */
 }
 
 /* Cards */
@@ -470,9 +470,9 @@ a:hover {
   cursor: pointer;
 }
 
-.offcanvas-header {
+/* .offcanvas-header {
   background: linear-gradient(90deg, #232547, #16172e);
-}
+} */
 
 #formOffcanvasPassword input {
   border-radius: 8px;
@@ -831,7 +831,7 @@ body.dark-mode .btn-outline-secondary {
 body.dark-mode .main {
   background: #383e77;
   border-radius: 0.5rem;
-  padding: 1rem;
+  padding: 0.7rem;
   margin: 1rem 0;
   color: #fff;
 }
@@ -978,8 +978,8 @@ body {
 .main {
   background: #fff;
   border-radius: 0.5rem;
-  padding: 1rem;
-  margin: 1rem 0;
+  padding: 0.7rem;
+  margin: .7rem 0;
 }
 
 /* Top bar icons */
@@ -1053,6 +1053,36 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
+}
+
+@media (max-width: 425px) {
+
+  /* Card */
+  .mrs-card {
+    background: var(--bg-secondary, #fff);
+    color: var(--text-primary, #1f2937);
+    border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
+    border-radius: .5rem;
+    transition: box-shadow 0.2s ease;
+    padding: 0px !important;
+  }
+  
+
+  .mrs-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .mrs-card-header {
+    padding: 0px;
+  }
+
+  .mrs-card-content {
+    padding: 0px;
+  }
+
+  .mrs-card .text-muted {
+    color: var(--text-secondary, #6b7280) !important;
+  }
 }
 
 @media (min-width: 768px) {
@@ -1272,68 +1302,75 @@ body.dark-mode .text-muted {
 
 
 /* ====== Sección "Soluciones TI Integrales" ====== */
-.mrs-hero-corp{
+.mrs-hero-corp {
   padding-top: 3rem;
   padding-bottom: 3rem;
 }
-.mrs-hero-corp h2{
+
+.mrs-hero-corp h2 {
   letter-spacing: -.02em;
 }
-.mrs-hero-corp .lead{
+
+.mrs-hero-corp .lead {
   max-width: 52ch;
 }
 
 /* Pastillas de beneficios (25 años, mexicana, partners) */
-.mrs-pill{
+.mrs-pill {
   background: #ffffff;
   border-radius: 999px;
   padding: .45rem .9rem;
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid rgba(0, 0, 0, .06);
 }
-.mrs-pill-icon{
+
+.mrs-pill-icon {
   color: var(--base-color);
 }
 
 /* Imagen y tarjeta flotante 500+ */
-.mrs-hero-corp-img-wrap{
+.mrs-hero-corp-img-wrap {
   max-width: 540px;
   margin-left: auto;
   margin-right: auto;
 }
-.mrs-hero-corp-img{
+
+.mrs-hero-corp-img {
   max-height: 400px;
   object-fit: cover;
   width: 100%;
   height: auto;
 }
-.mrs-stat-floating{
+
+.mrs-stat-floating {
   position: absolute;
   bottom: 1.8rem;
   left: 1.8rem;
   background: #ffffff;
   border-radius: 1rem;
   padding: 1rem 1.25rem;
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid rgba(0, 0, 0, .06);
 }
 
 /* ====== Sección "Quiénes Somos" ====== */
-.mrs-about-img{
+.mrs-about-img {
   width: 100%;
   object-fit: cover;
 }
-.mrs-quote{
+
+.mrs-quote {
   background: #f5f7fb;
-  border: 1px solid rgba(0,0,0,.04);
+  border: 1px solid rgba(0, 0, 0, .04);
 }
 
 /* Tarjetas Misión/Visión/Valores/Equipo */
-.mrs-info-card{
+.mrs-info-card {
   background: #ffffff;
   border-radius: 1rem;
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid rgba(0, 0, 0, .06);
   padding: 1.15rem 1.1rem;
 }
-.mrs-info-icon{
+
+.mrs-info-icon {
   color: var(--base-color);
 }
 
@@ -1341,30 +1378,27 @@ body.dark-mode .text-muted {
 body.dark-mode .mrs-hero-corp .lead,
 body.dark-mode .mrs-hero-corp p,
 body.dark-mode .mrs-about p,
-body.dark-mode .mrs-about .text-muted{
+body.dark-mode .mrs-about .text-muted {
   color: var(--text-secondary) !important;
 }
 
 body.dark-mode .mrs-pill,
 body.dark-mode .mrs-stat-floating,
-body.dark-mode .mrs-info-card{
+body.dark-mode .mrs-info-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   color: var(--text-primary);
 }
 
-body.dark-mode .mrs-quote{
-  background: rgba(148,163,184,.12);
+body.dark-mode .mrs-quote {
+  background: rgba(148, 163, 184, .12);
   border-color: var(--border-light);
 }
 
-body.dark-mode .mrs-hero-corp-img,
-body.dark-mode .mrs-about-img{
-  /* deja la foto igual, solo ajustamos el halo del shadow si quieres luego */
-}
 
-@media (max-width: 991.98px){
-  .mrs-stat-floating{
+
+@media (max-width: 991.98px) {
+  .mrs-stat-floating {
     left: 1rem;
     bottom: 1rem;
   }
@@ -1372,22 +1406,22 @@ body.dark-mode .mrs-about-img{
 
 
 /* Banda desde "¿Por qué usar MR SoS?" hasta el footer */
-:root{
+:root {
   --bg-band-light: #f9fafb;
   /* un tono distinto al body en oscuro (puedes cambiarlo si quieres) */
   --bg-band-dark: #050818;
 }
 
-.mrs-band-why{
+.mrs-band-why {
   background: var(--bg-band-light);
 }
 
 /* Modo oscuro: tono diferente al fondo general */
-body.dark-mode .mrs-band-why{
+body.dark-mode .mrs-band-why {
   background: var(--bg-band-dark);
 }
 
-body.dark-mode .mrs-band-why .text-muted{
+body.dark-mode .mrs-band-why .text-muted {
   color: var(--text-secondary) !important;
 }
 
@@ -1416,7 +1450,7 @@ body.dark-mode .mrs-band-why .text-muted{
   background-color: #cfd5df;
   border-radius: 999px;
   transition: background-color .25s ease;
-  box-shadow: inset 0 0 0 1px rgba(15,23,42,.05);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .05);
 }
 
 /* “Botón” con icono dentro */
@@ -1434,16 +1468,262 @@ body.dark-mode .mrs-band-why .text-muted{
   border-radius: 50%;
   font-size: 12px;
   transition: transform .25s ease, background-color .25s ease, color .25s ease;
-  color: #fbbf24; /* amarillo suave */
+  color: #fbbf24;
+  /* amarillo suave */
 }
 
 /* Estado ON (dark-mode) */
-.theme-switch input:checked + .slider {
+.theme-switch input:checked+.slider {
   background-color: var(--base-color);
 }
 
-.theme-switch input:checked + .slider::before {
+.theme-switch input:checked+.slider::before {
   transform: translateX(20px);
   content: "☀️";
   color: #facc15;
+}
+
+/* === Tabla de tickets por sede (MR SoS) === */
+
+.mrs-sede-block {
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, .06);
+  background: #ffffff;
+  padding: .7rem ;
+  margin-bottom: 1rem;
+}
+
+body.dark-mode .mrs-sede-block {
+  background: var(--bg-secondary, #0f172a);
+  border-color: rgba(148, 163, 184, .4);
+}
+
+.mrs-sede-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem .75rem;
+  margin-bottom: .75rem;
+}
+
+.mrs-sede-title {
+  font-weight: 600;
+  font-size: .95rem;
+}
+
+.mrs-sede-chip {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, .06);
+  color: #4f46e5;
+}
+
+body.dark-mode .mrs-sede-chip {
+  background: rgba(129, 140, 248, .12);
+  color: #a5b4fc;
+}
+
+.mrs-sede-count {
+  font-size: .8rem;
+  color: #6b7280;
+}
+
+body.dark-mode .mrs-sede-count {
+  color: #9ca3af;
+}
+
+/* Tabla compacta pero aireada */
+.mrs-table-tickets {
+  margin: 0;
+  font-size: .85rem;
+}
+
+.mrs-table-tickets tbody tr {
+  border-bottom: 1px solid rgba(15, 23, 42, .04);
+}
+
+body.dark-mode .mrs-table-tickets tbody tr {
+  border-bottom-color: rgba(148, 163, 184, .2);
+}
+
+.mrs-table-tickets tbody tr:hover {
+  background: rgba(15, 23, 42, .02);
+}
+
+body.dark-mode .mrs-table-tickets tbody tr:hover {
+  background: rgba(148, 163, 184, .12);
+}
+
+/* Primera columna (estado + proceso) */
+.mrs-ticket-main {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.mrs-ticket-id {
+  font-weight: 600;
+  font-size: .8rem;
+  color: #4b5563;
+}
+
+body.dark-mode .mrs-ticket-id {
+  color: #e5e7eb;
+}
+
+/* Segunda columna (equipo, SN, tipo, marca) */
+.mrs-ticket-body {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.mrs-ticket-title {
+  font-weight: 500;
+}
+
+.mrs-ticket-sub {
+  font-size: .78rem;
+  color: #6b7280;
+}
+
+body.dark-mode .mrs-ticket-sub {
+  color: #9ca3af;
+}
+
+.mrs-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .5rem;
+  font-size: .75rem;
+}
+
+/* Tercera columna (acción) */
+.mrs-ticket-action a {
+  font-size: .8rem;
+}
+
+.mrs-ticket-action i {
+  font-size: .75rem;
+}
+
+/* Badges pill un poquito más suaves */
+.badge-pill-soft {
+  border-radius: 999px;
+  padding: .15rem .5rem;
+  font-weight: 500;
+  font-size: .72rem;
+}
+
+
+
+
+/* === Vista CARDS de tickets === */
+
+.mrs-ticket-card {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(15, 23, 42, .06);
+  padding: 0.75rem 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+body.dark-mode .mrs-ticket-card {
+  background: var(--bg-secondary, #020617);
+  border-color: rgba(148, 163, 184, .25);
+}
+
+.mrs-ticket-id-small {
+  font-size: 0.78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+body.dark-mode .mrs-ticket-id-small {
+  color: #9ca3af;
+}
+
+.mrs-ticket-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.mrs-ticket-card-sub {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+body.dark-mode .mrs-ticket-card-sub {
+  color: #9ca3af;
+}
+
+.mrs-ticket-card-meta {
+  font-size: 0.75rem;
+}
+
+.mrs-ticket-card[data-crit="1"] {
+  border-left: 3px solid #dc2626;
+}
+
+.mrs-ticket-card[data-crit="2"] {
+  border-left: 3px solid #f97316;
+}
+
+.mrs-ticket-card[data-crit="3"] {
+  border-left: 3px solid #16a34a;
+}
+
+
+/* === Tarjetas de estadísticas === */
+.stat-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 1rem 1.1rem;
+  background: #ffffff;
+}
+
+body.dark-mode .stat-card {
+  background: var(--bg-secondary, #020617);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.stat-card h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+body.dark-mode .stat-card h6 {
+  color: #e5e7eb;
+}
+
+.stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+body.dark-mode .stat-card .stat-value {
+  color: #d1d5db;
+}
+
+
+
+
+.float-wa {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  bottom: 40px;
+  right: 40px;
+  background-color: #200f4c;
+  color: #FFF;
+  border-radius: 50px;
+  text-align: center;
+  font-size: 30px;
+  z-index: 100;
 }

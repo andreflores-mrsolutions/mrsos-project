@@ -33,10 +33,10 @@ $(document).ready(function () {
 const PROCESOS = [
   "asignacion",
   "revision inicial",
+  "revision especial",
   "logs",
   "meet",
-  "asignacion fecha cliente",
-  "asignacion fecha ingeniero", // mismo paso
+  "visita",
   "fecha asignada",
   "espera ventana",
   "espera visita",
@@ -73,8 +73,7 @@ function repaintDetalleProceso(nuevoProceso) {
   if ($steps) {
     $steps.innerHTML = PROCESOS.map(
       (_, i) =>
-        `<span class="small ${
-          i < paso ? "text-success" : "text-muted"
+        `<span class="small ${i < paso ? "text-success" : "text-muted"
         }" style="font-size:.75em;">●</span>`
     ).join("");
   }
@@ -85,40 +84,8 @@ function refreshListados() {
   if (typeof cargarTicketsPorSede === "function") cargarTodosTickets(); // los bloques por sede
 }
 
-$(document).ready(function () {
-  // Cargar los tickets al inicio y cuando cambian filtros
-
-  cargarTodosTickets();
-  $("#filtroEstado, #filtroMarca, #filtroProceso, #filtroTipoEquipo").change(
-    cargarTicketsPorSede
-  );
-});
-
 //TODO Reiniciar Filtros
-$(document).ready(function () {
-  // Cargar tickets iniciales
 
-  // Cambio en los filtros
-  $("#filtroEstado, #filtroMarca, #filtroProceso, #filtroTipoEquipo").change(
-    cargarTicketsPorSede
-  );
-
-  // Botón reset filtros
-  $("#resetFiltros").click(function () {
-    $("#filtroEstado").val("Todo");
-    $("#filtroMarca").val("");
-    $("#filtroProceso").val("");
-    $("#filtroTipoEquipo").val("");
-
-    cargarTodosTickets();
-  });
-
-  // Botón recargar
-  $("#btnRecargar").click(function () {
-    cargarTodosTickets();
-    cargarEstadisticas();
-  });
-});
 
 //TODO Guardar la fecha seleccionada
 function guardarFecha(ticketId) {
@@ -179,10 +146,10 @@ function guardarFecha(ticketId) {
 const PROCESOS_12 = [
   "asignacion",
   "revision inicial",
+  "revision especial",
   "logs",
   "meet",
-  "asignacion fecha cliente",
-  "asignacion fecha ingeniero", // mismo paso
+  "visita",
   "fecha asignada",
   "espera ventana",
   "espera visita",
@@ -225,265 +192,8 @@ function badgeTipoClase(tipo) {
   return "badge bg-light text-dark";
 }
 
-// ====== Render del detalle con Meet corregido ======
-function renderDetalleTicket(data) {
-  const procN = norm(data.tiProceso || "");
-  const progreso = Math.max(0, PROCESOS_12.indexOf(procN) + 1);
-  const progresoPorcentaje = Math.round((progreso / PROCESOS_12.length) * 100);
-  const badgeColor = badgeCritClass(data.tiNivelCriticidad);
-  const editable = procN === "meet"; // ✅ editable solo en proceso "meet"
 
-  // --- Vista principal ---
-  let html = `
-    <div class="text-center">
-      <img src="../img/Equipos/${(data.maNombre || "").toLowerCase()}/${
-    data.eqModelo
-  }.png"
-           alt="Equipo" class="img-fluid mb-3" style="max-height:200px;">
-    </div>
-    <h5>${data.eqModelo}</h5>
-    <p><b>SN:</b> ${data.peSN || "—"}</p>
-    <div class="d-flex align-items-center">
-      <img src="../img/Marcas/${(data.maNombre || "").toLowerCase()}.png"
-           alt="${
-             data.maNombre || ""
-           }" style="width:50px; height:auto; margin-right:10px;">
-      <span>${data.maNombre || ""}</span>
-    </div>
-    <hr>
 
-    
-
-    <p><b>Descripción:</b><br>${data.tiDescripcion || "—"}</p>
-    <p><b>Estado:</b> ${data.tiEstatus || "—"}</p>
-    <p><b>Proceso actual:</b> ${data.tiProceso || "—"}</p>
-    <div class="progress mb-2">
-      <div class="progress-bar" role="progressbar"
-           style="width:${progresoPorcentaje}%;" aria-valuenow="${progreso}"
-           aria-valuemin="0" aria-valuemax="${
-             PROCESOS_12.length
-           }">${progreso}/${PROCESOS_12.length}</div>
-    </div>
-    <div class="d-flex justify-content-between">
-      ${PROCESOS_12.map(
-        (p, i) =>
-          `<span class="small ${
-            i < progreso ? "text-success" : "text-muted"
-          }" style="font-size:0.75em;">●</span>`
-      ).join("")}
-    </div>
-    <hr>
-    <p><b>Nivel de Criticidad:</b> <span class="${badgeColor}">${
-    "Nivel " + (data.tiNivelCriticidad || "—")
-  }</span></p>
-    <p><b>Fecha de Creación:</b> ${fmtDate(data.tiFechaCreacion)}</p>
-    <p><b>Fecha/Hora de Visita:</b> ${fmtDateTime(data.tiVisita)}</p>
-    
-    <!-- 🔹 AQUI vamos a inyectar el bloque de MEET -->
-    <hr>
-    <p class="">
-      <a class="" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample" style="color: black;">
-        Solicitar un Meet <i class="bi bi-chevron-down"></i>
-      </a>
-    </p>
-    <div class="collapse" id="collapseExample">
-      <div id="meetAnchor" class="mb-3"></div>
-    </div>
-    <hr>
-    
-  `;
-
-  // 1) LOGS
-  if (procN === "logs") {
-    html += `
-      
-      <div class="card border-0" style="background:#f8f9fb">
-        <div class="card-body p-3">
-          <h6 class="mb-3">Subir logs</h6>
-          <div class="row g-2 align-items-center">
-            <div class="col-12 col-md-8">
-              <input type="file" id="logsFile_${data.tiId}" class="form-control"
-                     accept=".log,.txt,.zip,.tar,.gz,.7z,.rar, text/plain, application/zip, application/x-7z-compressed, application/x-rar-compressed">
-            </div>
-            <div class="col-12 col-md-4 d-grid">
-              <button class="btn btn-primary" onclick="uploadLogs(${
-                data.tiId
-              })">
-                Subir logs
-              </button>
-            </div>
-          </div>
-          <small class="text-muted d-block mt-2">Acepta .log, .txt o comprimidos (.zip/.7z/.rar).</small>
-
-          <div class="d-flex flex-wrap gap-2 mt-3">
-            <button class="btn btn-outline-secondary"
-                    onclick="openHelpLogs('${data.maNombre || ""}', '${
-      data.eqModelo || ""
-    }')">
-              ¿Cómo extraer los logs?
-            </button>
-            <button class="btn btn-outline-info" onclick="pedirAyudaCorreo(${
-              data.tiId
-            })">
-              Pedir ayuda por correo
-            </button>
-          </div>
-
-          <div class="mt-2">
-            <label class="form-label mt-3 mb-1">Preferencia para Meet (opcional)</label>
-            <input id="meetPref_${data.tiId}" class="form-control"
-                   placeholder="Ej: Proponer Meet mañana 10:00 o pegar un link de Meet">
-            <small class="text-muted">Se guardarán al enviar la solicitud.</small>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // 2) ASIGNACIÓN DE FECHA (cliente)
-  if (procN === "asignacion fecha cliente") {
-    html += `
-      
-      <div class="card border-0" style="background:#f8f9fb">
-        <div class="card-body p-3">
-          <h6 class="mb-3">Asignación de visita</h6>
-          <div class="row g-2">
-            <div class="col-12 col-md-4">
-              <label class="form-label">Fecha</label>
-              <input type="date" id="fecha_${data.tiId}" class="form-control">
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">Hora</label>
-              <input type="time" id="hora_${data.tiId}" class="form-control">
-            </div>
-            <div class="col-12 col-md-4 d-grid align-items-end">
-              <button class="btn btn-success mt-4 mt-md-0" onclick="asignarVisita(${data.tiId})">
-                Asignar visita
-              </button>
-            </div>
-          </div>
-          <div class="d-grid d-md-inline-block mt-2">
-            <button class="btn btn-outline-secondary" onclick="dejarFechaAlIngeniero(${data.tiId})">
-              Que el ingeniero proponga la fecha
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // 3) ENCUESTA
-  if (
-    procN === "encuesta satisfaccion" ||
-    procN === "encuesta de satisfaccion"
-  ) {
-    html += `
-      
-      <div class="d-grid">
-        <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalEncuesta_${
-          data.tiId
-        }">
-          Responder encuesta de satisfacción
-        </button>
-      </div>
-
-      <div class="modal fade" id="modalEncuesta_${
-        data.tiId
-      }" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <form class="modal-content" onsubmit="enviarEncuesta(event, ${
-            data.tiId
-          })">
-            <div class="modal-header">
-              <h5 class="modal-title">Encuesta de satisfacción</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label d-block mb-2">1) ¿Cómo calificas el servicio recibido?</label>
-                <div class="d-flex justify-content-between px-1">
-                  ${[
-                    { v: 5, t: "Excelente", e: "😄" },
-                    { v: 4, t: "Bueno", e: "🙂" },
-                    { v: 3, t: "Regular", e: "😐" },
-                    { v: 2, t: "Malo", e: "🙁" },
-                    { v: 1, t: "Muy malo", e: "😣" },
-                  ]
-                    .map(
-                      (x) => `
-                    <label class="text-center" style="cursor:pointer;">
-                      <input type="radio" name="enc_smile_${data.tiId}" value="${x.v}" class="form-check-input d-block mx-auto mb-1">
-                      <div style="font-size:1.6rem; line-height:1;">${x.e}</div>
-                      <small class="d-block">${x.t}</small>
-                    </label>
-                  `
-                    )
-                    .join("")}
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">2) ¿Qué mejorarías del servicio de MR?</label>
-                <textarea class="form-control" id="enc_mejora_${
-                  data.tiId
-                }" rows="3" maxlength="600"></textarea>
-              </div>
-
-              <div class="mb-0">
-                <label class="form-label">3) ¿Qué tal te pareció la plataforma y qué cambiarías?</label>
-                <textarea class="form-control" id="enc_plataforma_${
-                  data.tiId
-                }" rows="3" maxlength="600"></textarea>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Enviar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-  }
-
-  // Inyecta contenido principal
-  const cont = document.getElementById("offcanvasContent");
-  cont.innerHTML = html;
-
-  // 🔹 Siempre pinto el bloque Meet (visible como estado); editable solo si procN==='meet'
-  // Después (usa la API expuesta por modal_meet.js)
-  window.MRSOS_MEET?.cargarBloqueMeet(data.tiId, {
-    editable,
-    targetId: "meetAnchor",
-  });
-}
-
-// ====== Abrir detalle (sin cambios de fondo) ======
-function abrirDetalle(tiId) {
-  const body = document.getElementById("offcanvasContent");
-  body.innerHTML = `
-    <div class="text-center py-4">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p class="mt-2">Cargando...</p>
-    </div>`;
-  fetch(`../php/detalle_ticket.php?tiId=${encodeURIComponent(tiId)}`, {
-    cache: "no-store",
-  })
-    .then((r) => r.json())
-    .then((json) => {
-      if (!json?.success) {
-        body.innerHTML = `<p class="text-danger">${
-          json?.error || "No se pudo cargar el detalle."
-        }</p>`;
-        return;
-      }
-      renderDetalleTicket(json.ticket);
-    })
-    .catch(() => {
-      body.innerHTML = `<p class="text-danger">Error de red.</p>`;
-    });
-}
 
 // ================== Acciones: Logs ==================
 function uploadLogs(tiId) {
@@ -539,10 +249,24 @@ function pedirAyudaCorreo(tiId) {
 
 // ================== Acciones: Asignación de fecha ==================
 function asignarVisita(tiId) {
-  const f = document.getElementById(`fecha_${tiId}`)?.value;
-  const h = document.getElementById(`hora_${tiId}`)?.value;
+  const f = document.getElementById(`fecha_${tiId}`)?.value || "";
+  const h = document.getElementById(`hora_${tiId}`)?.value || "";
+
   if (!f || !h) {
-    alert("Selecciona fecha y hora.");
+    Swal.fire("Campos incompletos", "Selecciona fecha y hora.", "warning");
+    return;
+  }
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const sel = new Date(f + "T00:00:00");
+
+  if (sel <= hoy) {
+    Swal.fire(
+      "Fecha no válida",
+      "La fecha de visita debe ser posterior a hoy.",
+      "warning"
+    );
     return;
   }
   const tiVisita = `${f} ${h}`;
@@ -581,7 +305,7 @@ function dejarFechaAlIngeniero(ticketId) {
             const inst = bootstrap.Modal.getInstance(m);
             inst && inst.hide();
           });
-        } catch (_) {}
+        } catch (_) { }
 
         // Notifica y recarga listados
         if (typeof mostrarToast === "function") {
@@ -726,117 +450,7 @@ function badgeEstatusClase(estatus) {
   return "bg-light text-dark";
 }
 
-// RENDER: recibe el arreglo de sedes y pinta (no usa globals)
-function renderTicketsPorSede(sedesArr) {
-  const wrap = document.getElementById("wrapTicketsSedes");
-  if (!wrap) return;
 
-  const sedes = (Array.isArray(sedesArr) ? sedesArr : []).filter(
-    (s) => Array.isArray(s.tickets) && s.tickets.length
-  );
-
-  if (!sedes.length) {
-    wrap.innerHTML =
-      '<p class="text-muted mb-0">Sin tickets abiertos por sede.</p>';
-    return;
-  }
-
-  const html = sedes
-    .map((s) => {
-      const filas = s.tickets
-        .map(
-          (t) => `
-      <tr>
-        <td><span class="badge ${badgeEstatusClase(t.tiEstatus)}">${
-            t.tiEstatus || ""
-          }</span></td>
-        <td>${t.eqModelo || ""}${t.eqVersion ? " " + t.eqVersion : ""}</td>
-        <td class="d-none d-sm-table-cell">
-          <img src="../img/Marcas/${(
-            t.maNombre || ""
-          ).toLowerCase()}.png" style="height:20px;" alt="${t.maNombre || ""}">
-        </td>
-        <td class="d-none d-md-table-cell">${t.peSN || ""}</td>
-        <td class="d-none d-lg-table-cell"><span class="badge bg-light text-dark">${
-          t.tiProceso || ""
-        }</span></td>
-        <td class="d-none d-lg-table-cell"><span class="badge ${badgeTipoClase(
-          t.tiTipoTicket
-        )}">${t.tiTipoTicket || ""}</span></td>
-        <td class="d-none d-md-table-cell">${t.tiExtra || ""}</td>
-        <td><a href="#" onclick="abrirDetalle(${Number(
-          t.tiId
-        )})" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTicket">Ver más</a></td>
-      </tr>
-    `
-        )
-        .join("");
-
-      return `
-      <!-- Encabezado con línea tenue -->
-      <div class="d-flex align-items-center gap-3 my-3">
-        <h6 class="mb-0 border-bottom">${s.csNombre || "Sin sede"}</h6>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-borderless mb-0">
-          <thead class="d-none d-lg-table-header-group">
-            <tr>
-              <th>Estado</th>
-              <th>Equipo</th>
-              <th class="d-none d-sm-table-cell">Marca</th>
-              <th class="d-none d-md-table-cell">SN</th>
-              <th class="d-none d-lg-table-cell">Estatus</th>
-              <th class="d-none d-lg-table-cell">Tipo de ticket</th>
-              <th class="d-none d-md-table-cell">Extras</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>${filas}</tbody>
-        </table>
-      </div>
-    `;
-    })
-    .join("");
-
-  wrap.innerHTML = html;
-}
-
-// FETCH: trae sedes y llama al render (sin variables globales)
-// Cargar
-function cargarTicketsPorSede(params = {}) {
-  const qs = new URLSearchParams();
-  // MRA: opcional clId y/o csId
-  if (window.SESSION?.rol === "MRA") {
-    if (params.clId) qs.set("clId", params.clId);
-    if (params.csId) qs.set("csId", params.csId);
-  }
-  fetch(
-    `../php/obtener_tickets_sedes.php${
-      qs.toString() ? "?" + qs.toString() : ""
-    }`
-  )
-    .then((r) => r.json())
-    .then((json) => {
-      if (!json?.success) {
-        document.getElementById(
-          "wrapTicketsSedes"
-        ).innerHTML = `<p class="text-danger">${
-          json?.error || "No se pudieron cargar los tickets por sede."
-        }</p>`;
-        return;
-      }
-      renderTicketsPorSede(json.sedes || []);
-    })
-    .catch(() => {
-      document.getElementById(
-        "wrapTicketsSedes"
-      ).innerHTML = `<p class="text-danger">Error al cargar los tickets por sede.</p>`;
-    });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  cargarTodosTickets(); // por defecto, según el rol/sede del usuario
-});
 
 //TODO MEET
 // =======================
@@ -911,176 +525,6 @@ function fmtFechaHoraLocal(iso) {
   return isNaN(d) ? iso : d.toLocaleString();
 }
 
-// Reusa tus helpers existentes:
-/// badgeEstatusClase(estatus)
-/// badgeTipoClase(tipo)
-/// abrirDetalle(tiId)
-
-
-
-  
-// =======================
-// Render: Cards
-// =======================
-function renderTicketCard(t) {
-  const cliente = safe(t.clNombre || t.cliente || "");
-  const persona = safe(t.persona || t.contacto || t.usuario || "");
-  const estadoBadge = badgeEstatusClase(t.tiEstatus);
-  const procesoBadge = "badge mrs-badge-soft"; // proceso como pill suave
-  const modelo = joinModelo(t.eqModelo, t.eqVersion);
-  const fechaVisita = fmtFechaHoraLocal(t.tiVisita);
-  const sede = t.csNombre || "—";
-  const codigoTicket = `${(sede || "GEN").substring(0, 3).toLowerCase()}-${
-    t.tiId
-  }`;
-
-  return `
-  <div class="mrs-card">
-    <div class="mrs-card-header">
-      <div class="d-flex align-items-start justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-person text-muted"></i>
-          <h6 class="mb-0">${persona || cliente || "—"}</h6>
-        </div>
-        <span class="badge ${estadoBadge}">${safe(t.tiEstatus) || "—"}</span>
-      </div>
-      <span class="badge bg-dark mt-1   ">${t.tiProceso || "—"}</span>
-    </div>
-    <div class="mrs-card-content">
-    
-      <div class="d-flex align-items-center gap-2 text-muted mb-1">
-        <i class="bi bi-ticket"></i><span class="small">${
-          codigoTicket || "—"
-        }</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 text-muted mb-1">
-        <i class="bi bi-wrench"></i><span class="small">${modelo || "—"}</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 text-muted mb-1">
-        <i class="bi bi-calendar-event"></i>
-        <span class="small">${fechaVisita}</span>
-      </div>
-      
-      <div class="d-flex align-items-center gap-2 text-muted mb-3">
-        <i class="bi bi-123"></i>
-        <span class="small">${t.peSN || ""}</span>
-      </div>
-
-        <button class="btn btn-primary btn-sm"
-          onclick="abrirDetalle(${Number(t.tiId)})"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#offcanvasTicket">
-          Ver más
-        </button>
-      </div>
-    </div>
-  </div>
-`;
-  
-}
-
-// =======================
-// Render: Tabla (reusa tu tabla por sede)
-// =======================
-function renderTablaSede(s) {
-  const filas = (s.tickets || [])
-    .map(
-      (t) => `
-    <tr>
-      <td><span class="badge ${badgeEstatusClase(t.tiEstatus)}">${
-        t.tiEstatus || ""
-      }</span></td>
-      <td>${joinModelo(t.eqModelo, t.eqVersion)}</td>
-      <td class="d-none d-sm-table-cell">
-        <img src="../img/Marcas/${(t.maNombre || "").toLowerCase()}.png"
-             style="height:20px;" alt="${t.maNombre || ""}">
-      </td>
-      <td class="d-none d-md-table-cell">${t.peSN || ""}</td>
-      <td class="d-none d-lg-table-cell">
-        <span class="badge bg-light text-dark">${t.tiProceso || ""}</span>
-      </td>
-      <td class="d-none d-lg-table-cell">
-        <span class="badge ${badgeTipoClase(t.tiTipoTicket)}">${
-        t.tiTipoTicket || ""
-      }</span>
-      </td>
-      <td class="d-none d-md-table-cell">${t.tiExtra || ""}</td>
-      <td>
-        <a href="#" onclick="abrirDetalle(${Number(t.tiId)})"
-           data-bs-toggle="offcanvas" data-bs-target="#offcanvasTicket">Ver más</a>
-      </td>
-    </tr>
-  `
-    )
-    .join("");
-
-  return `
-    <div class="d-flex align-items-center gap-3 my-3">
-      <h6 class="mb-0 border-bottom">${s.csNombre || "Sin sede"}</h6>
-    </div>
-    <div class="table-responsive">
-      <table class="table table-borderless mb-0">
-        <thead class="d-none d-lg-table-header-group">
-          <tr>
-            <th>Estado</th>
-            <th>Equipo</th>
-            <th class="d-none d-sm-table-cell">Marca</th>
-            <th class="d-none d-md-table-cell">SN</th>
-            <th class="d-none d-lg-table-cell">Estatus</th>
-            <th class="d-none d-lg-table-cell">Tipo de ticket</th>
-            <th class="d-none d-md-table-cell">Extras</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>${filas}</tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderCardsSede(s) {
-  const cards = (s.tickets || []).map((t) => renderTicketCard(t)).join("");
-  return `
-    <div class="d-flex align-items-center gap-3 my-3">
-      <h6 class="mb-0 border-bottom">${s.csNombre || "Sin sede"}</h6>
-    </div>
-    <div class="mrs-grid">${cards}</div>
-  `;
-}
-
-// =======================
-// Render: Cliente → Sedes
-// =======================
-function renderCliente(client, mode) {
-  const title = client.clNombre || client.cliente || "Sin cliente";
-  const sedes = Array.isArray(client.sedes) ? client.sedes : [];
-  const bloques = sedes
-    .map((s) => (mode === "cards" ? renderCardsSede(s) : renderTablaSede(s)))
-    .join("");
-  return `
-    <div class="my-4">
-      <h5 class="mb-2">${title}</h5>
-      ${bloques || '<p class="text-muted">Sin tickets en sus sedes.</p>'}
-    </div>
-  `;
-}
-
-// =======================
-// Render: todos los clientes
-// =======================
-function renderTicketsClientes(clientes, mode = CURRENT_VIEW) {
-  const wrap = document.getElementById("wrapTicketsClientes");
-  if (!wrap) return;
-
-  const arr = Array.isArray(clientes) ? clientes : [];
-  if (!arr.length) {
-    wrap.innerHTML =
-      '<p class="text-muted mb-0">No hay tickets para mostrar.</p>';
-    return;
-  }
-
-  wrap.innerHTML = arr.map((c) => renderCliente(c, mode)).join("");
-}
 
 // =======================
 // FETCH: obtener todos agrupado por cliente→sedes
@@ -1100,91 +544,3 @@ function normalizeToClientes(payload) {
   }
   return [];
 }
-
-function cargarTodosTickets(params = {}) {
-  const qs = new URLSearchParams();
-  // Si en tu backend hay filtros opcionales:
-  // if (params.estado) qs.set('estado', params.estado);
-  // if (params.marca)  qs.set('marca',  params.marca);
-
-  // Endpoint recomendado (nuevo): obtener_todos_tickets.php
-  // Si aún no lo tienes, temporalmente intenta con obtener_tickets_sedes.php (devuelve todas)
-  const urlPrincipal = `../php/pruebas.php`;
-  const urlFallback = `../php/pruebas.php`;
-
-  fetch(qs.toString() ? `${urlPrincipal}?${qs}` : urlPrincipal, {
-    cache: "no-store",
-  })
-    .then((r) => (r.ok ? r.json() : Promise.reject()))
-    .then((json) => {
-      if (!json?.success)
-        throw new Error(json?.error || "Respuesta no exitosa");
-      const clientes = normalizeToClientes(json);
-      renderTicketsClientes(clientes, CURRENT_VIEW);
-    })
-    .catch(() => {
-      // Fallback automático al endpoint existente por sede
-      fetch(qs.toString() ? `${urlFallback}?${qs}` : urlFallback, {
-        cache: "no-store",
-      })
-        .then((r) => r.json())
-        .then((json) => {
-          const clientes = normalizeToClientes(json);
-          renderTicketsClientes(clientes, CURRENT_VIEW);
-        })
-        .catch(() => {
-          const wrap = document.getElementById("wrapTicketsClientes");
-          if (wrap)
-            wrap.innerHTML = `<p class="text-danger">Error al cargar tickets.</p>`;
-        });
-    });
-}
-
-// Arranque
-document.addEventListener("DOMContentLoaded", () => {
-  cargarTodosTickets();
-});
-
-
-
-
-
-
-  // Pega tu VAPID PUBLIC KEY en Base64URL (exactamente como la entrega VAPID::createVapidKeys())
-  const VAPID_PUBLIC = "TU_PUBLIC_KEY";
-
-  async function urlB64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-  }
-
-  async function enableWebPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return alert('Push no soportado');
-
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') return;
-
-  const reg = await navigator.serviceWorker.register('/service-worker.js');
-  const subscription = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: await urlB64ToUint8Array(VAPID_PUBLIC)
-  });
-
-  await fetch('../php/save_subscription.php', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ subscription })
-    // La cookie de sesión viaja sola; PHP sabrá quién eres y pondrá el usId
-  });
-
-  alert('Notificaciones activadas');
-}
-
-  // Llama esto en un botón o al cargar el admin
-  document.addEventListener('DOMContentLoaded', () => {
-    // O muestra un botón: <button onclick="enableWebPush()">Activar notificaciones</button>
-    // enableWebPush();
-  });
-

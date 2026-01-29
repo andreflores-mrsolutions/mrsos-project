@@ -109,7 +109,7 @@ if ($acId > 0) {
   }
 }
 
-$whereSQL = "WHERE usEstatus = 'Activo' AND" . implode(" AND ", $where);
+$whereSQL = "WHERE usEstatus = 'Activo' AND usId != '$usIdSesion' AND " . implode(" AND ", $where);
 
 /* --------- COUNT total (para paginación) --------- */
 $sqlCount = "

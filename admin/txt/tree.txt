@@ -1,0 +1,184 @@
+E:.
+├───.cache
+├───backend
+│   ├───css
+│   ├───js
+│   ├───lib
+│   ├───php
+│   └───pruebas
+├───css
+├───dashboard
+│   ├───layout
+│   └───layouts
+├───docs
+├───fonts
+│   └───TT-Norms-Fonts
+├───img
+│   ├───Clientes
+│   ├───Equipos
+│   │   ├───Dell
+│   │   ├───Hitachi
+│   │   ├───Synology
+│   │   └───xFusion
+│   ├───Ingeniero
+│   ├───Marcas
+│   ├───Tickets
+│   ├───Usuario
+│   └───ZIP
+│       └───Diseño sin título
+├───js
+│   ├───tickets
+│   └───versiones
+├───layout
+├───lib
+│   └───enviar_mail_php-main
+│       ├───docs
+│       └───vendor
+│           ├───composer
+│           └───phpmailer
+│               └───phpmailer
+│                   ├───language
+│                   └───src
+├───login
+├───MRsos
+│   ├───css
+│   ├───docs
+│   ├───fonts
+│   ├───img
+│   ├───js
+│   ├───layout
+│   ├───lib
+│   ├───php
+│   ├───sql
+│   └───widgets
+├───php
+├───sql
+│   └───mrsos
+├───uploads
+│   ├───hojas_servicio
+│   └───logs
+│       └───9
+├───vendor
+│   ├───brick
+│   │   └───math
+│   │       └───src
+│   │           ├───Exception
+│   │           └───Internal
+│   │               └───Calculator
+│   ├───composer
+│   ├───guzzlehttp
+│   │   ├───guzzle
+│   │   │   └───src
+│   │   │       ├───Cookie
+│   │   │       ├───Exception
+│   │   │       └───Handler
+│   │   ├───promises
+│   │   │   └───src
+│   │   └───psr7
+│   │       └───src
+│   │           └───Exception
+│   ├───minishlink
+│   │   └───web-push
+│   │       └───src
+│   ├───psr
+│   │   ├───clock
+│   │   │   └───src
+│   │   ├───http-client
+│   │   │   └───src
+│   │   ├───http-factory
+│   │   │   └───src
+│   │   └───http-message
+│   │       ├───docs
+│   │       └───src
+│   ├───ralouphie
+│   │   └───getallheaders
+│   │       └───src
+│   ├───spomky-labs
+│   │   ├───base64url
+│   │   │   ├───.github
+│   │   │   └───src
+│   │   └───pki-framework
+│   │       └───src
+│   │           ├───ASN1
+│   │           │   ├───Component
+│   │           │   ├───Exception
+│   │           │   ├───Feature
+│   │           │   ├───Type
+│   │           │   │   ├───Constructed
+│   │           │   │   ├───Primitive
+│   │           │   │   └───Tagged
+│   │           │   └───Util
+│   │           ├───CryptoBridge
+│   │           │   └───Crypto
+│   │           ├───CryptoEncoding
+│   │           ├───CryptoTypes
+│   │           │   ├───AlgorithmIdentifier
+│   │           │   │   ├───Asymmetric
+│   │           │   │   ├───Cipher
+│   │           │   │   ├───Feature
+│   │           │   │   ├───Hash
+│   │           │   │   └───Signature
+│   │           │   ├───Asymmetric
+│   │           │   │   ├───Attribute
+│   │           │   │   ├───EC
+│   │           │   │   ├───RFC8410
+│   │           │   │   │   ├───Curve25519
+│   │           │   │   │   └───Curve448
+│   │           │   │   └───RSA
+│   │           │   └───Signature
+│   │           ├───X501
+│   │           │   ├───ASN1
+│   │           │   │   ├───AttributeValue
+│   │           │   │   │   └───Feature
+│   │           │   │   └───Collection
+│   │           │   ├───DN
+│   │           │   ├───MatchingRule
+│   │           │   └───StringPrep
+│   │           └───X509
+│   │               ├───AttributeCertificate
+│   │               │   ├───Attribute
+│   │               │   └───Validation
+│   │               │       └───Exception
+│   │               ├───Certificate
+│   │               │   └───Extension
+│   │               │       ├───AccessDescription
+│   │               │       ├───CertificatePolicy
+│   │               │       ├───DistributionPoint
+│   │               │       ├───NameConstraints
+│   │               │       ├───PolicyMappings
+│   │               │       └───Target
+│   │               ├───CertificationPath
+│   │               │   ├───Exception
+│   │               │   ├───PathBuilding
+│   │               │   ├───PathValidation
+│   │               │   └───Policy
+│   │               ├───CertificationRequest
+│   │               │   └───Attribute
+│   │               ├───Exception
+│   │               ├───Feature
+│   │               └───GeneralName
+│   ├───symfony
+│   │   └───deprecation-contracts
+│   └───web-token
+│       └───jwt-library
+│           ├───.github
+│           ├───Checker
+│           ├───Console
+│           ├───Core
+│           │   └───Util
+│           │       └───Ecc
+│           ├───Encryption
+│           │   ├───Algorithm
+│           │   │   ├───ContentEncryption
+│           │   │   └───KeyEncryption
+│           │   │       └───Util
+│           │   └───Serializer
+│           ├───KeyManagement
+│           │   ├───Analyzer
+│           │   └───KeyConverter
+│           ├───NestedToken
+│           └───Signature
+│               ├───Algorithm
+│               │   └───Util
+│               └───Serializer
+└───widgets

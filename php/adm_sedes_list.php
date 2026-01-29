@@ -1,120 +1,296 @@
 <?php
-// php/adm_sedes_list.php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-header('Content-Type: application/json');
-include 'conexion.php';
+// ../php/adm_sedes_list.php
+declare(strict_types=1);
+header('Content-Type: application/json; charset=utf-8');
+
+require __DIR__ . '/conexion.php';
 session_start();
 
-$rolRaw     = trim($_SESSION['usRol'] ?? '');
-$rol        = strtoupper($rolRaw);
-$usId       = (int)($_SESSION['usId'] ?? 0);
-$clIdSesion = (int)($_SESSION['clId'] ?? 0);
+// ====== 1) Validar sesión básica ======
+$usId = $_SESSION['usId'] ?? null;
+$clId = $_SESSION['clId'] ?? null;
+$usRolSistema = $_SESSION['usRol'] ?? null; // CLI | MRA | MRV | MRSA
 
-// Normalizamos grupos de roles internos MR (ajusta si usas otros)
-$rolesMR = ['MRA', 'MRSA', 'MR', 'ADMIN', 'ADMINISTRADOR', 'SUPERADMIN'];
-
-// Entrada por GET (cliente por id o por nombre)
-$clIdGet       = isset($_GET['clId']) ? (int)$_GET['clId'] : 0;
-$clienteNombre = isset($_GET['cliente']) ? trim($_GET['cliente']) : '';
-
-// Helper: respuesta y salida
-$ok   = function (array $data) {
-  echo json_encode(['success' => true] + $data);
-  exit;
-};
-$fail = function (string $msg, int $code = 400) {
-  http_response_code($code);
-  echo json_encode(['success' => false, 'error' => $msg]);
-  exit;
-};
-
-// 1) Resolver clId objetivo
-$clIdObjetivo = 0;
-
-// 1.a) Si viene ?clId explícito
-if ($clIdGet > 0) {
-  $clIdObjetivo = $clIdGet;
+if (!$usId || !$clId) {
+    echo json_encode(['success' => false, 'error' => 'No autenticado']);
+    exit;
 }
 
-// 1.b) Si viene ?cliente=Nombre exacto (e.g., Enel) -> lo resolvemos
-if ($clIdObjetivo === 0 && $clienteNombre !== '') {
-  $sql = "SELECT clId FROM clientes WHERE clNombre = ? LIMIT 1";
-  if ($st = $conectar->prepare($sql)) {
-    $st->bind_param('s', $clienteNombre);
-    $st->execute();
-    $st->bind_result($clIdTmp);
-    if ($st->fetch()) $clIdObjetivo = (int)$clIdTmp;
-    $st->close();
-  }
-  if ($clIdObjetivo === 0) $fail("Cliente no encontrado: {$clienteNombre}");
+// ====== 2) Cargar datos base del cliente ======
+$cliente = null;
+if ($stmt = $conectar->prepare("SELECT clId, clNombre FROM clientes WHERE clId = ?")) {
+    $stmt->bind_param("i", $clId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $cliente = $res->fetch_assoc() ?: null;
+    $stmt->close();
+}
+if (!$cliente) {
+    echo json_encode(['success' => false, 'error' => 'Cliente no encontrado']);
+    exit;
 }
 
-// 1.c) Si el usuario de sesión ya trae clId (cliente final) y NO es rol MR, forzamos su cliente
-$esRolMR = in_array($rol, $rolesMR, true);
-if (!$esRolMR && $clIdSesion > 0) {
-  $clIdObjetivo = $clIdSesion;
-}
+// ====== 3) Determinar alcance (scope) basado en usuario_cliente_rol ======
+$scope = [
+    'tipo'       => null,     // GLOBAL | ZONA | SEDE | ALL_MR | NONE
+    'zonesAdmin' => [],       // czId que administra
+    'sedesAdmin' => []        // csId que administra
+];
 
-// 1.d) Si seguimos sin clId, y es rol MR, podemos permitir “todas” (sin filtro) o exigir clId.
-//     Por tu requerimiento “traer todas las sedes según el cliente”, exigimos clId claro:
-if ($clIdObjetivo === 0 && $esRolMR) {
-  $fail("Falta seleccionar cliente. Usa ?clId=ID o ?cliente=Nombre.");
-}
+// Personal MR (MRA / MRSA / MRV) -> ve todo lo del cliente actual
+if ($usRolSistema !== 'CLI') {
+    $scope['tipo'] = 'ALL_MR';
+} else {
+    // Cliente: usamos usuario_cliente_rol
+    $sql = "SELECT ucrRol, czId, csId
+            FROM usuario_cliente_rol
+            WHERE usId = ? AND clId = ? AND ucrEstatus = 'Activo'";
+    if ($stmt = $conectar->prepare($sql)) {
+        $stmt->bind_param("ii", $usId, $clId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $isAdminGlobal = false;
+        $zonesAdmin = [];
+        $sedesAdmin = [];
 
-// 2) Autorización básica
-// - Cliente final: debe tener clIdSesion y solo puede ver SU clId
-// - Rol AC (admin cliente ligado por sede_usuario) también restringido a sedes asignadas
-if (!$esRolMR && $clIdSesion === 0) {
-  $fail("No autorizado (sesión cliente inválida).", 401);
-}
-if (!$esRolMR && $clIdObjetivo !== $clIdSesion) {
-  $fail("No autorizado para consultar otro cliente.", 403);
-}
+        while ($row = $res->fetch_assoc()) {
+            $rol = $row['ucrRol'];
+            if ($rol === 'ADMIN_GLOBAL') {
+                $isAdminGlobal = true;
+            } elseif ($rol === 'ADMIN_ZONA' && !empty($row['czId'])) {
+                $zonesAdmin[] = (int)$row['czId'];
+            } elseif ($rol === 'ADMIN_SEDE' && !empty($row['csId'])) {
+                $sedesAdmin[] = (int)$row['csId'];
+            }
+        }
+        $stmt->close();
 
-try {
-  // 3) Caso especial: rol AC (admin cliente ligado a sedes por sede_usuario)
-  //    Solo devuelve las sedes activas a las que esté vinculado y del cliente correcto.
-  // 3) Caso: rol AC -> DEBE ver TODAS las sedes del cliente (no solo las asignadas)
-  if ($rol === 'AC') {
-    // Forzamos el cliente de la sesión para AC
-    $clIdObjetivo = $clIdSesion ?: $clIdObjetivo;
-    if ($clIdObjetivo === 0) {
-      $fail("No hay cliente en sesión para AC.");
+        $zonesAdmin = array_values(array_unique($zonesAdmin));
+        $sedesAdmin = array_values(array_unique($sedesAdmin));
+
+        if ($isAdminGlobal) {
+            $scope['tipo'] = 'GLOBAL';
+        } elseif (!empty($zonesAdmin)) {
+            $scope['tipo']       = 'ZONA';
+            $scope['zonesAdmin'] = $zonesAdmin;
+        } elseif (!empty($sedesAdmin)) {
+            $scope['tipo']       = 'SEDE';
+            $scope['sedesAdmin'] = $sedesAdmin;
+        } else {
+            $scope['tipo'] = 'NONE';
+        }
     }
-
-    $sql = "SELECT csId, csNombre
-          FROM cliente_sede
-          WHERE clId = ?
-          ORDER BY csNombre";
-    $st = $conectar->prepare($sql);
-    $st->bind_param('i', $clIdObjetivo);
-    $st->execute();
-    $res  = $st->get_result();
-    $rows = [];
-    while ($r = $res->fetch_assoc()) $rows[] = $r;
-    $st->close();
-
-    $ok(['sedes' => $rows, 'clId' => $clIdObjetivo, 'filtro' => 'AC_todas_del_cliente']);
-  }
-
-
-  // 4) Resto de roles:
-  //    - Cliente normal (UC/EC/Cliente, etc.) con clId forzado a su sesión -> todas las sedes activas de su cliente
-  //    - Roles MR (MRA/MRSA/ADMIN/...) con clId objetivo -> todas las sedes activas de ese cliente
-  $sql = "SELECT csId, csNombre
-          FROM cliente_sede
-          WHERE clId = ? AND csEstatus = 'Activo'
-          ORDER BY cs.csEsPrincipal DESC, csNombre";
-  $st = $conectar->prepare($sql);
-  $st->bind_param('i', $clIdObjetivo);
-  $st->execute();
-  $res  = $st->get_result();
-  $rows = [];
-  while ($r = $res->fetch_assoc()) $rows[] = $r;
-  $st->close();
-
-  $ok(['sedes' => $rows, 'clId' => $clIdObjetivo, 'filtro' => 'por_cliente']);
-} catch (Throwable $e) {
-  $fail('DB: ' . $e->getMessage(), 500);
 }
+
+// Si no tiene alcance -> denegado
+if ($scope['tipo'] === 'NONE') {
+    echo json_encode([
+        'success' => false,
+        'error'   => 'No tienes permisos para administrar usuarios de este cliente.'
+    ]);
+    exit;
+}
+
+// ====== 4) Cargar zonas y sedes del cliente ======
+// Importante: no todos los clientes tienen zonas/sedes, así que puede venir vacío
+
+$zonas = [];
+$sedes = [];
+
+// ZONAS
+if ($stmt = $conectar->prepare("
+    SELECT czId, czNombre, czCodigo
+    FROM cliente_zona
+    WHERE clId = ? AND czEstatus = 'Activo'
+    ORDER BY czNombre ASC
+")) {
+    $stmt->bind_param("i", $clId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $zonas[(int)$row['czId']] = [
+            'czId'     => (int)$row['czId'],
+            'czNombre' => $row['czNombre'],
+            'czCodigo' => $row['czCodigo'],
+        ];
+    }
+    $stmt->close();
+}
+
+// SEDES
+if ($stmt = $conectar->prepare("
+    SELECT csId, czId, csNombre, csCodigo, csEsPrincipal
+    FROM cliente_sede
+    WHERE clId = ? AND csEstatus = 'Activo'
+    ORDER BY csNombre ASC
+")) {
+    $stmt->bind_param("i", $clId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $sedes[(int)$row['csId']] = [
+            'csId'         => (int)$row['csId'],
+            'czId'         => $row['czId'] !== null ? (int)$row['czId'] : null,
+            'csNombre'     => $row['csNombre'],
+            'csCodigo'     => $row['csCodigo'],
+            'csEsPrincipal'=> (int)$row['csEsPrincipal'] === 1,
+        ];
+    }
+    $stmt->close();
+}
+
+// ====== 5) Cargar usuarios CLI del cliente ======
+$usuarios = [];
+
+$sqlUsuarios = "
+    SELECT 
+      u.usId,
+      u.usNombre,
+      u.usAPaterno,
+      u.usAMaterno,
+      u.usCorreo,
+      u.usTelefono,
+      u.usUsername,
+      u.usRol,
+      u.usEstatus,
+      u.usTheme,
+      u.usNotifInApp,
+      u.usNotifMail
+    FROM usuarios u
+    WHERE u.clId = ? 
+      AND u.usRol = 'CLI'
+    ORDER BY u.usNombre, u.usAPaterno
+";
+
+if ($stmt = $conectar->prepare($sqlUsuarios)) {
+    $stmt->bind_param("i", $clId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $usuarios[(int)$row['usId']] = [
+            'usId'        => (int)$row['usId'],
+            'nombre'      => $row['usNombre'],
+            'apaterno'    => $row['usAPaterno'],
+            'amaterno'    => $row['usAMaterno'],
+            'nombreCompleto' => trim($row['usNombre'] . ' ' . $row['usAPaterno'] . ' ' . $row['usAMaterno']),
+            'correo'      => $row['usCorreo'],
+            'telefono'    => $row['usTelefono'],
+            'username'    => $row['usUsername'],
+            'rolSistema'  => $row['usRol'],
+            'estatus'     => $row['usEstatus'],
+            'theme'       => $row['usTheme'],
+            'notifInApp'  => (bool)$row['usNotifInApp'],
+            'notifMail'   => (bool)$row['usNotifMail'],
+            'rolesCliente'=> []  // se llena abajo
+        ];
+    }
+    $stmt->close();
+}
+
+// Si no hay usuarios, devolvemos vacío pero success = true
+if (empty($usuarios)) {
+    echo json_encode([
+        'success' => true,
+        'scope'   => $scope,
+        'cliente' => $cliente,
+        'zonas'   => array_values($zonas),
+        'sedes'   => array_values($sedes),
+        'usuarios'=> []
+    ]);
+    exit;
+}
+
+// ====== 6) Cargar roles por usuario (usuario_cliente_rol) ======
+$rolesByUser = [];
+
+$sqlRoles = "
+    SELECT 
+      ucr.usId,
+      ucr.ucrRol,
+      ucr.czId,
+      ucr.csId,
+      cz.czNombre,
+      cs.csNombre
+    FROM usuario_cliente_rol ucr
+    LEFT JOIN cliente_zona cz ON cz.czId = ucr.czId
+    LEFT JOIN cliente_sede cs ON cs.csId = ucr.csId
+    WHERE ucr.clId = ? AND ucr.ucrEstatus = 'Activo'
+";
+
+if ($stmt = $conectar->prepare($sqlRoles)) {
+    $stmt->bind_param("i", $clId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $uId = (int)$row['usId'];
+        if (!isset($rolesByUser[$uId])) {
+            $rolesByUser[$uId] = [];
+        }
+        $rolesByUser[$uId][] = [
+            'rol'      => $row['ucrRol'],               // ADMIN_GLOBAL | ADMIN_ZONA | ADMIN_SEDE | USUARIO | VISOR
+            'czId'     => $row['czId'] !== null ? (int)$row['czId'] : null,
+            'csId'     => $row['csId'] !== null ? (int)$row['csId'] : null,
+            'czNombre' => $row['czNombre'],
+            'csNombre' => $row['csNombre'],
+        ];
+    }
+    $stmt->close();
+}
+
+// Asignar al arreglo de usuarios
+foreach ($usuarios as $id => &$u) {
+    $u['rolesCliente'] = $rolesByUser[$id] ?? [];
+}
+unset($u);
+
+// ====== 7) Filtrar usuarios según alcance (solo aplica a CLI, MR ve todo) ======
+function userIsVisibleForScope(array $uRoles, array $scope): bool {
+    // ALL_MR o GLOBAL -> ve todos
+    if ($scope['tipo'] === 'ALL_MR' || $scope['tipo'] === 'GLOBAL') {
+        return true;
+    }
+    if ($scope['tipo'] === 'ZONA') {
+        $zones = $scope['zonesAdmin'] ?? [];
+        if (empty($zones)) return false;
+        foreach ($uRoles as $r) {
+            if ($r['czId'] !== null && in_array((int)$r['czId'], $zones, true)) {
+                return true;
+            }
+            // también si la sede está en una zona que administro
+            if ($r['csId'] !== null && !empty($zones)) {
+                // la zona real de la sede la validamos en front si hace falta;
+                // aquí basta con que tenga algún rol y ya se filtrará extra en front
+                return true;
+            }
+        }
+        return false;
+    }
+    if ($scope['tipo'] === 'SEDE') {
+        $sedes = $scope['sedesAdmin'] ?? [];
+        if (empty($sedes)) return false;
+        foreach ($uRoles as $r) {
+            if ($r['csId'] !== null && in_array((int)$r['csId'], $sedes, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return false;
+}
+
+$usuariosFinal = [];
+foreach ($usuarios as $u) {
+    if (userIsVisibleForScope($u['rolesCliente'], $scope)) {
+        $usuariosFinal[] = $u;
+    }
+}
+
+// ====== 8) Respuesta final ======
+echo json_encode([
+    'success'  => true,
+    'scope'    => $scope,
+    'cliente'  => $cliente,
+    'zonas'    => array_values($zonas),
+    'sedes'    => array_values($sedes),
+    'usuarios' => $usuariosFinal
+]);

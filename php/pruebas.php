@@ -9,10 +9,10 @@ try {
   /* =========================
    * 1) CONEXIÓN (ajusta a tu entorno)
    * ========================= */
-  $DB_HOST = '127.0.0.1';
-  $DB_NAME = 'mrsos';
-  $DB_USER = 'root';
-  $DB_PASS = '';
+  $DB_HOST = 'localhost';
+  $DB_NAME = 'u140302554_mrsos';
+  $DB_USER = 'u140302554_mrsos';
+  $DB_PASS = 'MRsolutions552312#$';
   $DB_CHARSET = 'utf8mb4';
 
   $dsn = "mysql:host={$DB_HOST};dbname={$DB_NAME};charset={$DB_CHARSET}";

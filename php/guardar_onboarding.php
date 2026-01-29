@@ -178,7 +178,7 @@ unset($_SESSION['forzarCambioPass']);
 
 // Branding / datos base
 $NOMBRE_EMPRESA    = 'MR Solutions';
-$URL_LOGO          = 'https://mrsolutions.com.mx/wp-content/uploads/2025/02/logo_2021.webp';
+$URL_LOGO          = 'https://www.ventasdeseguridad.com/media/com_mtree/images/listings/o/2018_03_16_19_03_54_Logo.jpg';
 $DIRECCION_EMPRESA = 'Alhambra 813 Bis, Portales Sur, Benito Juárez, 03300 Ciudad de México, CDMX';
 
 // 1) Includes de PHPMailer

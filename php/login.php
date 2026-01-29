@@ -42,6 +42,8 @@ if ($user->usEstatus === 'NewPass') {
     $_SESSION['usId']              = (int)$user->usId;
     $_SESSION['usRol']             = $user->usRol;
     $_SESSION['forzarCambioPass']  = true;
+    $_SESSION['usEstatus']         = $user->usEstatus;
+
 
     echo json_encode([
         'success'          => true,

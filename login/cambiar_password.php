@@ -117,7 +117,7 @@ $user = $result->fetch_assoc();
         }
 
         .onb-hero-img {
-            max-width: 280px;
+            max-width: 480px;
             width: 100%;
             border-radius: 1.2rem;
             object-fit: cover;
@@ -205,6 +205,11 @@ $user = $result->fetch_assoc();
                                 <button type="button" class="btn btn-primary btn-lg px-4 onb-nav-btn" data-next>
                                     Comenzar
                                 </button>
+                                <button type="button" href="../php/logout.php"
+                                    data-href="../php/logout.php?ajax=1"
+                                    data-redirect="../login/login.php" class="btn btn-outline-secondary btn-lg px-4 onb-nav-btn ms-1" id="btnLogout">
+                                    En otro momento
+                                </button>
                             </div>
                         </div>
                     </section>
@@ -234,7 +239,7 @@ $user = $result->fetch_assoc();
                         </div>
                         <div class="col-12 col-md-6 order-md-1 text-center">
                             <!-- Usa una captura del dashboard de sos.php -->
-                            <img src="img/dashboard-mrsos.png" alt="Dashboard MR SoS" class="onb-hero-img">
+                            <img src="../img/dashboard-mrsos.svg" alt="Dashboard MR SoS" class="onb-hero-img">
                         </div>
                     </div>
                 </div>
@@ -541,6 +546,24 @@ $user = $result->fetch_assoc();
             }
 
         })();
+        document.addEventListener('click', function(e) {
+            const a = e.target.closest('#btnLogout');
+            if (!a) return;
+
+            e.preventDefault();
+
+            const hrefAjax = a.dataset.href || (a.getAttribute('href') + '?ajax=1');
+            const redirect = a.dataset.redirect || '../login/login.php';
+
+            fetch(hrefAjax, {
+                    method: 'GET', // si prefieres, usa 'POST' y ajusta logout.php
+                    credentials: 'same-origin'
+                })
+                .catch(() => {}) // aunque falle, intentamos redirigir
+                .finally(() => {
+                    window.location.href = redirect;
+                });
+        });
     </script>
 </body>
 

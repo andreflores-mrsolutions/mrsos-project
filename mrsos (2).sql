@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-09-2025 a las 03:09:15
+-- Tiempo de generación: 19-01-2026 a las 07:30:58
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -53,6 +53,7 @@ INSERT INTO `clientes` (`clId`, `clNombre`, `clDireccion`, `clTelefono`, `clCorr
 CREATE TABLE `cliente_sede` (
   `csId` int(9) NOT NULL,
   `clId` int(5) NOT NULL,
+  `czId` int(9) DEFAULT NULL,
   `csNombre` varchar(80) NOT NULL,
   `csCodigo` varchar(40) DEFAULT NULL,
   `csDireccion` text DEFAULT NULL,
@@ -64,11 +65,34 @@ CREATE TABLE `cliente_sede` (
 -- Volcado de datos para la tabla `cliente_sede`
 --
 
-INSERT INTO `cliente_sede` (`csId`, `clId`, `csNombre`, `csCodigo`, `csDireccion`, `csEstatus`, `csEsPrincipal`) VALUES
-(1, 1, 'Principal', NULL, NULL, 'Activo', 1),
-(4, 2, 'Enel Monterrey', NULL, NULL, 'Activo', 0),
-(5, 2, 'Enel Puebla', NULL, NULL, 'Activo', 0),
-(6, 2, 'Enel Miyana', NULL, NULL, 'Activo', 0);
+INSERT INTO `cliente_sede` (`csId`, `clId`, `czId`, `csNombre`, `csCodigo`, `csDireccion`, `csEstatus`, `csEsPrincipal`) VALUES
+(1, 1, NULL, 'Principal', NULL, NULL, 'Activo', 1),
+(4, 2, 1, 'Enel Monterrey', NULL, NULL, 'Activo', 0),
+(5, 2, 1, 'Enel Puebla', NULL, NULL, 'Activo', 0),
+(6, 2, 2, 'Enel Miyana', NULL, NULL, 'Activo', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cliente_zona`
+--
+
+CREATE TABLE `cliente_zona` (
+  `czId` int(9) NOT NULL,
+  `clId` int(5) NOT NULL,
+  `czNombre` varchar(80) NOT NULL,
+  `czCodigo` varchar(40) DEFAULT NULL,
+  `czDescripcion` text DEFAULT NULL,
+  `czEstatus` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `cliente_zona`
+--
+
+INSERT INTO `cliente_zona` (`czId`, `clId`, `czNombre`, `czCodigo`, `czDescripcion`, `czEstatus`) VALUES
+(1, 2, 'Zona Norte', 'NORTE', 'Zona norte de ejemplo', 'Activo'),
+(2, 2, 'Zona Sur', 'SUR', 'Zona sur de ejemplo', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -178,6 +202,41 @@ INSERT INTO `equipos` (`eqId`, `eqModelo`, `eqVersion`, `eqTipoEquipo`, `maId`, 
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `health_check`
+--
+
+CREATE TABLE `health_check` (
+  `hcId` int(11) NOT NULL,
+  `clId` int(11) NOT NULL,
+  `csId` int(11) NOT NULL,
+  `usId` int(11) NOT NULL,
+  `hcFechaHora` datetime NOT NULL,
+  `hcDuracionMins` int(11) NOT NULL DEFAULT 240,
+  `hcNombreContacto` varchar(120) NOT NULL,
+  `hcNumeroContacto` varchar(25) NOT NULL,
+  `hcCorreoContacto` varchar(120) NOT NULL,
+  `hcEstatus` enum('Programado','Completado','Cancelado') NOT NULL DEFAULT 'Programado',
+  `hcCreadoEn` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `health_check_items`
+--
+
+CREATE TABLE `health_check_items` (
+  `hciId` int(11) NOT NULL,
+  `hcId` int(11) NOT NULL,
+  `eqId` int(11) NOT NULL,
+  `peId` int(11) DEFAULT NULL,
+  `tiId` int(11) DEFAULT NULL,
+  `hciCreadoEn` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `historial`
 --
 
@@ -189,6 +248,85 @@ CREATE TABLE `historial` (
   `hTabla` varchar(255) NOT NULL,
   `hEstatus` enum('Activo','Inactivo','Cambios','Error') NOT NULL DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hojas_servicio`
+--
+
+CREATE TABLE `hojas_servicio` (
+  `hsId` int(11) NOT NULL,
+  `clId` int(11) NOT NULL,
+  `csId` int(11) NOT NULL,
+  `tiId` int(11) DEFAULT NULL,
+  `peId` int(11) DEFAULT NULL,
+  `hsTipo` enum('T','HC') NOT NULL,
+  `hsNumero` int(11) NOT NULL,
+  `hsPrefix` varchar(10) NOT NULL,
+  `hsFolio` varchar(30) NOT NULL,
+  `hsNombreEquipo` varchar(200) DEFAULT NULL,
+  `hsPath` varchar(500) NOT NULL,
+  `hsMime` varchar(80) DEFAULT 'application/pdf',
+  `hsActivo` tinyint(1) DEFAULT 1,
+  `hsCreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `hsUpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ingenieros`
+--
+
+CREATE TABLE `ingenieros` (
+  `ingId` int(5) NOT NULL,
+  `usId` int(5) NOT NULL,
+  `ingTier` enum('Tier 1','Tier 2','Tier 3') NOT NULL DEFAULT 'Tier 1',
+  `ingExperto` enum('OS','Cloud','Storage','Datacom','Servers','Virtualización','Backup','Otro') NOT NULL DEFAULT 'Otro',
+  `ingDescripcion` text DEFAULT NULL,
+  `ingEstatus` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `ingenieros`
+--
+
+INSERT INTO `ingenieros` (`ingId`, `usId`, `ingTier`, `ingExperto`, `ingDescripcion`, `ingEstatus`) VALUES
+(1, 1001, 'Tier 1', 'Cloud', 'Ingeniero Experto en cloud', 'Activo'),
+(2, 1002, 'Tier 1', 'Storage', 'Ingeniero experto en Storage', 'Activo'),
+(3, 1004, 'Tier 1', 'OS', 'Ingeniero experto en OS', 'Activo'),
+(4, 1005, 'Tier 1', 'Datacom', 'Ingeniero experto en Datacom', 'Activo'),
+(6, 1007, 'Tier 2', 'Backup', 'Ingeniero experto en Backup', 'Activo'),
+(7, 1008, 'Tier 2', 'Storage', 'Ingeniero experto en Storage', 'Activo'),
+(8, 1007, 'Tier 3', 'Backup', 'Ingeniero experto en Backup', 'Activo'),
+(9, 1008, 'Tier 3', 'Storage', 'Ingeniero experto en Storage', 'Activo');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ingeniero_equipos`
+--
+
+CREATE TABLE `ingeniero_equipos` (
+  `ieId` int(11) NOT NULL,
+  `usId` int(11) NOT NULL,
+  `ieTipo` enum('Laptop','Celular','Herramienta','Refaccion','Otro') NOT NULL,
+  `ieMarca` varchar(100) DEFAULT NULL,
+  `ieModelo` varchar(100) DEFAULT NULL,
+  `ieSerie` varchar(100) DEFAULT NULL,
+  `ieDescripcion` text DEFAULT NULL,
+  `ieActivo` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `ingeniero_equipos`
+--
+
+INSERT INTO `ingeniero_equipos` (`ieId`, `usId`, `ieTipo`, `ieMarca`, `ieModelo`, `ieSerie`, `ieDescripcion`, `ieActivo`, `created_at`) VALUES
+(1, 1001, 'Laptop', 'Dell', 'Inspiron 15', 'ASDF123', 'Equipo de trabajo', 1, '2026-01-19 05:32:13'),
+(2, 1001, 'Celular', 'Samsung', 'S24 Ultra', '48379520934823', 'Telefono personal', 1, '2026-01-19 05:32:55');
 
 -- --------------------------------------------------------
 
@@ -243,24 +381,26 @@ INSERT INTO `marca` (`maId`, `maNombre`, `maEstatus`) VALUES
 
 CREATE TABLE `polizascliente` (
   `pcId` int(5) NOT NULL,
+  `pcIdentificador` varchar(64) DEFAULT NULL,
+  `pcPdfPath` varchar(255) DEFAULT NULL,
   `pcTipoPoliza` varchar(15) NOT NULL,
   `clId` int(5) NOT NULL,
   `csId` int(9) DEFAULT NULL,
   `pcFechaInicio` date NOT NULL,
   `pcFechaFin` date NOT NULL,
   `usId` int(5) NOT NULL,
-  `pcEstatus` enum('Activo','Inactivo','Cambios','Error') NOT NULL
+  `pcEstatus` enum('Activo','Inactivo','Cambios','Error','Vencida') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `polizascliente`
 --
 
-INSERT INTO `polizascliente` (`pcId`, `pcTipoPoliza`, `clId`, `csId`, `pcFechaInicio`, `pcFechaFin`, `usId`, `pcEstatus`) VALUES
-(1, 'Platinum', 1, 1, '2023-05-01', '2028-05-31', 1001, 'Activo'),
-(2, 'Platinum', 2, 4, '2023-05-01', '2028-05-31', 2001, 'Activo'),
-(3, 'Platinum', 2, 5, '2023-05-01', '2028-05-31', 2001, 'Activo'),
-(4, 'Platinum', 2, 6, '2023-05-01', '2028-05-31', 2001, 'Activo');
+INSERT INTO `polizascliente` (`pcId`, `pcIdentificador`, `pcPdfPath`, `pcTipoPoliza`, `clId`, `csId`, `pcFechaInicio`, `pcFechaFin`, `usId`, `pcEstatus`) VALUES
+(1, 'B 6162', NULL, 'Platinum', 1, 1, '2023-05-01', '2028-05-31', 1001, 'Activo'),
+(2, 'B 6163', 'uploads/poliza/enel', 'Platinum', 2, 4, '2023-05-01', '2028-05-31', 2001, 'Activo'),
+(3, 'B 6164', NULL, 'Platinum', 2, 5, '2023-05-01', '2028-12-01', 2001, 'Activo'),
+(4, 'B 6165', NULL, 'Gold', 2, 6, '2023-05-01', '2028-12-31', 2001, 'Activo');
 
 -- --------------------------------------------------------
 
@@ -273,6 +413,7 @@ CREATE TABLE `polizasequipo` (
   `peDescripcion` text NOT NULL,
   `peSN` text NOT NULL,
   `pcId` int(5) NOT NULL,
+  `csId` int(9) DEFAULT NULL,
   `peSO` varchar(25) NOT NULL,
   `peEstatus` enum('Activo','Inactivo','Error') NOT NULL DEFAULT 'Activo',
   `eqId` int(5) NOT NULL
@@ -282,12 +423,14 @@ CREATE TABLE `polizasequipo` (
 -- Volcado de datos para la tabla `polizasequipo`
 --
 
-INSERT INTO `polizasequipo` (`peId`, `peDescripcion`, `peSN`, `pcId`, `peSO`, `peEstatus`, `eqId`) VALUES
-(1, 'Equipo que almacena las VM de prueba', '2106195YSAXEP2000008', 1, 'Windows Server 2019', 'Activo', 2),
-(2, 'Equipo que almacena las VM de prueba 2', '2106195YSAXEP2000009', 1, 'Ubuntu', 'Activo', 47),
-(3, 'Equipo que almacena las VM de prueba 3', '2106195YSAXEP2000010', 2, 'Ubuntu', 'Activo', 3),
-(4, 'Equipo que almacena las VM de prueba 4', '2106195YSAXEP2000011', 4, 'Ubuntu', 'Activo', 44),
-(5, 'Equipo que almacena las VM de prueba 5', '2106195YSAXEP2000012', 3, 'Ubuntu', 'Activo', 47);
+INSERT INTO `polizasequipo` (`peId`, `peDescripcion`, `peSN`, `pcId`, `csId`, `peSO`, `peEstatus`, `eqId`) VALUES
+(1, 'Equipo que almacena las VM de prueba', '2106195YSAXEP2000008', 1, 1, 'Windows Server 2019', 'Activo', 2),
+(2, 'Equipo que almacena las VM de prueba 2', '2106195YSAXEP2000009', 1, 1, 'Ubuntu', 'Activo', 47),
+(3, 'Equipo que almacena las VM de prueba 3', '2106195YSAXEP2000010', 2, 4, 'Ubuntu', 'Activo', 3),
+(4, 'Equipo que almacena las VM de prueba 4', '2106195YSAXEP2000011', 4, 6, 'Ubuntu', 'Activo', 44),
+(5, 'Equipo que almacena las VM de prueba 5', '2106195YSAXEP2000012', 3, 5, 'Ubuntu', 'Activo', 47),
+(6, 'Equipo que almacena las VM de prueba 4', '2106195YSAXEP2000015', 4, 6, 'Ubuntu', 'Activo', 44),
+(7, 'Equipo que almacena las VM de prueba 5', '2106195YSAXEP2000019', 4, 5, 'Ubuntu', 'Activo', 47);
 
 -- --------------------------------------------------------
 
@@ -313,27 +456,38 @@ CREATE TABLE `refaccion` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `sede_usuario`
+-- Estructura de tabla para la tabla `ticket_acceso_ingeniero`
 --
 
-CREATE TABLE `sede_usuario` (
-  `suId` int(9) NOT NULL,
-  `csId` int(9) NOT NULL,
-  `usId` int(5) NOT NULL,
-  `suRol` enum('AC','UC','EC') NOT NULL,
-  `suEstatus` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
+CREATE TABLE `ticket_acceso_ingeniero` (
+  `taiId` int(11) NOT NULL,
+  `tiId` int(11) NOT NULL,
+  `usId` int(11) DEFAULT NULL,
+  `nombre` varchar(120) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `telefono` varchar(30) DEFAULT NULL,
+  `curp` varchar(20) DEFAULT NULL,
+  `nss` varchar(20) DEFAULT NULL,
+  `autoPlacas` varchar(15) DEFAULT NULL,
+  `autoMarca` varchar(50) DEFAULT NULL,
+  `autoModelo` varchar(50) DEFAULT NULL,
+  `autoColor` varchar(40) DEFAULT NULL,
+  `celMarca` varchar(50) DEFAULT NULL,
+  `celModelo` varchar(50) DEFAULT NULL,
+  `celSerie` varchar(80) DEFAULT NULL,
+  `lapMarca` varchar(50) DEFAULT NULL,
+  `lapModelo` varchar(50) DEFAULT NULL,
+  `lapSerie` varchar(80) DEFAULT NULL,
+  `extraInfo` varchar(500) DEFAULT NULL,
+  `creadoEn` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Volcado de datos para la tabla `sede_usuario`
+-- Volcado de datos para la tabla `ticket_acceso_ingeniero`
 --
 
-INSERT INTO `sede_usuario` (`suId`, `csId`, `usId`, `suRol`, `suEstatus`) VALUES
-(1, 6, 2001, 'AC', 'Activo'),
-(2, 1, 1001, 'AC', 'Activo'),
-(3, 1, 1002, 'UC', 'Activo'),
-(4, 4, 2002, 'UC', 'Activo'),
-(5, 5, 178379, 'AC', 'Activo');
+INSERT INTO `ticket_acceso_ingeniero` (`taiId`, `tiId`, `usId`, `nombre`, `email`, `telefono`, `curp`, `nss`, `autoPlacas`, `autoMarca`, `autoModelo`, `autoColor`, `celMarca`, `celModelo`, `celSerie`, `lapMarca`, `lapModelo`, `lapSerie`, `extraInfo`, `creadoEn`) VALUES
+(1, 1, 1001, 'Andre', 'andre.flores@mrsolurions.com.mx', '4534553', 'SADLASLDLSAD', '3982479832', 'ASDASD12', 'Volkswagen', 'Polo', 'Gris', 'sadasd', 'asdasd', 'asdasd', 'sadasd', 'sadasd', 'sadasd', 'asdasd', '2026-01-18 23:38:30');
 
 -- --------------------------------------------------------
 
@@ -359,12 +513,42 @@ CREATE TABLE `ticket_archivos` (
 --
 
 INSERT INTO `ticket_archivos` (`taId`, `tiId`, `taTipo`, `taNombreOriginal`, `taNombreAlmacenado`, `taMime`, `taTamano`, `taRuta`, `usId`, `fecha`) VALUES
-(1, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e2ed9056664.23183947.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e2ed9056664.23183947.txt', 2001, '2025-08-14 18:45:45'),
-(2, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e363760a9e9.69115002.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e363760a9e9.69115002.txt', 2001, '2025-08-14 19:17:11'),
-(3, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e390a5dc087.21046012.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e390a5dc087.21046012.txt', 2001, '2025-08-14 19:29:14'),
-(4, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e39c8b776f7.55100291.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e39c8b776f7.55100291.txt', 2001, '2025-08-14 19:32:24'),
-(5, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e3b3a61fc81.81603436.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e3b3a61fc81.81603436.txt', 2001, '2025-08-14 19:38:34'),
-(6, 9, 'log', 'Telmex Licenciado.txt', 'log_9_689e70ea0a8825.82359326.txt', 'text/plain', 306, 'uploads/logs/9/log_9_689e70ea0a8825.82359326.txt', 2001, '2025-08-14 23:27:38');
+(14, 1, 'log', 'User apolo.txt', 'log_1_696dbc64288842.24763930.txt', 'text/plain', 7189, 'uploads/logs/1/log_1_696dbc64288842.24763930.txt', 2001, '2026-01-19 05:08:52');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ticket_folio_entrada`
+--
+
+CREATE TABLE `ticket_folio_entrada` (
+  `tfeId` int(11) NOT NULL,
+  `tiId` int(11) NOT NULL,
+  `folio` varchar(80) NOT NULL,
+  `archivoRuta` varchar(255) DEFAULT NULL,
+  `comentario` text DEFAULT NULL,
+  `creadoPor` int(11) NOT NULL,
+  `creadoEn` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ticket_meet_propuestas`
+--
+
+CREATE TABLE `ticket_meet_propuestas` (
+  `mpId` int(11) NOT NULL,
+  `tiId` int(11) NOT NULL,
+  `mpAutorTipo` enum('cliente','ingeniero') NOT NULL,
+  `mpModo` enum('propuesta','asignacion') NOT NULL,
+  `mpPlataforma` varchar(30) DEFAULT NULL,
+  `mpLink` varchar(600) DEFAULT NULL,
+  `mpInicio` datetime NOT NULL,
+  `mpFin` datetime NOT NULL,
+  `mpEstado` enum('pendiente','aceptada','rechazada','expirada','cancelada') NOT NULL DEFAULT 'pendiente',
+  `mpCreadoEn` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -381,39 +565,84 @@ CREATE TABLE `ticket_soporte` (
   `peId` int(11) DEFAULT NULL,
   `tiDescripcion` text NOT NULL,
   `tiEstatus` enum('Abierto','Pospuesto','Cerrado') NOT NULL,
-  `tiProceso` enum('asignacion','revision inicial','logs','meet','revision especial','espera refaccion','asignacion fecha cliente','asignacion fecha ingeniero','fecha asignada','espera ventana','espera visita','en camino','espera documentacion','encuesta satisfaccion','finalizado','cancelado','fuera de alcance','servicio por evento') NOT NULL DEFAULT 'asignacion',
+  `tiProceso` enum('asignacion','revision inicial','logs','meet','revision especial','espera refaccion','visita','fecha asignada','espera ventana','espera visita','en camino','espera documentacion','encuesta satisfaccion','finalizado','cancelado','fuera de alcance','servicio por evento') DEFAULT 'asignacion',
   `tiTipoTicket` enum('Servicio','Preventivo','Extra') NOT NULL DEFAULT 'Servicio',
   `tiExtra` text NOT NULL DEFAULT '--',
   `tiNivelCriticidad` varchar(12) NOT NULL,
   `tiFechaCreacion` date NOT NULL,
   `tiVisita` datetime NOT NULL,
+  `tiVisitaDuracionMins` int(11) DEFAULT NULL,
+  `tiVisitaAutorId` int(11) DEFAULT NULL,
   `tiMeetActivo` enum('meet cliente','meet ingeniero','meet solicitado cliente','meet solicitado ingeniero') DEFAULT NULL,
-  `tiMeetLink` text DEFAULT NULL,
-  `tiMeetFecha` datetime DEFAULT NULL,
-  `tiMeetPlataforma` enum('Google','Teams','Zoom','Otro') DEFAULT NULL,
   `tiDiagnostico` text DEFAULT NULL,
-  `tiCitaTipo` enum('cliente','ingeniero') DEFAULT NULL,
-  `tiCitaEstado` enum('sin cita','propuesta enviada','en espera confirmacion cliente','en espera confirmacion ingeniero','confirmada','rechazada') NOT NULL DEFAULT 'sin cita',
+  `tiVisitaTipo` varchar(50) DEFAULT NULL,
+  `tiVisitaModo` varchar(30) DEFAULT NULL,
+  `tiVisitaAutor` int(11) DEFAULT NULL,
+  `tiVisitaAutorNombre` varchar(120) DEFAULT NULL,
+  `tiAccesoRequiereDatos` tinyint(1) NOT NULL DEFAULT 0,
+  `tiAccesoExtraTexto` varchar(500) DEFAULT NULL,
+  `tiAccesoFolio` varchar(100) DEFAULT NULL,
+  `tiAccesoSoportePath` varchar(255) DEFAULT NULL,
+  `tiVisitaFecha` date DEFAULT NULL,
+  `tiVisitaHora` time DEFAULT NULL,
+  `tiVisitaEstado` varchar(50) DEFAULT NULL,
+  `tiFolioEntrada` varchar(80) DEFAULT NULL,
+  `tiFolioArchivo` varchar(255) DEFAULT NULL,
+  `tiFolioCreadoEn` datetime DEFAULT NULL,
+  `tiFolioCreadoPor` int(11) DEFAULT NULL,
+  `tiVisitaCancelBy` varchar(20) DEFAULT NULL,
+  `tiVisitaCancelMotivo` text DEFAULT NULL,
+  `tiVisitaCancelFecha` datetime DEFAULT NULL,
   `tiCitaPropuesta` datetime DEFAULT NULL,
-  `tiCitaConfirmada` datetime DEFAULT NULL,
+  `tiVisitaConfirmada` tinyint(1) NOT NULL DEFAULT 0,
   `tiNombreContacto` varchar(50) NOT NULL,
   `tiNumeroContacto` varchar(25) NOT NULL DEFAULT '555-55-55-55',
   `tiCorreoContacto` varchar(50) NOT NULL DEFAULT 'example@correo.com',
   `usIdIng` int(5) NOT NULL DEFAULT 1002,
-  `estatus` enum('Activo','Inactivo','Cambios','Error') NOT NULL DEFAULT 'Activo'
+  `estatus` enum('Activo','Inactivo','Cambios','Error') NOT NULL DEFAULT 'Activo',
+  `tiMeetFecha` date DEFAULT NULL,
+  `tiMeetHora` time DEFAULT NULL,
+  `tiMeetPlataforma` varchar(30) DEFAULT NULL,
+  `tiMeetEnlace` varchar(255) DEFAULT NULL,
+  `tiMeetModo` enum('propuesta_cliente','propuesta_ingeniero','asignado_cliente','asignado_ingeniero') DEFAULT NULL,
+  `tiMeetEstado` enum('pendiente','confirmado','rechazado','reprogramar') DEFAULT NULL,
+  `tiMeetCancelBy` varchar(20) DEFAULT NULL,
+  `tiMeetCancelMotivo` text DEFAULT NULL,
+  `tiMeetCancelFecha` datetime DEFAULT NULL,
+  `tiMeetAutorNombre` varchar(80) DEFAULT NULL,
+  `tiUltimaRespuestaCliente` datetime DEFAULT NULL,
+  `tiUltimaRespuestaIng` datetime DEFAULT NULL,
+  `tiVenceRespuestaCliente` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `ticket_soporte`
 --
 
-INSERT INTO `ticket_soporte` (`tiId`, `clId`, `csId`, `usId`, `eqId`, `peId`, `tiDescripcion`, `tiEstatus`, `tiProceso`, `tiTipoTicket`, `tiExtra`, `tiNivelCriticidad`, `tiFechaCreacion`, `tiVisita`, `tiMeetActivo`, `tiMeetLink`, `tiMeetFecha`, `tiMeetPlataforma`, `tiDiagnostico`, `tiCitaTipo`, `tiCitaEstado`, `tiCitaPropuesta`, `tiCitaConfirmada`, `tiNombreContacto`, `tiNumeroContacto`, `tiCorreoContacto`, `usIdIng`, `estatus`) VALUES
-(1, 1, 1, 1001, 2, 1, 'Muestra para pruebas MR1', 'Abierto', 'logs', 'Servicio', '--', '3', '2025-08-08', '2025-05-15 18:42:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, '2025-05-15 18:42:00', 'Jonh Due', '555-55-55-55', 'example@correo.com', 1001, 'Activo'),
-(5, 1, 1, 1001, 47, 2, 'Muestra para pruebas MR2', 'Abierto', 'meet', 'Preventivo', '--', '1', '2025-08-02', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre Flores', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo'),
-(6, 1, 1, 1001, 47, 2, 'Muestra para pruebas MR3', 'Abierto', 'fecha asignada', 'Extra', '--', '2', '2025-08-02', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre Flores', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo'),
-(7, 2, 5, 2001, 3, 3, 'Prueba de ticket Puebla', 'Abierto', 'asignacion fecha ingeniero', 'Servicio', '--', '3', '2025-08-08', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, 'ingeniero', 'en espera confirmacion cliente', NULL, NULL, 'Nailea FO', '5534846421', 'nailea@enel.com.mx', 1002, 'Activo'),
-(8, 2, 4, 2001, 44, 4, 'Prueba de ticket Monterrey', 'Abierto', 'encuesta satisfaccion', 'Preventivo', '--', '2', '2025-08-12', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'confirmada', NULL, NULL, 'Andre', '7847474', 'prueba@prueba.com', 1002, 'Activo'),
-(9, 2, 6, 2001, 47, 5, 'Prueba de ticket Miyana', 'Abierto', 'asignacion fecha ingeniero', 'Extra', '--', '1', '2025-08-12', '0000-00-00 00:00:00', NULL, NULL, NULL, NULL, NULL, 'ingeniero', 'en espera confirmacion cliente', NULL, NULL, 'Nailea O', '5534846421', 'andre.flores@mrsolutions.com.mx', 1002, 'Activo');
+INSERT INTO `ticket_soporte` (`tiId`, `clId`, `csId`, `usId`, `eqId`, `peId`, `tiDescripcion`, `tiEstatus`, `tiProceso`, `tiTipoTicket`, `tiExtra`, `tiNivelCriticidad`, `tiFechaCreacion`, `tiVisita`, `tiVisitaDuracionMins`, `tiVisitaAutorId`, `tiMeetActivo`, `tiDiagnostico`, `tiVisitaTipo`, `tiVisitaModo`, `tiVisitaAutor`, `tiVisitaAutorNombre`, `tiAccesoRequiereDatos`, `tiAccesoExtraTexto`, `tiAccesoFolio`, `tiAccesoSoportePath`, `tiVisitaFecha`, `tiVisitaHora`, `tiVisitaEstado`, `tiFolioEntrada`, `tiFolioArchivo`, `tiFolioCreadoEn`, `tiFolioCreadoPor`, `tiVisitaCancelBy`, `tiVisitaCancelMotivo`, `tiVisitaCancelFecha`, `tiCitaPropuesta`, `tiVisitaConfirmada`, `tiNombreContacto`, `tiNumeroContacto`, `tiCorreoContacto`, `usIdIng`, `estatus`, `tiMeetFecha`, `tiMeetHora`, `tiMeetPlataforma`, `tiMeetEnlace`, `tiMeetModo`, `tiMeetEstado`, `tiMeetCancelBy`, `tiMeetCancelMotivo`, `tiMeetCancelFecha`, `tiMeetAutorNombre`, `tiUltimaRespuestaCliente`, `tiUltimaRespuestaIng`, `tiVenceRespuestaCliente`) VALUES
+(1, 2, 6, 2001, 44, 4, 'Estamos probando la app desde 0 con clientes sin tickets', 'Abierto', 'visita', 'Servicio', '--', '3', '2026-01-18', '0000-00-00 00:00:00', 60, 2001, NULL, 'El problema actual del ticket es error en DB, vamos a solicitar logs', NULL, '', NULL, 'Nailea', 1, '', NULL, NULL, '2026-01-20', '01:14:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 'Nailea Fragoso Osorio', '5534846421', 'andre.flores@mrsolutions.com.mx', 1001, 'Activo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ticket_visita_equipos`
+--
+
+CREATE TABLE `ticket_visita_equipos` (
+  `tveId` int(11) NOT NULL,
+  `taiId` int(11) NOT NULL,
+  `ieId` int(11) NOT NULL,
+  `tveCantidad` int(11) DEFAULT 1,
+  `tveNotas` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `ticket_visita_equipos`
+--
+
+INSERT INTO `ticket_visita_equipos` (`tveId`, `taiId`, `ieId`, `tveCantidad`, `tveNotas`) VALUES
+(1, 1, 1, 1, NULL),
+(2, 1, 2, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -426,15 +655,22 @@ CREATE TABLE `usuarios` (
   `usNombre` varchar(20) NOT NULL,
   `usAPaterno` varchar(20) NOT NULL,
   `usAMaterno` varchar(20) NOT NULL,
-  `usRol` enum('AC','UC','EC','MRA','MRV','MRSA') NOT NULL DEFAULT 'UC',
+  `usRol` enum('CLI','MRA','MRV','MRSA') NOT NULL DEFAULT 'CLI',
   `usCorreo` varchar(50) NOT NULL,
   `usPass` text NOT NULL,
   `usResetToken` bigint(34) NOT NULL,
   `usResetTokenExpira` datetime NOT NULL,
   `usTelefono` bigint(20) NOT NULL,
-  `usTokenTelefono` text NOT NULL,
-  `usImagen` int(2) NOT NULL,
-  `usNotificaciones` varchar(15) NOT NULL,
+  `usTokenTelefono` text NOT NULL DEFAULT 'N/A',
+  `usImagen` varchar(55) NOT NULL DEFAULT 'avatar_default.png',
+  `usNotificaciones` varchar(15) NOT NULL DEFAULT 'N/A',
+  `usTheme` enum('light','dark') NOT NULL DEFAULT 'light',
+  `usNotifInApp` tinyint(1) NOT NULL DEFAULT 1,
+  `usNotifMail` tinyint(1) NOT NULL DEFAULT 1,
+  `usNotifTicketCambio` tinyint(1) NOT NULL DEFAULT 1,
+  `usNotifMeet` tinyint(1) NOT NULL DEFAULT 1,
+  `usNotifVisita` tinyint(1) NOT NULL DEFAULT 1,
+  `usNotifFolio` tinyint(1) NOT NULL DEFAULT 1,
   `clId` int(5) NOT NULL,
   `usConfirmado` varchar(15) NOT NULL,
   `usEstatus` enum('Activo','Inactivo','NewPass','Error','Eliminado') NOT NULL DEFAULT 'Activo',
@@ -445,14 +681,63 @@ CREATE TABLE `usuarios` (
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`usId`, `usNombre`, `usAPaterno`, `usAMaterno`, `usRol`, `usCorreo`, `usPass`, `usResetToken`, `usResetTokenExpira`, `usTelefono`, `usTokenTelefono`, `usImagen`, `usNotificaciones`, `clId`, `usConfirmado`, `usEstatus`, `usUsername`) VALUES
-(1000, 'Miguel', 'García', 'Contreras', 'MRA', 'miguel@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'MiguelGC'),
-(1001, 'Andre Gonzalo', 'Flores', 'Cabrera', 'MRA', 'andre.flores@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5534846421, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'AndreFC47'),
-(1002, 'Luis', 'Tostado', 'De los Santos', 'MRA', 'luis.tostado@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'LuisTS'),
-(1003, 'Alfredo', 'Meza', 'Cara', 'MRV', 'alfredo.meza@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 1, 'Si', 'Activo', 'AlfredoME'),
-(2001, 'Nailea', 'Fragoso', 'Osorio', 'AC', 'nailea@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 1, 'a', 2, 'Si', 'Activo', 'NaileaFO'),
-(2002, 'Raymundo', 'Leonel', 'Arga', 'AC', 'ray@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', 0, 'a', 2, 'Si', 'Activo', 'RayAG'),
-(178379, 'Bruce', 'Wayne', 'M.', 'UC', 'andre@gmail.com', '$2y$10$Py2f3ceu9GWwGliHnmixDOM1o/oebJ8KwWIAz9N9hzQfTPg0uAfcO', 0, '0000-00-00 00:00:00', 5534846421, '', 0, '', 2, '', 'Eliminado', 'BruceWM');
+INSERT INTO `usuarios` (`usId`, `usNombre`, `usAPaterno`, `usAMaterno`, `usRol`, `usCorreo`, `usPass`, `usResetToken`, `usResetTokenExpira`, `usTelefono`, `usTokenTelefono`, `usImagen`, `usNotificaciones`, `usTheme`, `usNotifInApp`, `usNotifMail`, `usNotifTicketCambio`, `usNotifMeet`, `usNotifVisita`, `usNotifFolio`, `clId`, `usConfirmado`, `usEstatus`, `usUsername`) VALUES
+(1000, 'Miguel', 'García', 'Contreras', 'MRA', 'miguel@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', '0', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'MiguelGC'),
+(1001, 'Andre Gonzalo', 'Flores', 'Cabrera', 'MRSA', 'andre.flores@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5534846421, 'N/A', '1', 'a', 'light', 1, 0, 1, 1, 1, 1, 1, 'Si', 'Activo', 'AndreFC47'),
+(1002, 'Luis', 'Tostado', 'De los Santos', 'MRA', 'luis.tostado@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', '0', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'LuisTS'),
+(1003, 'Alfredo', 'Meza', 'Cara', 'MRV', 'alfredo.meza@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'AlfredoME'),
+(1004, 'Manfredo Augusto', 'Gonzalez', 'Lozada', 'MRA', 'mgonzalez@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'NA', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'ManfredoG'),
+(1005, 'Jorge Antonio', 'Hernandez', 'García', 'MRA', 'jorge.hernandez@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'JorgeH'),
+(1006, 'Luis', 'Tostado', 'De los Santos', 'MRSA', 'luis.tostado@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'LuisT'),
+(1007, 'Christian', 'Mata', 'San Luis', 'MRA', 'chmata@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'ChistianM'),
+(1008, 'Juan Carlos', 'Zafra', 'Daniel', 'MRA', 'juan@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'JuanZ'),
+(1009, 'Norma', 'De la Cruz', '-', 'MRSA', 'norma@mrsolutions.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-10-23 20:56:08', 55, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 1, 'Si', 'Activo', 'NormaC'),
+(2001, 'Nailea', 'Fragoso', 'Osorio', 'CLI', 'andre.flores@mrsolutions.com.mx', '$2y$10$zjyDNnDNAri0lreAZU4Qg.ODMcQtuld.T7bW3cZ190kiqm763uEVW', 0, '1970-01-01 00:00:00', 5534846421, 'N/A', '1', 'a', 'light', 1, 0, 1, 1, 1, 1, 2, 'No', 'Activo', 'NaileaFO'),
+(2002, 'Raymundo', 'Leonel', 'Arga', 'CLI', 'ray@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5555643121, 'N/A', '0', 'a', 'light', 1, 1, 1, 1, 1, 1, 2, 'Si', 'Activo', 'RayAG'),
+(2003, 'Jonh', 'Ted', 'Fredd', 'CLI', 'fred@enel.com.mx', '$2y$10$BM/012LgYwxjjR1GYbCAbuza69X7FaBU9sgexYU17JPjb.k5gvRha', 0, '2025-05-23 18:56:23', 5520844359, 'N/A', '1', 'a', 'light', 1, 1, 1, 1, 1, 1, 2, 'Si', 'Activo', 'JonhTF'),
+(2008, 'Andre Gonzalo', 'Flores', 'Cabrera', 'CLI', 'andregonzalo47@gmail.com', '$2y$10$QVta6FDofCg3bebFUVGfte5h3AXNDJAGoyt2sWKd2ehTy0n9L3xLO', 0, '0000-00-00 00:00:00', 5534846422, 'N/A', '0', 'N/A', 'light', 1, 1, 1, 1, 1, 1, 2, '', 'Activo', 'andrefc147');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario_cliente_rol`
+--
+
+CREATE TABLE `usuario_cliente_rol` (
+  `ucrId` int(11) NOT NULL,
+  `usId` int(5) NOT NULL,
+  `clId` int(5) NOT NULL,
+  `czId` int(9) DEFAULT NULL,
+  `csId` int(9) DEFAULT NULL,
+  `ucrRol` enum('ADMIN_GLOBAL','ADMIN_ZONA','ADMIN_SEDE','USUARIO','VISOR') NOT NULL,
+  `ucrEstatus` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuario_cliente_rol`
+--
+
+INSERT INTO `usuario_cliente_rol` (`ucrId`, `usId`, `clId`, `czId`, `csId`, `ucrRol`, `ucrEstatus`) VALUES
+(1, 2001, 2, NULL, NULL, 'ADMIN_GLOBAL', 'Activo'),
+(3, 2002, 2, 2, 5, 'ADMIN_ZONA', 'Activo'),
+(4, 2003, 2, 1, 5, 'USUARIO', 'Activo'),
+(8, 2008, 2, 2, 6, 'USUARIO', 'Activo');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `webpush_subscriptions`
+--
+
+CREATE TABLE `webpush_subscriptions` (
+  `id` int(11) NOT NULL,
+  `usId` int(11) NOT NULL,
+  `endpoint` text NOT NULL,
+  `p256dh` varchar(255) NOT NULL,
+  `auth` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Índices para tablas volcadas
@@ -470,7 +755,16 @@ ALTER TABLE `clientes`
 ALTER TABLE `cliente_sede`
   ADD PRIMARY KEY (`csId`),
   ADD UNIQUE KEY `uq_cs_nombre_por_cliente` (`clId`,`csNombre`),
-  ADD KEY `ix_cs_clId` (`clId`);
+  ADD KEY `ix_cs_clId` (`clId`),
+  ADD KEY `fk_cs_zona` (`czId`);
+
+--
+-- Indices de la tabla `cliente_zona`
+--
+ALTER TABLE `cliente_zona`
+  ADD PRIMARY KEY (`czId`),
+  ADD UNIQUE KEY `uq_cz_nombre_por_cliente` (`clId`,`czNombre`),
+  ADD KEY `ix_cz_clId` (`clId`);
 
 --
 -- Indices de la tabla `cuentas`
@@ -489,11 +783,54 @@ ALTER TABLE `equipos`
   ADD KEY `eqMarca` (`maId`);
 
 --
+-- Indices de la tabla `health_check`
+--
+ALTER TABLE `health_check`
+  ADD PRIMARY KEY (`hcId`),
+  ADD KEY `idx_hc_csId` (`csId`),
+  ADD KEY `idx_hc_clId` (`clId`),
+  ADD KEY `idx_hc_usId` (`usId`);
+
+--
+-- Indices de la tabla `health_check_items`
+--
+ALTER TABLE `health_check_items`
+  ADD PRIMARY KEY (`hciId`),
+  ADD KEY `idx_hci_hcId` (`hcId`),
+  ADD KEY `idx_hci_eqId` (`eqId`),
+  ADD KEY `idx_hci_tiId` (`tiId`);
+
+--
 -- Indices de la tabla `historial`
 --
 ALTER TABLE `historial`
   ADD PRIMARY KEY (`hId`),
   ADD KEY `aId` (`usId`);
+
+--
+-- Indices de la tabla `hojas_servicio`
+--
+ALTER TABLE `hojas_servicio`
+  ADD PRIMARY KEY (`hsId`),
+  ADD KEY `idx_cl` (`clId`),
+  ADD KEY `idx_cs` (`csId`),
+  ADD KEY `idx_ti` (`tiId`),
+  ADD KEY `idx_folio` (`hsFolio`),
+  ADD KEY `idx_tipo` (`hsTipo`);
+
+--
+-- Indices de la tabla `ingenieros`
+--
+ALTER TABLE `ingenieros`
+  ADD PRIMARY KEY (`ingId`),
+  ADD KEY `usId` (`usId`);
+
+--
+-- Indices de la tabla `ingeniero_equipos`
+--
+ALTER TABLE `ingeniero_equipos`
+  ADD PRIMARY KEY (`ieId`),
+  ADD KEY `usId` (`usId`);
 
 --
 -- Indices de la tabla `inventario`
@@ -513,6 +850,7 @@ ALTER TABLE `marca`
 --
 ALTER TABLE `polizascliente`
   ADD PRIMARY KEY (`pcId`),
+  ADD UNIQUE KEY `uq_pc_identificador` (`pcIdentificador`),
   ADD KEY `clId` (`clId`),
   ADD KEY `ix_pc_csId` (`csId`);
 
@@ -522,7 +860,8 @@ ALTER TABLE `polizascliente`
 ALTER TABLE `polizasequipo`
   ADD PRIMARY KEY (`peId`),
   ADD KEY `eqId` (`eqId`),
-  ADD KEY `pcId` (`pcId`);
+  ADD KEY `pcId` (`pcId`),
+  ADD KEY `ix_pe_csId` (`csId`);
 
 --
 -- Indices de la tabla `refaccion`
@@ -533,12 +872,12 @@ ALTER TABLE `refaccion`
   ADD KEY `maId` (`maId`);
 
 --
--- Indices de la tabla `sede_usuario`
+-- Indices de la tabla `ticket_acceso_ingeniero`
 --
-ALTER TABLE `sede_usuario`
-  ADD PRIMARY KEY (`suId`),
-  ADD UNIQUE KEY `uq_sede_usuario` (`csId`,`usId`),
-  ADD KEY `ix_su_usId` (`usId`);
+ALTER TABLE `ticket_acceso_ingeniero`
+  ADD PRIMARY KEY (`taiId`),
+  ADD KEY `fk_tai_ticket` (`tiId`),
+  ADD KEY `fk_tai_usuario` (`usId`);
 
 --
 -- Indices de la tabla `ticket_archivos`
@@ -546,6 +885,22 @@ ALTER TABLE `sede_usuario`
 ALTER TABLE `ticket_archivos`
   ADD PRIMARY KEY (`taId`),
   ADD KEY `tiId` (`tiId`);
+
+--
+-- Indices de la tabla `ticket_folio_entrada`
+--
+ALTER TABLE `ticket_folio_entrada`
+  ADD PRIMARY KEY (`tfeId`),
+  ADD KEY `tiId` (`tiId`),
+  ADD KEY `fk_tfe_usuario` (`creadoPor`);
+
+--
+-- Indices de la tabla `ticket_meet_propuestas`
+--
+ALTER TABLE `ticket_meet_propuestas`
+  ADD PRIMARY KEY (`mpId`),
+  ADD KEY `tiId` (`tiId`),
+  ADD KEY `mpEstado` (`mpEstado`);
 
 --
 -- Indices de la tabla `ticket_soporte`
@@ -558,7 +913,15 @@ ALTER TABLE `ticket_soporte`
   ADD KEY `usIdIng` (`usIdIng`),
   ADD KEY `ix_ti_csId` (`csId`),
   ADD KEY `fk_ticket_pe` (`peId`),
-  ADD KEY `idx_tiCitaEstado` (`tiCitaEstado`);
+  ADD KEY `idx_tiCitaEstado` (`tiVisitaEstado`);
+
+--
+-- Indices de la tabla `ticket_visita_equipos`
+--
+ALTER TABLE `ticket_visita_equipos`
+  ADD PRIMARY KEY (`tveId`),
+  ADD KEY `taiId` (`taiId`),
+  ADD KEY `ieId` (`ieId`);
 
 --
 -- Indices de la tabla `usuarios`
@@ -566,6 +929,25 @@ ALTER TABLE `ticket_soporte`
 ALTER TABLE `usuarios`
   ADD PRIMARY KEY (`usId`),
   ADD KEY `clId` (`clId`);
+
+--
+-- Indices de la tabla `usuario_cliente_rol`
+--
+ALTER TABLE `usuario_cliente_rol`
+  ADD PRIMARY KEY (`ucrId`),
+  ADD UNIQUE KEY `uq_ucr_combo` (`usId`,`clId`,`czId`,`csId`,`ucrRol`),
+  ADD KEY `ix_ucr_usId` (`usId`),
+  ADD KEY `ix_ucr_clId` (`clId`),
+  ADD KEY `ix_ucr_czId` (`czId`),
+  ADD KEY `ix_ucr_csId` (`csId`);
+
+--
+-- Indices de la tabla `webpush_subscriptions`
+--
+ALTER TABLE `webpush_subscriptions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_endpoint` (`endpoint`(191)),
+  ADD KEY `idx_user` (`usId`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -584,16 +966,52 @@ ALTER TABLE `cliente_sede`
   MODIFY `csId` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT de la tabla `cliente_zona`
+--
+ALTER TABLE `cliente_zona`
+  MODIFY `czId` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT de la tabla `cuentas`
 --
 ALTER TABLE `cuentas`
   MODIFY `cuId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT de la tabla `health_check`
+--
+ALTER TABLE `health_check`
+  MODIFY `hcId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `health_check_items`
+--
+ALTER TABLE `health_check_items`
+  MODIFY `hciId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `historial`
 --
 ALTER TABLE `historial`
   MODIFY `hId` int(50) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hojas_servicio`
+--
+ALTER TABLE `hojas_servicio`
+  MODIFY `hsId` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `ingenieros`
+--
+ALTER TABLE `ingenieros`
+  MODIFY `ingId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `ingeniero_equipos`
+--
+ALTER TABLE `ingeniero_equipos`
+  MODIFY `ieId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `inventario`
@@ -617,7 +1035,7 @@ ALTER TABLE `polizascliente`
 -- AUTO_INCREMENT de la tabla `polizasequipo`
 --
 ALTER TABLE `polizasequipo`
-  MODIFY `peId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `peId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `refaccion`
@@ -626,28 +1044,58 @@ ALTER TABLE `refaccion`
   MODIFY `refId` int(5) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `sede_usuario`
+-- AUTO_INCREMENT de la tabla `ticket_acceso_ingeniero`
 --
-ALTER TABLE `sede_usuario`
-  MODIFY `suId` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `ticket_acceso_ingeniero`
+  MODIFY `taiId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `ticket_archivos`
 --
 ALTER TABLE `ticket_archivos`
-  MODIFY `taId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `taId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `ticket_folio_entrada`
+--
+ALTER TABLE `ticket_folio_entrada`
+  MODIFY `tfeId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `ticket_meet_propuestas`
+--
+ALTER TABLE `ticket_meet_propuestas`
+  MODIFY `mpId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `ticket_soporte`
 --
 ALTER TABLE `ticket_soporte`
-  MODIFY `tiId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `tiId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `ticket_visita_equipos`
+--
+ALTER TABLE `ticket_visita_equipos`
+  MODIFY `tveId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `usId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=617370;
+  MODIFY `usId` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2009;
+
+--
+-- AUTO_INCREMENT de la tabla `usuario_cliente_rol`
+--
+ALTER TABLE `usuario_cliente_rol`
+  MODIFY `ucrId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT de la tabla `webpush_subscriptions`
+--
+ALTER TABLE `webpush_subscriptions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -657,7 +1105,14 @@ ALTER TABLE `usuarios`
 -- Filtros para la tabla `cliente_sede`
 --
 ALTER TABLE `cliente_sede`
-  ADD CONSTRAINT `cliente_sede_ibfk_1` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`);
+  ADD CONSTRAINT `cliente_sede_ibfk_1` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`),
+  ADD CONSTRAINT `fk_cs_zona` FOREIGN KEY (`czId`) REFERENCES `cliente_zona` (`czId`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `cliente_zona`
+--
+ALTER TABLE `cliente_zona`
+  ADD CONSTRAINT `fk_cz_cliente` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `cuentas`
@@ -674,10 +1129,28 @@ ALTER TABLE `equipos`
   ADD CONSTRAINT `equipos_ibfk_1` FOREIGN KEY (`maId`) REFERENCES `marca` (`maId`);
 
 --
+-- Filtros para la tabla `health_check_items`
+--
+ALTER TABLE `health_check_items`
+  ADD CONSTRAINT `fk_hci_hc` FOREIGN KEY (`hcId`) REFERENCES `health_check` (`hcId`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `historial`
 --
 ALTER TABLE `historial`
   ADD CONSTRAINT `historial_ibfk_1` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`);
+
+--
+-- Filtros para la tabla `ingenieros`
+--
+ALTER TABLE `ingenieros`
+  ADD CONSTRAINT `ingenieros_ibfk_1` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`);
+
+--
+-- Filtros para la tabla `ingeniero_equipos`
+--
+ALTER TABLE `ingeniero_equipos`
+  ADD CONSTRAINT `ingeniero_equipos_ibfk_1` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`);
 
 --
 -- Filtros para la tabla `inventario`
@@ -696,6 +1169,7 @@ ALTER TABLE `polizascliente`
 -- Filtros para la tabla `polizasequipo`
 --
 ALTER TABLE `polizasequipo`
+  ADD CONSTRAINT `fk_pe_sede` FOREIGN KEY (`csId`) REFERENCES `cliente_sede` (`csId`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `polizasequipo_ibfk_2` FOREIGN KEY (`eqId`) REFERENCES `equipos` (`eqId`),
   ADD CONSTRAINT `polizasequipo_ibfk_3` FOREIGN KEY (`pcId`) REFERENCES `polizascliente` (`pcId`);
 
@@ -706,17 +1180,30 @@ ALTER TABLE `refaccion`
   ADD CONSTRAINT `refaccion_ibfk_1` FOREIGN KEY (`maId`) REFERENCES `marca` (`maId`);
 
 --
--- Filtros para la tabla `sede_usuario`
+-- Filtros para la tabla `ticket_acceso_ingeniero`
 --
-ALTER TABLE `sede_usuario`
-  ADD CONSTRAINT `sede_usuario_ibfk_1` FOREIGN KEY (`csId`) REFERENCES `cliente_sede` (`csId`),
-  ADD CONSTRAINT `sede_usuario_ibfk_2` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`);
+ALTER TABLE `ticket_acceso_ingeniero`
+  ADD CONSTRAINT `fk_tai_ticket` FOREIGN KEY (`tiId`) REFERENCES `ticket_soporte` (`tiId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_tai_usuario` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`) ON DELETE SET NULL;
 
 --
 -- Filtros para la tabla `ticket_archivos`
 --
 ALTER TABLE `ticket_archivos`
   ADD CONSTRAINT `fk_ta_ticket` FOREIGN KEY (`tiId`) REFERENCES `ticket_soporte` (`tiId`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `ticket_folio_entrada`
+--
+ALTER TABLE `ticket_folio_entrada`
+  ADD CONSTRAINT `fk_tfe_ticket` FOREIGN KEY (`tiId`) REFERENCES `ticket_soporte` (`tiId`),
+  ADD CONSTRAINT `fk_tfe_usuario` FOREIGN KEY (`creadoPor`) REFERENCES `usuarios` (`usId`);
+
+--
+-- Filtros para la tabla `ticket_meet_propuestas`
+--
+ALTER TABLE `ticket_meet_propuestas`
+  ADD CONSTRAINT `fk_mp_ticket` FOREIGN KEY (`tiId`) REFERENCES `ticket_soporte` (`tiId`);
 
 --
 -- Filtros para la tabla `ticket_soporte`
@@ -730,10 +1217,26 @@ ALTER TABLE `ticket_soporte`
   ADD CONSTRAINT `ticket_soporte_ibfk_4` FOREIGN KEY (`usIdIng`) REFERENCES `usuarios` (`usId`);
 
 --
+-- Filtros para la tabla `ticket_visita_equipos`
+--
+ALTER TABLE `ticket_visita_equipos`
+  ADD CONSTRAINT `ticket_visita_equipos_ibfk_1` FOREIGN KEY (`taiId`) REFERENCES `ticket_acceso_ingeniero` (`taiId`),
+  ADD CONSTRAINT `ticket_visita_equipos_ibfk_2` FOREIGN KEY (`ieId`) REFERENCES `ingeniero_equipos` (`ieId`);
+
+--
 -- Filtros para la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
   ADD CONSTRAINT `usuarios_ibfk_1` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`);
+
+--
+-- Filtros para la tabla `usuario_cliente_rol`
+--
+ALTER TABLE `usuario_cliente_rol`
+  ADD CONSTRAINT `fk_ucr_cliente` FOREIGN KEY (`clId`) REFERENCES `clientes` (`clId`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ucr_sede` FOREIGN KEY (`csId`) REFERENCES `cliente_sede` (`csId`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ucr_user` FOREIGN KEY (`usId`) REFERENCES `usuarios` (`usId`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ucr_zona` FOREIGN KEY (`czId`) REFERENCES `cliente_zona` (`czId`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

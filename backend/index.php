@@ -1,206 +1,223 @@
 <?php
-// headers.php (parte superior)
-$theme = $_COOKIE['mrs_theme'] ?? 'light';
+// admin/index.php
+declare(strict_types=1);
+
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . "/../php/conexion.php"; // ajusta la ruta si aplica
 
-// Permite fijar la póliza activa desde ?pcId= y guardarla en sesión
-if (isset($_GET['pcId'])) {
-  $_SESSION['pcId'] = (int)$_GET['pcId'];
-}
-
-$clId  = $_SESSION['clId'] ?? null;      // cliente del usuario logueado
-$pcId  = $_SESSION['pcId'] ?? null;      // póliza activa (opcional)
-
-// Helper: localizar la foto de usuario con varias extensiones
-function findUserAvatarUrl(string $username): string
-{
-  // Ajusta las rutas base según tu estructura
-  $urlBase = "../img/Usuario/";                         // para el src en <img>
-  $fsBase  = realpath(__DIR__ . "/../img/Usuario");     // en disco
-
-  if (!$fsBase) return $urlBase . "user.webp";
-
-  $exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-  foreach ($exts as $ext) {
-    $fs = $fsBase . DIRECTORY_SEPARATOR . $username . "." . $ext;
-    if (file_exists($fs)) {
-      return $urlBase . $username . "." . $ext;
-    }
-  }
-  return $urlBase . "user.webp";
-}
-
-// Buscar vendedor (usId) para el cliente (y póliza si está definida)
-$vend = null;
-if ($clId) {
-  if ($pcId) {
-    $sql = "SELECT u.usId, u.usNombre, u.usAPaterno, u.usUsername
-            FROM cuentas c
-            JOIN polizascliente pc ON pc.pcId = c.pcId
-            JOIN usuarios u ON u.usId = c.usId
-            WHERE c.clId = ? AND c.pcId = ?
-            LIMIT 1";
-    $stmt = $conectar->prepare($sql);
-    $stmt->bind_param("ii", $clId, $pcId);
-  } else {
-    // Si no hay póliza activa, toma cualquiera del cliente (la más reciente)
-    $sql = "SELECT u.usId, u.usNombre, u.usAPaterno, u.usUsername
-            FROM cuentas c
-            JOIN polizascliente pc ON pc.pcId = c.pcId
-            JOIN usuarios u ON u.usId = c.usId
-            WHERE c.clId = ?
-            ORDER BY c.cuId DESC
-            LIMIT 1";
-    $stmt = $conectar->prepare($sql);
-    $stmt->bind_param("i", $clId);
-  }
-
-  if ($stmt && $stmt->execute()) {
-    $res = $stmt->get_result();
-    $vend = $res->fetch_assoc() ?: null;
-  }
-  if (isset($stmt) && $stmt) $stmt->close();
-}
-
-$vendNombre = $vend ? trim(($vend['usNombre'] ?? '') . ' ' . ($vend['usAPaterno'] ?? '')) : 'Responsable del proyecto';
-$vendAvatar = $vend ? findUserAvatarUrl($vend['usUsername'] ?? '') : '../img/Usuario/user.webp';
-
-if (empty($_SESSION['clId'])) {
+// Seguridad mínima (vista)
+if (empty($_SESSION['usId'])) {
   header('Location: ../login/login.php');
   exit;
 }
 
-// ... tu lógica de sesión previa
-$ROL   = $_SESSION['usRol']  ?? null;   // 'AC' | 'UC' | 'EC' | 'MRA'
-$CL_ID = $_SESSION['clId'] ?? null;
-$US_ID = $_SESSION['usId'] ?? null;
-
-$CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
+$theme = $_COOKIE['mrs_theme'] ?? 'light';
 ?>
-<script>
-  window.SESSION = {
-    rol: <?= json_encode($ROL) ?>,
-    clId: <?= json_encode((int)$CL_ID) ?>,
-    usId: <?= json_encode((int)$US_ID) ?>,
-    canCreateTicket: <?= $CAN_CREATE ? 'true' : 'false' ?>
-  };
-</script>
-
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
-  <title>MRSolutions</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Ajax - JQuery -->
+  <title>MR SOS | Admin</title>
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- /Ajax - JQuery -->
-
-  <!-- SweetAlert -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#0e1525">
-  <link rel="apple-touch-icon" href="/img/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-
-
-  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-  <script src="https://kit.fontawesome.com/04af9e068b.js" crossorigin="anonymous"></script>
-  <!-- /Bootstrap -->
-  <!-- Bootstrap Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/04af9e068b.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-  <!-- Chart.js -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script> -->
-
-  <!-- css -->
   <link href="../css/style.css" rel="stylesheet">
-  <!-- JS -->
-  <script src="js/main.js"></script>
-  <script src="../js/dashboard.js"></script>
-  <script src="../js/tickets/modal_meet.js"></script>
-  <script src="../js/logout.js"></script>
-  <script src="js/ingenieros.js"></script>
-  <script src="js/analisis.js"></script>
-  <!-- /JS -->
-  <style>
 
+  <style>
+    :root {
+      --mr-bg: #f5f7fb;
+      --mr-card: #ffffff;
+      --mr-border: rgba(15, 23, 42, .10);
+      --mr-text: #0f172a;
+      --mr-muted: rgba(15, 23, 42, .65);
+      --mr-shadow: 0 8px 22px rgba(15, 23, 42, .08);
+      --mr-radius: 14px;
+    }
+
+    body {
+      background: var(--mr-bg);
+    }
+
+    body.dark-mode {
+      background: #0b1220;
+    }
+
+    .admin-topbar {
+      background: rgba(255, 255, 255, .85);
+      border-bottom: 1px solid var(--mr-border);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-mode .admin-topbar {
+      background: rgba(15, 23, 42, .65);
+      border-bottom: 1px solid rgba(148, 163, 184, .18);
+    }
+
+    .kpi-card,
+    .filters-row,
+    .client-card {
+      background: var(--mr-card);
+      border: 1px solid var(--mr-border);
+      border-radius: var(--mr-radius);
+      box-shadow: var(--mr-shadow);
+    }
+
+    body.dark-mode .kpi-card,
+    body.dark-mode .filters-row,
+    body.dark-mode .client-card {
+      background: rgba(15, 23, 42, .6);
+      border-color: rgba(148, 163, 184, .18);
+      color: #e5e7eb;
+    }
+
+    .kpi-card {
+      padding: 14px;
+      height: 100%;
+    }
+
+    .kpi-title {
+      font-size: .85rem;
+      color: var(--mr-muted);
+    }
+
+    .kpi-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--mr-text);
+    }
+
+    body.dark-mode .kpi-title {
+      color: rgba(226, 232, 240, .75);
+    }
+
+    body.dark-mode .kpi-value {
+      color: #e5e7eb;
+    }
+
+    .filters-row {
+      padding: 12px;
+    }
+
+    .client-card {
+      padding: 14px;
+      height: 100%;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .client-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+    }
+
+    .client-logo {
+      height: 54px;
+      width: 100%;
+      object-fit: contain;
+    }
+
+    .muted {
+      color: var(--mr-muted);
+    }
+
+    body.dark-mode .muted {
+      color: rgba(226, 232, 240, .75);
+    }
+
+    .pill {
+      border: 1px solid var(--mr-border);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: .74rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(2, 6, 23, .02);
+    }
+
+    body.dark-mode .pill {
+      border-color: rgba(148, 163, 184, .18);
+      background: rgba(148, 163, 184, .06);
+    }
+
+    .pill-danger {
+      border-color: rgba(239, 68, 68, .35);
+      background: rgba(239, 68, 68, .08);
+      color: #b91c1c;
+    }
+
+    .pill-warn {
+      border-color: rgba(245, 158, 11, .35);
+      background: rgba(245, 158, 11, .10);
+      color: #b45309;
+    }
+
+    .group-title {
+      margin-top: 18px;
+      margin-bottom: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--mr-border);
+      border-radius: var(--mr-radius);
+      padding: 22px;
+      text-align: center;
+      background: rgba(255, 255, 255, .6);
+    }
+
+    body.dark-mode .empty-state {
+      background: rgba(15, 23, 42, .35);
+      border-color: rgba(148, 163, 184, .18);
+    }
   </style>
 </head>
 
 <body class="<?php echo ($theme === 'dark') ? 'dark-mode' : ''; ?>">
-
   <div class="container-fluid">
     <div class="row gx-0">
-      <!-- SIDEBAR -->
-      <!-- SIDEBAR FIJO (md+) -->
+
+      <!-- SIDEBAR (simple, puedes alinearlo a tu sidebar real) -->
       <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
         <div class="brand mb-3 px-2">
           <a class="navbar-brand" href="#">
-            <img src="../img/image.png" alt="Logo" class="rounded-pill">
+            <img src="../img/image.png" alt="Logo" class="rounded-pill" style="max-width: 120px;">
           </a>
         </div>
 
+        <div class="section-title px-2">Operación</div>
         <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item">
-            <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Asignados</a>
-          </li>
-          <li class="nav-item" id="btnNuevoTicket">
-            <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Configuración</a>
-          </li>
-
-
-          <!-- Dropdown -->
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="reportesMenu"
-              data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-upload"></i> Exportar Reportes
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="reportesMenu">
-              <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                  <i class="bi bi-person"></i> Hojas de Servicio
-                </a>
-              </li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li>
-                <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                  <i class="bi bi-box-arrow-right"></i> Póliza
-                </a>
-              </li>
-            </ul>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a>
-          </li>
+          <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
         </ul>
 
-        <div class="section-title px-2">MÁS</div>
+        <div class="section-title px-2 mt-3">Gestión</div>
         <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item">
-            <a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Todos los equipos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#"><i class="bi bi-person"></i> Mis datos</a>
-          </li>
+          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Pólizas</a></li>
+          <li class="nav-item"><a class="nav-link" href="hojas_de_servicio.php"><i class="bi bi-download"></i> Hojas de Servicio</a></li>
+        </ul>
+
+        <div class="section-title px-2 mt-3">Administración</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a></li>
+        </ul>
+
+        <div class="section-title px-2 mt-3">General</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Equipos</a></li>
+          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
         </ul>
       </nav>
-
       <!-- OFFCANVAS (xs/sm) y como sidebar en lg mediante .offcanvas-lg -->
       <div class="offcanvas offcanvas-start offcanvas-xl mr-side" tabindex="-1" id="offcanvasSidebar">
         <div class="p-3 d-flex align-items-center justify-content-between">
@@ -214,508 +231,413 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
           </button>
         </div>
 
-        <div class="offcanvas-body pt-0">
-          <ul class="nav nav-pills flex-column gap-1">
-            <li class="nav-item">
-              <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Asignados</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="configuracion.php" modalAsignacion><i class="bi bi-gear"></i> Configuración</a>
-            </li>
 
-            <!-- Dropdown (mismo contenido que el sidebar) -->
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="reportesMenuOff"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-upload"></i> Reportes
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="reportesMenuOff">
-                <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                    <i class="bi bi-person"></i> Hojas de Servicio
-                  </a>
-                </li>
-                <li>
-                  <hr class="dropdown-divider">
-                </li>
-                <li>
-                  <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                    <i class="bi bi-box-arrow-right"></i> Póliza
-                  </a>
-                </li>
-              </ul>
-            </li>
 
-            <li class="nav-item">
-              <a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a>
-            </li>
-          </ul>
+        <div class="section-title px-2">Operación</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
+          <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
+        </ul>
 
-          <div class="section-title px-1">MÁS</div>
-          <ul class="nav nav-pills flex-column gap-1 mb-4">
-            <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Mis equipos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person"></i> Mis datos</a></li>
-          </ul>
-        </div>
+        <div class="section-title px-2 mt-3">Gestión</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Pólizas</a></li>
+          <li class="nav-item"><a class="nav-link" href="hojas_de_servicio.php"><i class="bi bi-download"></i> Hojas de Servicio</a></li>
+        </ul>
+
+        <div class="section-title px-2 mt-3">Administración</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a></li>
+        </ul>
+
+        <div class="section-title px-2 mt-3">General</div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Equipos</a></li>
+          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
+        </ul>
+
       </div>
 
 
-
-      <!-- MAIN -->
-      <main class="col-md-10  px-4">
-        <!-- Top bar -->
-        <!-- Contenedor general -->
-        <div class="d-flex align-items-center justify-content-between py-3 px-2 px-md-4 ">
-          <!-- Lado izquierdo -->
-          <div class="d-flex align-items-center">
-            <!-- Botón hamburguesa solo en sm y xs -->
+      <main class="col-12 col-lg-10">
+        <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
             <button class="btn btn-outline-secondary d-lg-none me-2"
               data-bs-toggle="offcanvas"
               data-bs-target="#offcanvasSidebar"
               aria-controls="offcanvasSidebar">
               <i class="bi bi-list"></i>
             </button>
-
-            <!-- Logo cliente siempre visible -->
-            <span class="badge bg-light me-3 p-2">
-              <img src="../img/Clientes/enel.svg" style="height:30px;" alt="cliente">
-            </span>
-
-            <!-- Estado: en mobiles pequeño badge -->
-            <span class="badge bg-success me-3 d-none d-sm-inline-block">Activo</span>
-
-            <!-- Responsable: solo avatar en xs & sm -->
-            <!-- Responsable: avatar + nombre del vendedor desde BD -->
-            <img src="<?= htmlspecialchars($vendAvatar) ?>"
-              class="rounded-circle me-2 d-inline-block"
-              alt="<?= htmlspecialchars($vendNombre) ?>"
-              style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-            <span class="d-none d-sm-inline">
-              <?= htmlspecialchars($vendNombre) ?>
-            </span>
-
+            <span class="badge text-bg-success rounded-pill px-3">Activo</span>
+            <span class="fw-bold" id="topUser">Admin</span>
+            <span class="muted">| Admin</span>
           </div>
 
-          <!-- Lado derecho -->
-          <div class="d-flex align-items-center">
-            <!-- Íconos grandes: solo md+ -->
-            <div class="d-none d-md-flex align-items-center top-icons me-3">
-              <i class="bi bi-search mx-2"></i>
-              <a id="btnRecargar"><i class="bi bi-arrow-clockwise mx-2"></i></a>
-              <i class="bi bi-bell mx-2"></i>
-              <i class="bi bi-question-circle mx-2"></i>
-
-              <!-- NUEVO: Botón tema (luna) -->
-              <button id="btnThemeDesktop" class="btn btn-outline-secondary btn-icon mx-2" title="Modo oscuro">
-                <i class="bi bi-moon"></i>
-              </button>
-            </div>
-
-
-            <!-- Dropdown general en sm- -->
-            <div class="dropdown d-md-none me-2">
-              <button class="btn btn-outline-secondary" type="button" id="moreActions" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreActions">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-search me-2"></i>Buscar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-clockwise me-2"></i>Refrescar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-bell me-2"></i>Notificaciones</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Ayuda</a></li>
-
-                <!-- NUEVO: Tema -->
-                <li>
-                  <a id="btnThemeMobile" class="dropdown-item" href="#" role="button">
-                    <i class="bi bi-moon me-2"></i><span>Cambiar a modo oscuro</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-
-            <!-- Perfil -->
-            <div class="nav-item dropdown">
-              <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
-                id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                <?php
-
-                // Ajusta si tu archivo está en otra carpeta
-                $usuario  = $_SESSION['usUsername'] ?? 'default';
-                $usuario  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usuario); // sanitiza por seguridad
-
-                $dirFS  = __DIR__ . '/../img/Usuario/'; // ruta en el sistema de archivos
-                $dirURL = '../img/Usuario/';            // ruta pública (para el src)
-
-                $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $src = $dirURL . 'user.webp'; // fallback por si no hay avatar
-
-                foreach ($extsPermitidas as $ext) {
-                  $fs = $dirFS . $usuario . '.' . $ext;
-                  if (is_file($fs)) {
-                    // Evita caché del navegador cuando cambie la imagen
-                    $src = $dirURL . $usuario . '.' . $ext . '?v=' . filemtime($fs);
-                    break;
-                  }
-                }
-                ?>
-                <img
-                  src="<?= htmlspecialchars($src, ENT_QUOTES) ?>"
-                  class="rounded-circle me-2"
-                  alt="Usuario"
-                  style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"
-                  onerror="this.onerror=null;this.src='../img/Usuario/user.webp';" />
-
-                <span class="d-none d-md-inline"><strong><?php echo $_SESSION['usUsername']; ?></strong></span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mis datos</a></li>
-                <li>
-                  <hr class="dropdown-divider">
-                </li>
-                <li><a id="btnLogout"
-                    class="dropdown-item"
-                    href="../php/logout.php"
-                    data-href="../php/logout.php?ajax=1"
-                    data-redirect="../login/login.php">
-                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
-                  </a></li>
-
-              </ul>
-            </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnTheme" type="button" title="Tema">
+              <i class="bi bi-moon"></i>
+            </button>
+            <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php" title="Salir">
+              <i class="bi bi-box-arrow-right"></i>
+            </a>
           </div>
         </div>
-        <!-- Recent Incidents -->
-        <div class="main mb-4">
-          <div class="row">
-            <main class="col-md-9 ms-sm-auto col-lg-12 px-md-4">
-              <button id="btnRecargar" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-clockwise"></i> Recargar Tickets
+
+        <div class="p-3 p-lg-4">
+          <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+            <div>
+              <h3 class="mb-1 fw-bold">Dashboard Administrador</h3>
+              <div class="muted">Prioriza por riesgo, criticidad y tickets abiertos por cliente.</div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm" id="btnReload">
+                <i class="bi bi-arrow-clockwise"></i> Recargar
               </button>
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnalisis">
-                Launch demo modal
-              </button>
-              <div class="d-flex gap-2 my-2">
-                <button class="btn btn-outline-primary btn-sm" onclick="enableWebPush()">Activar notificaciones</button>
-                <button class="btn btn-outline-success btn-sm" onclick="probarPush()">Probar push</button>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="row g-3 mb-3" id="kpiRow">
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="bi bi-inboxes me-1"></i> Tickets abiertos</div>
+                <div class="kpi-value" id="kpiOpen">—</div>
+                <div class="muted" style="font-size:.85rem;">En todos los clientes</div>
               </div>
-              <script>
-                function probarPush() {
-                  const usIdActual = window.USUARIO_ACTUAL_ID || 2001;
-                  if (!usIdActual) {
-                    alert('Define USUARIO_ACTUAL_ID');
-                    return;
-                  }
-                  fetch('../php/send_push_test.php?usId=' + usIdActual)
-                    .then(r => r.json())
-                    .then(j => alert(JSON.stringify(j)))
-                    .catch(e => alert('Error: ' + e.message));
-                }
-              </script>
-
-              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="bi bi-hourglass-split me-1"></i> SLA en riesgo</div>
+                <div class="kpi-value" id="kpiRisk">—</div>
+                <div class="muted" style="font-size:.85rem;">Criticidad 1–2 (abiertos)</div>
               </div>
-          </div>
-          <h5>Incidentes Recientes</h5>
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <div class="btn-group" id="viewToggle">
-              <button type="button" class="btn btn-outline-secondary btn-sm active" data-mode="table">
-                <i class="bi bi-table"></i> Tabla
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-mode="cards">
-                <i class="bi bi-grid-3x3-gap"></i> Cards
-              </button>
             </div>
-          </div>
-
-          <!-- Aquí pintamos todo (clientes -> sedes -> tickets) -->
-          <div id="wrapTicketsClientes"></div>
-
-        </div>
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasTicket" aria-labelledby="offcanvasTicket"
-          data-bs-scroll="true" aria-labelledby="offcanvasWithBackdropLabel">
-          <div class="offcanvas-header bg-light" style="background: #f8f9fb!important;">
-            <h5 class="offcanvas-title bg-light">Detalles del Ticket</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-          </div>
-          <div class="offcanvas-body" id="offcanvasContent">
-            <p>Cargando información...</p>
-          </div>
-        </div>
-
-
-        <!-- Menu -->
-        <div class="d-flex gap-3 mb-4 mx-0 row">
-          <div class="col-2 menu-card active"><i class="bi bi-exclamation-triangle"></i><br>Tickets</div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-file-earmark-text"></i><br>Hojas de servicio</a></div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-journal"></i><br>Póliza</a></div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-sliders"></i><br>Ajustes</a></div>
-
-        </div>
-
-        <!-- Statistics -->
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-          <input type="month" id="mesFiltro" class="form-control form-control-sm" style="max-width: 180px;" value="<?= date('Y-m'); ?>">
-          <select id="selSede" class="form-select form-select-sm" style="max-width: 220px;">
-            <option value="">Todas las sedes</option>
-          </select>
-          <button id="btnMesAplicar" class="btn btn-sm btn-primary">Aplicar mes</button>
-          <button id="btnUlt30" class="btn btn-sm btn-outline-secondary">Últimos 30 días</button>
-        </div>
-
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="stat-card">
-              <h6>Incidentes (rango)</h6>
-              <canvas id="areaChart"></canvas>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="stat-card text-center">
-              <h6>Tipo de ticket<br><small>en rango</small></h6>
-              <canvas id="donutTipo" style="max-width:140px; display:initial!important;"></canvas>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="stat-card text-center">
-              <h6>Estatus de ticket<br><small>en rango</small></h6>
-              <canvas id="donutEstatus" style="max-width:140px; display:initial!important;"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal: Meet -->
-        <div class="modal fade" id="modalMeet" aria-hidden="true">
-          <div class="modal-dialog">
-            <form id="formMeet" class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Reunión (Meet)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="bi bi-exclamation-triangle me-1"></i> Tickets críticos</div>
+                <div class="kpi-value" id="kpiCritical">—</div>
+                <div class="muted" style="font-size:.85rem;">Criticidad 1 (abiertos)</div>
               </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="bi bi-building me-1"></i> Clientes activos</div>
+                <div class="kpi-value" id="kpiClients">—</div>
+                <div class="muted" style="font-size:.85rem;">Con estatus Activo</div>
+              </div>
+            </div>
+          </div>
 
-              <div class="modal-body">
-                <input type="hidden" id="meet_ticketId" name="ticketId">
-                <input type="hidden" id="meet_modo" name="modo">
-
-                <div class="mb-3">
-                  <label for="meet_plataforma" class="form-label">Plataforma</label>
-                  <select id="meet_plataforma" name="plataforma" class="form-select">
-                    <option value="">Selecciona…</option>
-                    <option value="Google">Google</option>
-                    <option value="Teams">Teams</option>
-                    <option value="Zoom">Zoom</option>
-                    <option value="Otro">Otro</option>
-                  </select>
+          <!-- FILTERS + SEARCH (JS) -->
+          <div class="filters-row mb-3">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-lg-6">
+                <div class="btn-group" role="group" aria-label="Filtro pólizas" id="filterGroup">
+                  <button class="btn btn-sm btn-outline-secondary active" data-filter="VIGENTE" type="button">Vigente</button>
+                  <button class="btn btn-sm btn-outline-secondary" data-filter="POR_VENCER" type="button">Por vencer</button>
+                  <button class="btn btn-sm btn-outline-secondary" data-filter="VENCIDO" type="button">Vencido</button>
+                  <button class="btn btn-sm btn-outline-secondary" data-filter="TODOS" type="button">Todos</button>
                 </div>
-
-                <div class="mb-3">
-                  <label for="meet_link" class="form-label">Enlace</label>
-                  <input id="meet_link" name="link" type="url" class="form-control" placeholder="https://…">
-                  <div class="form-text">Pega el enlace completo. (Opcional al solicitar)</div>
-                </div>
-                <!-- dentro del form del modalMeet -->
-                <div class="row g-2">
-                  <div class="col-12 col-md-6">
-                    <!-- <label class="form-label mb-1">Fecha del meet</label> -->
-                    <input type="date" id="meet_fecha" name="fecha" class="form-control">
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <!-- <label class="form-label mb-1">Hora</label> -->
-                    <input type="time" id="meet_hora" name="hora" class="form-control">
-                  </div>
-                </div>
-
-                <!-- Mensajes según rol -->
-                <div class="alert alert-info d-none" data-rol="cliente">
-                  Se enviará una solicitud de reunión al ingeniero.
-                </div>
-                <div class="alert alert-success d-none" data-rol="ingeniero">
-                  Estás estableciendo una reunión activa para el cliente.
+                <div class="muted mt-2" style="font-size:.85rem;">
+                  Regla UX: lo normal no se marca. Solo aparece badge en excepción.
                 </div>
               </div>
 
-              <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <!-- Botón visible cuando es flujo de cliente -->
-                <button type="submit" class="btn btn-primary" data-rol="cliente">Solicitar</button>
-                <!-- Botón visible cuando es flujo de ingeniero -->
-                <button type="submit" class="btn btn-success d-none" data-rol="ingeniero">Establecer</button>
+              <div class="col-12 col-lg-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input id="searchClient" type="text" class="form-control" placeholder="Buscar cliente (nombre)...">
+                  <button class="btn btn-outline-secondary" id="btnClear" type="button">Limpiar</button>
+                  <button class="btn btn-outline-primary" id="btnReset" type="button" title="Restablecer filtros y búsqueda">
+                    Restablecer
+                  </button>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
+
+          <!-- Contenedor render -->
+          <div id="cardsRoot"></div>
+
+          <!-- Empty state -->
+          <div id="emptyState" class="empty-state mt-3 d-none">
+            <div class="fw-bold mb-1">Sin resultados</div>
+            <div class="muted mb-3">Prueba con otro filtro o borra la búsqueda.</div>
+            <button class="btn btn-primary btn-sm" id="btnReset2"><i class="bi bi-arrow-counterclockwise"></i> Restablecer</button>
+          </div>
+
         </div>
+      </main>
+    </div>
+  </div>
 
+  
 
-        <!-- Bootstrap JS Bundle -->
+  <script>
+    // ---------------------------
+    // Tema
+    // ---------------------------
+    $('#btnTheme').on('click', function() {
+      const isDark = document.body.classList.contains('dark-mode');
+      document.cookie = "mrs_theme=" + (isDark ? "light" : "dark") + "; path=/; max-age=31536000";
+      location.reload();
+    });
 
+    // ---------------------------
+    // Estado de UI (persistente)
+    // ---------------------------
+    const state = {
+      filter: 'VIGENTE',
+      search: '',
+      data: null, // respuesta del API
+      filteredCards: [], // cards ya filtradas
+    };
 
+    function saveState() {
+      try {
+        localStorage.setItem('mrs_admin_dashboard_state', JSON.stringify({
+          filter: state.filter,
+          search: state.search
+        }));
+      } catch (e) {}
+    }
 
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('mrs_admin_dashboard_state');
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.filter) state.filter = s.filter;
+        if (typeof s.search === 'string') state.search = s.search;
+      } catch (e) {}
+    }
 
+    function setActiveFilterButton() {
+      $('#filterGroup [data-filter]').removeClass('active');
+      $('#filterGroup [data-filter="' + state.filter + '"]').addClass('active');
+    }
+
+    // ---------------------------
+    // Fetch data
+    // ---------------------------
+    async function fetchDashboard() {
+      $('#cardsRoot').html('<div class="muted">Cargando...</div>');
+      $('#emptyState').addClass('d-none');
+
+      const res = await fetch('api/clientes_dashboard.php', {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        $('#cardsRoot').html('<div class="alert alert-danger">Error al cargar dashboard. ' + txt + '</div>');
+        return;
+      }
+      const json = await res.json();
+      if (!json.success) {
+        $('#cardsRoot').html('<div class="alert alert-danger">Error: ' + (json.error || 'Desconocido') + '</div>');
+        return;
+      }
+      state.data = json;
+
+      // KPIs
+      $('#kpiOpen').text(json.kpi.open);
+      $('#kpiRisk').text(json.kpi.risk);
+      $('#kpiCritical').text(json.kpi.critical);
+      $('#kpiClients').text(json.kpi.clients);
+
+      $('#topUser').text(json.user?.name || 'Admin');
+
+      applyFiltersAndRender();
+    }
+
+    // ---------------------------
+    // Filtrado (JS)
+    // ---------------------------
+    function applyFiltersAndRender() {
+      if (!state.data) return;
+
+      const q = (state.search || '').trim().toLowerCase();
+      const f = state.filter;
+
+      const all = state.data.cards || [];
+      const filtered = all.filter(c => {
+        const name = (c.name || '').toLowerCase();
+        const matchText = !q || name.includes(q);
+        const matchFilter = (f === 'TODOS') || (c.status === f);
+        return matchText && matchFilter;
+      });
+
+      state.filteredCards = filtered;
+
+      renderCardsGrouped(filtered);
+
+      const hasAny = filtered.length > 0;
+      $('#emptyState').toggleClass('d-none', hasAny);
+    }
+
+    // ---------------------------
+    // Render grouped
+    // ---------------------------
+    function badgeHtml(status) {
+      if (status === 'VENCIDO') {
+        return '<span class="pill pill-danger"><i class="bi bi-x-circle"></i> Vencido</span>';
+      }
+      if (status === 'POR_VENCER') {
+        return '<span class="pill pill-warn"><i class="bi bi-clock-history"></i> Por vencer</span>';
+      }
+      return ''; // Vigente => sin badge
+    }
+
+    function escapeHtml(s) {
+      return (s ?? '').toString()
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderCardsGrouped(cards) {
+      const root = $('#cardsRoot');
+      root.empty();
+
+      if (!cards.length) {
+        root.html(''); // empty state lo muestra aparte
+        return;
+      }
+
+      // agrupar
+      const groups = {};
+      for (const c of cards) {
+        const g = c.group || '#';
+        groups[g] = groups[g] || [];
+        groups[g].push(c);
+      }
+
+      // orden de grupos fijo
+      const order = ['A–F', 'G–L', 'M–R', 'S–Z', '#'];
+
+      for (const gName of order) {
+        if (!groups[gName] || !groups[gName].length) continue;
+
+        root.append(`
+        <div class="group-title">
+          <span>${escapeHtml(gName)}</span>
+          <small class="muted">(${groups[gName].length})</small>
+        </div>
+      `);
+
+        const row = $('<div class="row g-3"></div>');
+
+        for (const it of groups[gName]) {
+          const logo = escapeHtml(it.logo || '');
+          const name = escapeHtml(it.name || '');
+          const clId = it.clId;
+
+          row.append(`
+          <div class="col-12 col-md-6 col-xl-4">
+            <div class="client-card" data-clid="${clId}">
+              <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                <div class="d-flex flex-column gap-1">
+                  ${badgeHtml(it.status)}
+                  <div class="fw-bold" style="font-size:1.05rem;">${name}</div>
+                </div>
+
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="tickets.php?clId=${clId}">
+                      <i class="bi bi-ticket-perforated me-2"></i> Ver Tickets</a></li>
+                    <li><a class="dropdown-item" href="polizas.php?clId=${clId}">
+                      <i class="bi bi-file-earmark-text me-2"></i> Ver Pólizas</a></li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <img class="client-logo" src="${logo}" alt="Logo ${name}"
+                  onerror="this.onerror=null;this.src='../img/Clientes/cliente_default.png';">
+              </div>
+
+              <div class="d-flex flex-wrap gap-3 mb-2">
+                <span class="muted" style="font-size:.85rem;"><i class="bi bi-geo-alt"></i> ${it.sedes} Sedes</span>
+                <span class="muted" style="font-size:.85rem;"><i class="bi bi-file-earmark"></i> ${it.polizas} Pólizas</span>
+              </div>
+
+              <hr class="my-2" style="opacity:.12;">
+
+              <div class="d-flex flex-wrap gap-2">
+                <span class="muted" style="font-size:.85rem;"><i class="bi bi-inboxes"></i> Abiertos: <b>${it.open}</b></span>
+                <span class="muted" style="font-size:.85rem;"><i class="bi bi-hourglass-split"></i> Riesgo: <b>${it.risk}</b></span>
+                <span class="muted" style="font-size:.85rem;"><i class="bi bi-exclamation-triangle"></i> Críticos: <b>${it.critical}</b></span>
+              </div>
+
+              <div class="mt-3 d-flex gap-2">
+                <a class="btn btn-sm btn-outline-secondary flex-grow-1" href="polizas.php?clId=${clId}">Ver Pólizas</a>
+                <a class="btn btn-sm btn-primary flex-grow-1" href="tickets.php?clId=${clId}">Ver Tickets</a>
+              </div>
+            </div>
+          </div>
+        `);
+        }
+
+        root.append(row);
+      }
+    }
+
+    // ---------------------------
+    // Eventos UI
+    // ---------------------------
+    $('#filterGroup').on('click', '[data-filter]', function() {
+      state.filter = $(this).data('filter');
+      setActiveFilterButton();
+      saveState();
+      applyFiltersAndRender();
+    });
+
+    $('#searchClient').on('input', function() {
+      state.search = $(this).val();
+      saveState();
+      applyFiltersAndRender();
+    });
+
+    $('#btnClear').on('click', function() {
+      state.search = '';
+      $('#searchClient').val('');
+      saveState();
+      applyFiltersAndRender();
+    });
+
+    function resetAll() {
+      state.filter = 'VIGENTE';
+      state.search = '';
+      $('#searchClient').val('');
+      setActiveFilterButton();
+      saveState();
+      applyFiltersAndRender();
+    }
+
+    $('#btnReset, #btnReset2').on('click', resetAll);
+
+    $('#btnReload').on('click', fetchDashboard);
+
+    // Click card: tickets por defecto (urgencia)
+    $(document).on('click', '.client-card', function(e) {
+      if ($(e.target).closest('.dropdown, a, button').length) return;
+      const clId = $(this).data('clid');
+      window.location.href = "tickets.php?clId=" + encodeURIComponent(clId);
+    });
+
+    // Init
+    loadState();
+    $('#searchClient').val(state.search);
+    setActiveFilterButton();
+    fetchDashboard();
+  </script>
 </body>
 
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js" integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha" crossorigin="anonymous"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-
 </html>
-
-<script>
-  // --- Helpers de cookie ---
-  function setCookie(name, value, days = 365) {
-    const d = new Date();
-    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-    document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/;SameSite=Lax`;
-  }
-
-  function getCookie(name) {
-    const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return m ? decodeURIComponent(m[2]) : null;
-  }
-
-  // --- Estado inicial: cookie > prefers-color-scheme > light ---
-  (function initTheme() {
-    const cookieTheme = getCookie('mrs_theme');
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = cookieTheme || (prefersDark ? 'dark' : 'light');
-    applyTheme(initial, {
-      save: false
-    });
-  })();
-
-  function applyTheme(mode, {
-    save = true
-  } = {}) {
-    const isDark = (mode === 'dark');
-    document.body.classList.toggle('dark-mode', isDark);
-    if (save) setCookie('mrs_theme', isDark ? 'dark' : 'light');
-
-    // Sincroniza iconos Desktop + Mobile
-    const deskBtn = document.getElementById('btnThemeDesktop');
-    const mobBtn = document.getElementById('btnThemeMobile');
-
-    if (deskBtn) {
-      const i = deskBtn.querySelector('i');
-      if (i) {
-        i.classList.remove('bi-moon', 'bi-moon-fill');
-        i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
-      }
-      deskBtn.title = isDark ? 'Modo claro' : 'Modo oscuro';
-    }
-
-    if (mobBtn) {
-      const i = mobBtn.querySelector('i');
-      const label = mobBtn.querySelector('span');
-      if (i) {
-        i.classList.remove('bi-moon', 'bi-moon-fill');
-        i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
-      }
-      if (label) {
-        label.textContent = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
-      }
-    }
-  }
-
-  // --- Eventos de toggle ---
-  document.addEventListener('DOMContentLoaded', () => {
-    const deskBtn = document.getElementById('btnThemeDesktop');
-    const mobBtn = document.getElementById('btnThemeMobile');
-
-    const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-    applyTheme(current, {
-      save: false
-    });
-
-    if (deskBtn) {
-      deskBtn.addEventListener('click', () => {
-        const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
-        applyTheme(next);
-      });
-    }
-
-    if (mobBtn) {
-      mobBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
-        applyTheme(next);
-
-        // Cerrar el dropdown en móviles si está abierto (Bootstrap)
-        const dropdownEl = document.getElementById('moreActions');
-        if (dropdownEl) {
-          const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
-          if (bsDropdown) bsDropdown.hide();
-        }
-      });
-    }
-  });
-</script>
-
-<!-- Modal: Análisis de ingeniero -->
-<div class="modal fade justify-content-center" id="modalAnalisis" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header border-0">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <div class="modal-body justify-content-center">
-        <img src="../img/asignacion.png" class="d-flex mx-auto mb-2" style="height: 150px;" alt="Análisis">
-        <h1 class="modal-title text-center"><b>Análisis</b></h1>
-        <h6 class="text-muted text-center mb-4">
-          Añade un análisis al ticket. (Si faltan datos, escribe “Faltan datos”).
-        </h6>
-
-        <div class="mb-3">
-          <label for="tiAnalisisDesc" class="form-label">Descripción del análisis</label>
-          <textarea class="form-control" id="tiAnalisisDesc"
-            placeholder="Describe el análisis preliminar/final del problema"
-            rows="4"></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer justify-content-center border-0">
-        <button class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-success" id="btnGuardarAnalisis"
-          data-next-proceso="logs">Continuar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
-<!-- Modal: Asignación de ingeniero -->
-<div class="modal fade" id="modalAsignacion" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <div class="modal-body">
-        <h1 class="modal-title text-center"><b>Asignación</b></h1>
-        <h5 class="text-muted text-center mb-3">Es momento de asignar un ingeniero, elige la mejor opción</h5>
-
-        <!-- Grupos por Tier -->
-        <div id="wrapIngenieros">
-          <!-- Aquí se pintan los tiers y las cards -->
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancelar</button>
-        <button id="btnContinuarAsignacion" class="btn btn-success d-none">Continuar</button>
-      </div>
-    </div>
-  </div>
-</div>

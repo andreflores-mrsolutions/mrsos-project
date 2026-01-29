@@ -1,7 +1,11 @@
 <?php
 session_start();
-if (empty($_SESSION['usId'])) {
+if (empty($_SESSION['usId'] || $_SESSION['usEstatus'] !== 'Activo' || empty($_SESSION['usEstatus']))) {
     header('Location: login/login.php');
+    exit;
+}
+if ($_SESSION['usEstatus'] === 'NewPass' || empty($_SESSION['usEstatus'])) {
+    header('Location: login/cambiar_password.php');
     exit;
 }
 ?>
@@ -72,7 +76,7 @@ if (empty($_SESSION['usId'])) {
                             } else {
                             ?>
                                 <li class="nav-item">
-                                    <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="dashboard/polizas.php">Mi Póliza</a>
+                                    <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="dashboard/poliza.php">Mi Póliza</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="dashboard/home.php">Dashboard</a>
@@ -405,10 +409,14 @@ if (empty($_SESSION['usId'])) {
                             </li>
                             <li class="d-flex align-items-start mb-2">
                                 <span class="mrs-step">3</span>
-                                <div><b>Agendar Meet/visita</b><br><small>Confirmación rápida.</small></div>
+                                <div><b>Análisis de la falla</b><br><small>Los expertos de MRSolutions diagnostican la falla.</small></div>
+                            </li>
+                            <li class="d-flex align-items-start mb-2">
+                                <span class="mrs-step">4</span>
+                                <div><b>Agendar Meet/Visita</b><br><small>Confirmación rápida.</small></div>
                             </li>
                             <li class="d-flex align-items-start">
-                                <span class="mrs-step">4</span>
+                                <span class="mrs-step">5</span>
                                 <div><b>Resolución y encuesta</b><br><small>Cierre y calificación.</small></div>
                             </li>
                         </ul>
@@ -416,7 +424,7 @@ if (empty($_SESSION['usId'])) {
                     <div class="col-12 col-lg-7">
                         <div class="mrs-progress px-3 py-4 rounded-4">
                             <div class="d-flex justify-content-between small text-muted mb-2">
-                                <span>Asignación</span><span>Logs</span><span>Meet</span><span>Visita</span><span>Encuesta</span>
+                                <span>Asignación</span><span>Logs</span><span>Análisis</span><span>Visita</span><span>Encuesta</span>
                             </div>
                             <div class="progress" style="height: 10px;">
                                 <div class="progress-bar" style="width: 65%"></div>
@@ -436,11 +444,11 @@ if (empty($_SESSION['usId'])) {
                                 <small class="text-muted">Te tomará menos de 2 minutos.</small>
                             </div>
                             <div class="d-flex gap-2 mt-3 mt-lg-0">
-                                <a href="tickets.php?nuevo=1" class="btn btn-primary">
+                                <a href="dashboard/nuevo_ticket.php" class="btn btn-primary">
                                     <i class="bi bi-plus-circle me-2"></i>Nuevo ticket
                                 </a>
-                                <a href="soporte.php" class="btn btn-outline-primary">
-                                    <i class="bi bi-calendar-check me-2"></i>Agendar Meet
+                                <a href="dashboard/home.php" class="btn btn-outline-primary">
+                                    <i class="bi bi-calendar-check me-2"></i>Ver mis tickets
                                 </a>
                             </div>
                         </div>

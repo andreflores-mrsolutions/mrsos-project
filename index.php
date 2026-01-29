@@ -1,8 +1,6 @@
 <?php session_start();
-if (empty($_SESSION['clId'])) {
-    header('Location: ../login/login.php');
-    exit;
-}
+header('Location: ../login/login.php');
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

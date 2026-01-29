@@ -102,6 +102,11 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <!-- SweetAlert -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#0e1525">
+  <link rel="apple-touch-icon" href="/img/image.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -123,6 +128,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <script src="../js/tickets/modal_meet.js"></script>
   <script src="../js/logout.js"></script>
   <script src="js/ingenieros.js"></script>
+  <script src="js/analisis.js"></script>
   <!-- /JS -->
   <style>
 
@@ -147,7 +153,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Abiertos</a>
+            <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Asignados</a>
           </li>
           <li class="nav-item" id="btnNuevoTicket">
             <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
@@ -155,7 +161,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
           <li class="nav-item">
             <a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Configuración</a>
           </li>
-          
+
 
           <!-- Dropdown -->
           <li class="nav-item dropdown">
@@ -165,15 +171,15 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             </a>
             <ul class="dropdown-menu" aria-labelledby="reportesMenu">
               <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                  <i class="bi bi-person"></i> Hojas de Servicio
+                  <i class="bi bi-archive"></i> Hojas de Servicio
                 </a>
               </li>
               <li>
                 <hr class="dropdown-divider">
               </li>
               <li>
-                <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                  <i class="bi bi-box-arrow-right"></i> Póliza
+                <a id="btnLogout2" class="dropdown-item" href="../dashboard/poliza.php">
+                    <i class="bi bi-file-text"></i> Póliza
                 </a>
               </li>
             </ul>
@@ -187,7 +193,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
         <div class="section-title px-2">MÁS</div>
         <ul class="nav nav-pills flex-column gap-1">
           <li class="nav-item">
-            <a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Mis equipos</a>
+            <a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Todos los equipos</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="#"><i class="bi bi-person"></i> Mis datos</a>
@@ -214,7 +220,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Abiertos</a>
+              <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Asignados</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
@@ -231,15 +237,15 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               </a>
               <ul class="dropdown-menu" aria-labelledby="reportesMenuOff">
                 <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                    <i class="bi bi-person"></i> Hojas de Servicio
+                    <i class="bi bi-archive"></i> Hojas de Servicio
                   </a>
                 </li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
                 <li>
-                  <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                    <i class="bi bi-box-arrow-right"></i> Póliza
+                  <a id="btnLogout2" class="dropdown-item" href="../dashboard/poliza.php">
+                    <i class="bi bi-file-text"></i> Póliza
                   </a>
                 </li>
               </ul>
@@ -390,9 +396,27 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               <button id="btnRecargar" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-clockwise"></i> Recargar Tickets
               </button>
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignacion">
-            Launch demo modal
-          </button>
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnalisis">
+                Launch demo modal
+              </button>
+              <div class="d-flex gap-2 my-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="enableWebPush()">Activar notificaciones</button>
+                <button class="btn btn-outline-success btn-sm" onclick="probarPush()">Probar push</button>
+              </div>
+              <script>
+                function probarPush() {
+                  const usIdActual = window.USUARIO_ACTUAL_ID || 2001;
+                  if (!usIdActual) {
+                    alert('Define USUARIO_ACTUAL_ID');
+                    return;
+                  }
+                  fetch('../php/send_push_test.php?usId=' + usIdActual)
+                    .then(r => r.json())
+                    .then(j => alert(JSON.stringify(j)))
+                    .catch(e => alert('Error: ' + e.message));
+                }
+              </script>
+
               <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 
               </div>
@@ -634,6 +658,38 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
     }
   });
 </script>
+
+<!-- Modal: Análisis de ingeniero -->
+<div class="modal fade justify-content-center" id="modalAnalisis" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body justify-content-center">
+        <img src="../img/asignacion.png" class="d-flex mx-auto mb-2" style="height: 150px;" alt="Análisis">
+        <h1 class="modal-title text-center"><b>Análisis</b></h1>
+        <h6 class="text-muted text-center mb-4">
+          Añade un análisis al ticket. (Si faltan datos, escribe “Faltan datos”).
+        </h6>
+
+        <div class="mb-3">
+          <label for="tiAnalisisDesc" class="form-label">Descripción del análisis</label>
+          <textarea class="form-control" id="tiAnalisisDesc"
+            placeholder="Describe el análisis preliminar/final del problema"
+            rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-center border-0">
+        <button class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" id="btnGuardarAnalisis"
+          data-next-proceso="logs">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 

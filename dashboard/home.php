@@ -104,9 +104,9 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#0e1525">
-  <link rel="apple-touch-icon" href="/img/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
 
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -114,23 +114,22 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <script src="https://kit.fontawesome.com/04af9e068b.js" crossorigin="anonymous"></script>
   <!-- /Bootstrap -->
   <!-- Bootstrap Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/04af9e068b.js" crossorigin="anonymous"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-  <!-- Chart.js -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script> -->
+  <!-- Primero el objeto Meet -->
+  <script src="../js/tickets/modal_meet.js"></script>
+  <script src="../js/tickets/modal_visita.js"></script>
+
+  <!-- Luego tus otros JS que lo usan -->
+  <script src="../js/tickets.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/logout.js"></script>
 
   <!-- css -->
   <link href="../css/style.css" rel="stylesheet">
-  <!-- JS -->
-  <script src="../js/main.js"></script>
-  <script src="../js/dashboard.js"></script>
-  <script src="../js/tickets/modal_meet.js"></script>
-  <script src="../js/logout.js"></script>
-  <!-- /JS -->
-  <style>
 
-  </style>
+
 </head>
 
 <body class="<?php echo ($theme === 'dark') ? 'dark-mode' : ''; ?>">
@@ -150,9 +149,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
           <li class="nav-item">
             <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Abiertos</a>
-          </li>
+
           <li class="nav-item" id="btnNuevoTicket">
             <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
           </li>
@@ -169,15 +166,15 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             </a>
             <ul class="dropdown-menu" aria-labelledby="reportesMenu">
               <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                  <i class="bi bi-person"></i> Hojas de Servicio
+                  <i class="bi bi-archive"></i> Hojas de Servicio
                 </a>
               </li>
               <li>
                 <hr class="dropdown-divider">
               </li>
               <li>
-                <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                  <i class="bi bi-box-arrow-right"></i> Póliza
+                <a id="btnLogout2" class="dropdown-item" href="../dashboard/poliza.php">
+                    <i class="bi bi-file-text"></i> Póliza
                 </a>
               </li>
             </ul>
@@ -194,7 +191,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             <a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Mis equipos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#"><i class="bi bi-person"></i> Mis datos</a>
+            <a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a>
           </li>
         </ul>
       </nav>
@@ -217,9 +214,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             <li class="nav-item">
               <a class="nav-link active" href="home.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="tickets_abiertos.php"><i class="bi bi-tree"></i> Tickets Abiertos</a>
-            </li>
+            
             <li class="nav-item">
               <a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-plus-circle"></i> Ticket Nuevo</a>
             </li>
@@ -235,15 +230,15 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               </a>
               <ul class="dropdown-menu" aria-labelledby="reportesMenuOff">
                 <li><a class="dropdown-item" href="hojas_de_servicio.php">
-                    <i class="bi bi-person"></i> Hojas de Servicio
+                    <i class="bi bi-archive"></i> Hojas de Servicio
                   </a>
                 </li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
                 <li>
-                  <a id="btnLogout2" class="dropdown-item" href="../php/polizas.php">
-                    <i class="bi bi-box-arrow-right"></i> Póliza
+                  <a id="btnLogout2" class="dropdown-item" href="../dashboard/poliza.php">
+                    <i class="bi bi-file-text"></i> Póliza
                   </a>
                 </li>
               </ul>
@@ -257,7 +252,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
           <div class="section-title px-1">MÁS</div>
           <ul class="nav nav-pills flex-column gap-1 mb-4">
             <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Mis equipos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person"></i> Mis datos</a></li>
+            <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
           </ul>
         </div>
       </div>
@@ -265,7 +260,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
 
       <!-- MAIN -->
-      <main class="col-md-10  px-4">
+      <main class="col-md-12 ms-sm-auto col-lg-10 px-lg-4">
         <!-- Top bar -->
         <!-- Contenedor general -->
         <div class="d-flex align-items-center justify-content-between py-3 px-2 px-md-4 ">
@@ -371,7 +366,7 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                 <span class="d-none d-md-inline"><strong><?php echo $_SESSION['usUsername']; ?></strong></span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mis datos</a></li>
+                <li><a class="dropdown-item" href="configuracion.php"><i class="bi bi-person me-2"></i>Mis datos</a></li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
@@ -390,168 +385,243 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
         <!-- Recent Incidents -->
         <div class="main mb-4">
           <div class="row">
-            <main class="col-md-9 ms-sm-auto col-lg-12 px-md-4">
-              <button id="btnRecargar" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-clockwise"></i> Recargar Tickets
-              </button>
-              <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnalisis">
-                Launch demo modal
-              </button>
-              <div class="d-flex gap-2 my-2">
-                <button class="btn btn-outline-primary btn-sm" onclick="enableWebPush()">Activar notificaciones</button>
-                <button class="btn btn-outline-success btn-sm" onclick="probarPush()">Probar push</button>
-              </div> -->
-              <script>
-                function probarPush() {
-                  const usIdActual = window.USUARIO_ACTUAL_ID || 2001;
-                  if (!usIdActual) {
-                    alert('Define USUARIO_ACTUAL_ID');
-                    return;
-                  }
-                  fetch('../php/send_push_test.php?usId=' + usIdActual)
-                    .then(r => r.json())
-                    .then(j => alert(JSON.stringify(j)))
-                    .catch(e => alert('Error: ' + e.message));
-                }
-              </script>
+            <main class="col-md-12 ms-sm-auto col-lg-12 px-lg-4">
+              <div class="card mrs-card mt-4">
+                <div class="card-body" style="padding:0.5rem;">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div>
+                      <h5 class="mb-0">Tickets por sede</h5>
+                      <small class="text-muted">
+                        Visualiza los tickets abiertos agrupados por cada sede de tu organización.
+                      </small>
+                    </div>
+                  </div>
+                  <!-- Toggle Tabla / Cards -->
+                  <div class="btn-group btn-group-sm my-2" id="vistaTicketsToggle" role="group">
+                    <button type="button"
+                      class="btn btn-outline-secondary active"
+                      data-vista="tabla">
+                      <i class="bi bi-table"></i>
+                      <span class="d-none d-md-inline ms-1">Tabla</span>
+                    </button>
+                    <button type="button"
+                      class="btn btn-outline-secondary"
+                      data-vista="cards">
+                      <i class="bi bi-grid-3x3-gap"></i>
+                      <span class="d-none d-md-inline ms-1">Cards</span>
+                    </button>
+                    <button id="btnRecargar1" class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-arrow-clockwise"></i> Recargar Tickets
+                    </button>
+                  </div>
 
-              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                  <!-- Filtros rápidos + buscador -->
+                  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                    <!-- Filtros por estado/criticidad -->
+                    <div id="filtrosTickets" class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="all">
+                        Todos
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-success" data-filter="abierto">
+                        Abiertos
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" data-filter="alta">
+                        Críticos
+                      </button>
+                    </div>
 
-              </div>
-          </div>
-          <h5>Incidentes Recientes</h5>
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <div class="btn-group" id="viewToggle">
-              <button type="button" class="btn btn-outline-secondary btn-sm active" data-mode="table">
-                <i class="bi bi-table"></i> Tabla
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-mode="cards">
-                <i class="bi bi-grid-3x3-gap"></i> Cards
-              </button>
-            </div>
-          </div>
-
-          <!-- Aquí pintamos todo (clientes -> sedes -> tickets) -->
-          <div id="wrapTicketsClientes"></div>
-
-        </div>
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasTicket" aria-labelledby="offcanvasTicket"
-          data-bs-scroll="true" aria-labelledby="offcanvasWithBackdropLabel">
-          <div class="offcanvas-header bg-light" style="background: #f8f9fb!important;">
-            <h5 class="offcanvas-title bg-light">Detalles del Ticket</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-          </div>
-          <div class="offcanvas-body" id="offcanvasContent">
-            <p>Cargando información...</p>
-          </div>
-        </div>
+                    <!-- Buscador por código o SN -->
+                    <div class="input-group input-group-sm" style="max-width:260px;">
+                      <span class="input-group-text"><i class="bi bi-search"></i></span>
+                      <input type="text" id="searchTickets" class="form-control"
+                        placeholder="Buscar por código, SN o modelo">
+                    </div>
+                  </div>
 
 
-        <!-- Menu -->
-        <div class="d-flex gap-3 mb-4 mx-0 row">
-          <div class="col-2 menu-card active"><i class="bi bi-exclamation-triangle"></i><br>Tickets</div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-file-earmark-text"></i><br>Hojas de servicio</a></div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-journal"></i><br>Póliza</a></div>
-          <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-sliders"></i><br>Ajustes</a></div>
-
-        </div>
-
-        <!-- Statistics -->
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-          <input type="month" id="mesFiltro" class="form-control form-control-sm" style="max-width: 180px;" value="<?= date('Y-m'); ?>">
-          <select id="selSede" class="form-select form-select-sm" style="max-width: 220px;">
-            <option value="">Todas las sedes</option>
-          </select>
-          <button id="btnMesAplicar" class="btn btn-sm btn-primary">Aplicar mes</button>
-          <button id="btnUlt30" class="btn btn-sm btn-outline-secondary">Últimos 30 días</button>
-        </div>
-
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="stat-card">
-              <h6>Incidentes (rango)</h6>
-              <canvas id="areaChart"></canvas>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="stat-card text-center">
-              <h6>Tipo de ticket<br><small>en rango</small></h6>
-              <canvas id="donutTipo" style="max-width:140px; display:initial!important;"></canvas>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="stat-card text-center">
-              <h6>Estatus de ticket<br><small>en rango</small></h6>
-              <canvas id="donutEstatus" style="max-width:140px; display:initial!important;"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal: Meet -->
-        <div class="modal fade" id="modalMeet" aria-hidden="true">
-          <div class="modal-dialog">
-            <form id="formMeet" class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Reunión (Meet)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                  <div id="wrapTicketsSedes">
+                    <p class="text-muted mb-0">Cargando tickets...</p>
+                  </div>
+                </div>
               </div>
 
-              <div class="modal-body">
-                <input type="hidden" id="meet_ticketId" name="ticketId">
-                <input type="hidden" id="meet_modo" name="modo">
 
-                <div class="mb-3">
-                  <label for="meet_plataforma" class="form-label">Plataforma</label>
-                  <select id="meet_plataforma" name="plataforma" class="form-select">
-                    <option value="">Selecciona…</option>
-                    <option value="Google">Google</option>
-                    <option value="Teams">Teams</option>
-                    <option value="Zoom">Zoom</option>
-                    <option value="Otro">Otro</option>
+
+          </div>
+          <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasTicket" aria-labelledby="offcanvasTicket"
+            data-bs-scroll="true" aria-labelledby="offcanvasWithBackdropLabel">
+            <div class="offcanvas-header bg-light" style="background: #f8f9fb!important;">
+              <h5 class="offcanvas-title bg-light">Detalles del Ticket</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body" id="offcanvasContent">
+              <p>Cargando información...</p>
+            </div>
+          </div>
+
+
+          <!-- Menu -->
+          <div class="d-flex gap-3 mb-4 mx-0 row">
+            <div class="col-2 menu-card active"><i class="bi bi-exclamation-triangle"></i><br>Tickets</div>
+            <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-file-earmark-text"></i><br>Hojas de servicio</a></div>
+            <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-journal"></i><br>Póliza</a></div>
+            <div class="col-2 menu-card"><a href="hojas_de_servicio.php"><i class="bi bi-sliders"></i><br>Ajustes</a></div>
+
+          </div>
+
+          <!-- === Estadísticas de tickets === -->
+          <div class="card mrs-card mt-4">
+            <div class="card-body">
+              <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-0">Estadísticas de tickets</h5>
+                  <small class="text-muted">Incidentes y distribuciones en el rango seleccionado.</small>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  <input type="month" id="mesFiltro"
+                    class="form-control form-control-sm"
+                    style="max-width: 180px;"
+                    value="<?= date('Y-m'); ?>">
+
+                  <select id="selSede" class="form-select form-select-sm" style="max-width: 220px;">
+                    <option value="">Todas las sedes</option>
                   </select>
+
+                  <button id="btnMesAplicar" class="btn btn-sm btn-primary">
+                    Aplicar mes
+                  </button>
+                  <button id="btnUlt30" class="btn btn-sm btn-outline-secondary">
+                    Últimos 30 días
+                  </button>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="stat-card">
+                    <h6 class="mb-2">Incidentes (rango)</h6>
+                    <canvas id="areaChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="stat-card text-center">
+                    <h6>Tipo de ticket<br><small>en rango</small></h6>
+                    <canvas id="donutTipo"
+                      style="max-width:140px; display:initial!important;"></canvas>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="stat-card text-center">
+                    <h6>Estatus de ticket<br><small>en rango</small></h6>
+                    <canvas id="donutEstatus"
+                      style="max-width:140px; display:initial!important;"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+      </main>
+
+
+      <div class="modal fade" id="modalMeet" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header border-0">
+              <div class="d-flex align-items-center gap-2">
+                <img src="../img/icon-meet.svg" alt="" style="width:42px;height:42px;">
+                <div>
+                  <h5 class="modal-title mb-0">Meet</h5>
+                  <small class="text-muted" id="meetSubtitulo">Fecha propuesta</small>
+                </div>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <!-- vista propuesta -->
+              <div id="meetVistaPropuesta">
+                <div class="mb-3 row g-2">
+                  <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" id="meetFechaProp" class="form-control">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Hora</label>
+                    <input type="time" id="meetHoraProp" class="form-control">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Plataforma</label>
+                    <select id="meetPlataformaProp" class="form-select">
+                      <option value="teams">Teams</option>
+                      <option value="google_meet">Google Meet</option>
+                      <option value="zoom">Zoom</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="meet_link" class="form-label">Enlace</label>
-                  <input id="meet_link" name="link" type="url" class="form-control" placeholder="https://…">
-                  <div class="form-text">Pega el enlace completo. (Opcional al solicitar)</div>
-                </div>
-                <!-- dentro del form del modalMeet -->
-                <div class="row g-2">
-                  <div class="col-12 col-md-6">
-                    <!-- <label class="form-label mb-1">Fecha del meet</label> -->
-                    <input type="date" id="meet_fecha" name="fecha" class="form-control">
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <!-- <label class="form-label mb-1">Hora</label> -->
-                    <input type="time" id="meet_hora" name="hora" class="form-control">
-                  </div>
-                </div>
-
-                <!-- Mensajes según rol -->
-                <div class="alert alert-info d-none" data-rol="cliente">
-                  Se enviará una solicitud de reunión al ingeniero.
-                </div>
-                <div class="alert alert-success d-none" data-rol="ingeniero">
-                  Estás estableciendo una reunión activa para el cliente.
+                  <label class="form-label">Enlace de reunión (opcional)</label>
+                  <input type="url" id="meetLinkProp" class="form-control"
+                    placeholder="https://...">
                 </div>
               </div>
 
-              <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <!-- Botón visible cuando es flujo de cliente -->
-                <button type="submit" class="btn btn-primary" data-rol="cliente">Solicitar</button>
-                <!-- Botón visible cuando es flujo de ingeniero -->
-                <button type="submit" class="btn btn-success d-none" data-rol="ingeniero">Establecer</button>
+              <!-- vista asignación -->
+              <div id="meetVistaAsignacion" class="d-none">
+                <div class="mb-3 row g-2">
+                  <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" id="meetFechaAsig" class="form-control">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Hora</label>
+                    <input type="time" id="meetHoraAsig" class="form-control">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Plataforma</label>
+                    <select id="meetPlataformaAsig" class="form-select">
+                      <option value="google_meet">Google Meet</option>
+                      <option value="teams">Teams</option>
+                      <option value="zoom">Zoom</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Enlace de reunión</label>
+                  <input type="url" id="meetLinkAsig" class="form-control"
+                    placeholder="https://...">
+                  <small class="text-muted">
+                    Si eliges “Google Meet” y lo asigna MR Solutions, el enlace lo puede generar el ingeniero.
+                  </small>
+                </div>
               </div>
-            </form>
+            </div>
+
+            <div class="modal-footer border-0 justify-content-between">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                Cancelar
+              </button>
+              <div class="d-flex gap-2">
+                <!-- para modo propuesta -->
+                <button type="button" class="btn btn-outline-primary d-none" id="btnMeetNuevaPropuesta">
+                  Nueva propuesta
+                </button>
+                <button type="button" class="btn btn-primary" id="btnMeetConfirmar">
+                  Confirmar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
 
-        <!-- Bootstrap JS Bundle -->
+      <!-- Bootstrap JS Bundle -->
 
 
 
@@ -657,66 +727,295 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   });
 </script>
 
-<!-- Modal: Análisis de ingeniero -->
-<div class="modal fade justify-content-center" id="modalAnalisis" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header border-0">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- ========== MODAL VISITA · PROPUESTA ========== -->
+<div class="modal fade" id="visitaModalPropuesta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" id="visitaFormPropuesta">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <img src="../img/icon-visita.svg" alt="Visita" style="width:40px;height:40px;">
+          <div>
+            <h5 class="modal-title mb-0">Ventana/Visita</h5>
+            <small class="text-muted">Fecha propuesta</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+      <div class="modal-body">
+        <input type="hidden" id="visitaProp_tiId" name="tiId">
 
-      <div class="modal-body justify-content-center">
-        <img src="../img/asignacion.png" class="d-flex mx-auto mb-2" style="height: 150px;" alt="Análisis">
-        <h1 class="modal-title text-center"><b>Análisis</b></h1>
-        <h6 class="text-muted text-center mb-4">
-          Añade un análisis al ticket. (Si faltan datos, escribe “Faltan datos”).
-        </h6>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="visitaProp_fecha" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" id="visitaProp_hora" required>
+          </div>
+        </div>
 
         <div class="mb-3">
-          <label for="tiAnalisisDesc" class="form-label">Descripción del análisis</label>
-          <textarea class="form-control" id="tiAnalisisDesc"
-            placeholder="Describe el análisis preliminar/final del problema"
-            rows="4"></textarea>
+          <label class="form-label">Tiempo estimado</label>
+          <div class="input-group mb-1">
+            <input type="number" min="0" class="form-control"
+              id="visitaProp_duracionHoras" placeholder="Horas">
+            <span class="input-group-text">:</span>
+            <input type="number" min="0" max="59" class="form-control"
+              id="visitaProp_duracionMinutos" placeholder="Minutos">
+          </div>
+          <div class="form-text">
+            Las ventanas de visita ayudan a organizar mejor las agendas de los ingenieros.
+          </div>
         </div>
-      </div>
 
-      <div class="modal-footer justify-content-center border-0">
-        <button class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-success" id="btnGuardarAnalisis"
-          data-next-proceso="logs">Continuar</button>
+        <div class="mb-3">
+          <label class="form-label d-block">¿Cómo se gestionará la invitación?</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio"
+              name="visitaProp_envio" id="visitaProp_envio_correo"
+              value="correo">
+            <label class="form-check-label" for="visitaProp_envio_correo">
+              Enviaré la invitación por correo electrónico
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio"
+              name="visitaProp_envio" id="visitaProp_envio_ingeniero"
+              value="ingeniero">
+            <label class="form-check-label" for="visitaProp_envio_ingeniero">
+              Que el ingeniero genere la invitación
+            </label>
+          </div>
+        </div>
+
       </div>
-    </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Confirmar propuesta</button>
+      </div>
+    </form>
   </div>
 </div>
 
-
-
-<!-- Modal: Asignación de ingeniero -->
-<div class="modal fade" id="modalAsignacion" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- ========== MODAL VISITA · ASIGNACIÓN ========== -->
+<div class="modal fade" id="visitaModalAsignar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" id="visitaFormAsignar">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <img src="../img/icon-visita.svg" alt="Visita" style="width:40px;height:40px;">
+          <div>
+            <h5 class="modal-title mb-0">Ventana/Visita</h5>
+            <small class="text-muted">Asignación de una ventana/visita</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
-        <h1 class="modal-title text-center"><b>Asignación</b></h1>
-        <h5 class="text-muted text-center mb-3">Es momento de asignar un ingeniero, elige la mejor opción</h5>
+        <input type="hidden" id="visitaAsig_tiId" name="tiId">
 
-        <!-- Grupos por Tier -->
-        <div id="wrapIngenieros">
-          <!-- Aquí se pintan los tiers y las cards -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="visitaAsig_fecha" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" id="visitaAsig_hora" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Tiempo estimado</label>
+          <div class="input-group mb-1">
+            <input type="number" min="0" class="form-control"
+              id="visitaAsig_duracionHoras" placeholder="Horas">
+            <span class="input-group-text">:</span>
+            <input type="number" min="0" max="59" class="form-control"
+              id="visitaAsig_duracionMinutos" placeholder="Minutos">
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input"
+              type="checkbox"
+              id="visitaAsig_reqAcceso">
+            <label class="form-check-label" for="visitaAsig_reqAcceso">
+              El ingeniero enviará esta información para la creación de folio de entrada
+            </label>
+            <div class="form-text">
+              Nombre, Email, Teléfono, CURP, NSS (Num de Seguro Social), Auto ( placas, marca, modelo y color), Celular (marca, modelo, serie), Laptop (Marca, Modelo y serie).
+            </div>
+          </div>
+          <label class="form-label mt-2">
+            ¿Se necesita algo más para el folio de entrada?
+          </label>
+          <textarea class="form-control"
+            id="visitaAsig_extraAcceso"
+            rows="2"
+            placeholder="Ej. Enviar copia de credencial, licencia vigente, etc."></textarea>
         </div>
       </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancelar</button>
-        <button id="btnContinuarAsignacion" class="btn btn-success d-none">Continuar</button>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Guardar visita</button>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
 
 
+
+
+<!-- ========== MODAL MEET · PROPUESTA ==========
+     El cliente propone fecha/horario/plataforma, puede mandar link o decir
+     que mandará invitación por correo.
+-->
+<div class="modal fade" id="meetModalPropuesta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" id="meetFormPropuesta">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <img src="../img/icon-meet.svg" alt="Meet" style="width:40px;height:40px;">
+          <div>
+            <h5 class="modal-title mb-0">Meet</h5>
+            <small class="text-muted">Fecha propuesta</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="meetProp_tiId" name="tiId">
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="meetProp_fecha" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" id="meetProp_hora" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Plataforma</label>
+          <select class="form-select" id="meetProp_plataforma" required>
+            <option value="">Selecciona…</option>
+            <option value="Google Meet">Google Meet</option>
+            <option value="Teams">Microsoft Teams</option>
+            <option value="Zoom">Zoom</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Enlace (si ya lo tienes)</label>
+          <input type="url" class="form-control" id="meetProp_link"
+            placeholder="https://…">
+          <div class="form-text">
+            Si aún no tienes el link, puedes elegir la opción de enviar invitación por correo.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label d-block">¿Cómo se gestionará la invitación?</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio"
+              name="meetProp_envio" id="meetProp_envio_link"
+              value="link" checked>
+            <label class="form-check-label" for="meetProp_envio_link">
+              Ya tengo / tendré el enlace del Meet
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio"
+              name="meetProp_envio" id="meetProp_envio_correo"
+              value="correo">
+            <label class="form-check-label" for="meetProp_envio_correo">
+              Enviaré invitación por correo electrónico
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio"
+              name="meetProp_envio" id="meetProp_envio_ingeniero"
+              value="ingeniero">
+            <label class="form-check-label" for="meetProp_envio_ingeniero">
+              Que el ingeniero genere la invitación
+            </label>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Confirmar propuesta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========== MODAL MEET · ASIGNACIÓN ==========
+     El cliente deja YA firme la fecha y el enlace.
+-->
+<div class="modal fade" id="meetModalAsignar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" id="meetFormAsignar">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <img src="../img/icon-meet.svg" alt="Meet" style="width:40px;height:40px;">
+          <div>
+            <h5 class="modal-title mb-0">Meet</h5>
+            <small class="text-muted">Asignación de un meet</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="meetAsig_tiId" name="tiId">
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="meetAsig_fecha" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" id="meetAsig_hora" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Plataforma</label>
+          <select class="form-select" id="meetAsig_plataforma" required>
+            <option value="">Selecciona…</option>
+            <option value="Google Meet">Google Meet</option>
+            <option value="Teams">Microsoft Teams</option>
+            <option value="Zoom">Zoom</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <div class="form-text">
+            Los ingenieros de MR normalmente generan la reunión en Google Meet.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Enlace de la reunión</label>
+          <input type="url" class="form-control" id="meetAsig_link"
+            placeholder="https://…">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Guardar meet</button>
+      </div>
+    </form>
+  </div>
+</div>
+<a href="nuevo_ticket.php" class="float-wa">
+  <div class="position-absolute top-50 start-50 translate-middle">
+    <i class="bi bi-plus mx-auto my-auto"></i>
+  </div>
+</a>

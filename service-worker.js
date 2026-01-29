@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'MR SOS';
   const options = {
     body: data.body || '',
-    icon: '/img/icon-192.png',   // pon un icono si tienes
+    icon: '/img/image.png',   // pon un icono si tienes
     badge: '/img/badge-72.png',  // opcional
     data: { url: data.url || '/admin/' }
   };

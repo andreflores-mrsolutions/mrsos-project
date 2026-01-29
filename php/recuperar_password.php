@@ -5,10 +5,10 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
 try {
   // ======= 1) Conexión =======
-  $DB_HOST = '127.0.0.1';
-  $DB_NAME = 'mrsos';
-  $DB_USER = 'root';
-  $DB_PASS = '';
+  $DB_HOST = 'localhost';
+  $DB_NAME = 'u140302554_mrsos';
+  $DB_USER = 'u140302554_mrsos';
+  $DB_PASS = 'MRsolutions552312#$';
   $DB_CHARSET = 'utf8mb4';
   $dsn = "mysql:host={$DB_HOST};dbname={$DB_NAME};charset={$DB_CHARSET}";
   $pdo = new PDO($dsn, $DB_USER, $DB_PASS, [
@@ -56,7 +56,7 @@ try {
   $resetLink         = "{$DOMINIO}{$RUTA_RESET}?token={$token}&usId={$usId}";
 
   // Logo (idealmente URL pública https)
-  $URL_LOGO          = 'https://mrsolutions.com.mx/wp-content/uploads/2025/02/logo_2021.webp';
+  $URL_LOGO          = 'https://www.ventasdeseguridad.com/media/com_mtree/images/listings/o/2018_03_16_19_03_54_Logo.jpg';
   $DIRECCION_EMPRESA = 'Alhambra 813 Bis, Portales Sur, Benito Juárez, 03300 Ciudad de México, CDMX';
 
   // ======= 6) PHPMailer =======

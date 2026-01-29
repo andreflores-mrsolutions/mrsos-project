@@ -16,7 +16,7 @@ if (!$conectar) {
 date_default_timezone_set('America/Mexico_City');
 
 /* === CONEXIÓN A BD === */
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'mrsos');
 define('DB_USER', 'root');
 define('DB_PASS', '');

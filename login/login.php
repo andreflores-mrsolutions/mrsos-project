@@ -1,5 +1,10 @@
 <?php session_start();
-if (!empty($_SESSION['usId'])) {
+if (isset($_SESSION['usEstatus'])) {
+    if ($_SESSION['usEstatus'] === 'NewPass') {
+        header('Location: cambiar_password.php');
+    }
+}
+if (!empty($_SESSION['usId']) ) {
     header('Location: ../sos.php');
 }
 ?>

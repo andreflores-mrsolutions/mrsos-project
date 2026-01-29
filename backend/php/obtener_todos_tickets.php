@@ -7,7 +7,7 @@ try {
   /* =========================
    * 1) CONEXIÓN (ajusta a tu entorno)
    * ========================= */
-  $DB_HOST = '127.0.0.1';
+  $DB_HOST = 'localhost';
   $DB_NAME = 'mrsos';
   $DB_USER = 'root';
   $DB_PASS = '';
