@@ -1,6 +1,6 @@
 <?php
 // Create connection
-$conectar = mysqli_connect("localhost", "root", "", "mrsos");
+$conectar = mysqli_connect("localhost", "u140302554_mrsos", "MRsolutions552312#$", "u140302554_mrsos");
 // Check connection
 if (!$conectar) {
     die("Connection failed: " . mysqli_connect_error());
@@ -14,12 +14,16 @@ if (!$conectar) {
  */
 
 date_default_timezone_set('America/Mexico_City');
-
+// require_once __DIR__.'/db.php';
+  // $DB_HOST = 'localhost';
+  // $DB_NAME = 'u140302554_mrsos';
+  // $DB_USER = 'u140302554_mrsos';
+  // $DB_PASS = 'MRsolutions552312#$';
 /* === CONEXIÓN A BD === */
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'mrsos');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'u140302554_mrsos');
+define('DB_USER', 'u140302554_mrsos');
+define('DB_PASS', 'MRsolutions552312#$');
 define('DB_CHARSET', 'utf8mb4');
 
 /* === VAPID KEYS === */

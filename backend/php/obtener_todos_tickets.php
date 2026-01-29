@@ -7,11 +7,17 @@ try {
   /* =========================
    * 1) CONEXIÓN (ajusta a tu entorno)
    * ========================= */
+  // $DB_HOST = 'localhost';
+  // $DB_NAME = 'mrsos';
+  // $DB_USER = 'root';
+  // $DB_PASS = '';
+  // $DB_CHARSET = 'utf8mb4';
+
+  // require_once __DIR__.'/db.php';
   $DB_HOST = 'localhost';
-  $DB_NAME = 'mrsos';
-  $DB_USER = 'root';
-  $DB_PASS = '';
-  $DB_CHARSET = 'utf8mb4';
+  $DB_NAME = 'u140302554_mrsos';
+  $DB_USER = 'u140302554_mrsos';
+  $DB_PASS = 'MRsolutions552312#$';
 
   $dsn = "mysql:host={$DB_HOST};dbname={$DB_NAME};charset={$DB_CHARSET}";
   $pdo = new PDO($dsn, $DB_USER, $DB_PASS, [
