@@ -4,7 +4,7 @@ declare(strict_types=1);
 date_default_timezone_set('America/Mexico_City');
 
 // === CONFIG ===
-$cfgFile = __DIR__ . '/config.alocal.php';
+$cfgFile = __DIR__ . '/config.local.php';
 if (file_exists($cfgFile)) {
   require_once $cfgFile;
 } else {
