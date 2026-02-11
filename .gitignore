@@ -3,3 +3,4 @@ echo "secrets/mrsos-31341-66e405cfe145.json" >> .gitignore
 
 # (recomendado) ignora todas las keys JSON en secrets/
 echo "secrets/*.json" >> .gitignore
+secrets/*.json
