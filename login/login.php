@@ -1,4 +1,7 @@
-<?php session_start();
+<?php 
+require_once __DIR__ . '/../php/csrf.php';
+$csrf = csrf_token();
+
 if (isset($_SESSION['usEstatus'])) {
     if ($_SESSION['usEstatus'] === 'NewPass') {
         header('Location: cambiar_password.php');
@@ -8,6 +11,9 @@ if (!empty($_SESSION['usId']) ) {
     header('Location: ../sos.php');
 }
 ?>
+<script>
+  window.MRS_CSRF = <?= json_encode($csrf) ?>;
+</script>
 <!DOCTYPE html>
 <html lang="en">
 

@@ -3,116 +3,127 @@ declare(strict_types=1);
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
-require 'conexion.php'; // $conectar (mysqli)
+require_once __DIR__ . '/conexion.php'; // db(): PDO
 
-$usId  = $_SESSION['usId']  ?? null;
-$usRol = $_SESSION['usRol'] ?? null;
-$clIdSes = $_SESSION['clId'] ?? null;
-
-// Validación mínima de auth
-if (!$usId || !$usRol) {
-  echo json_encode(['success' => false, 'error' => 'No autenticado']);
+// ---------- Helpers JSON ----------
+function jfail(string $msg, int $code = 400): void {
+  http_response_code($code);
+  echo json_encode(['success' => false, 'error' => $msg], JSON_UNESCAPED_UNICODE);
   exit;
 }
-
-$usId = (int)$usId;
-
-// Roles MR internos
-$isMR = in_array($usRol, ['MRA', 'MRV', 'MRSA'], true);
-
-// Cliente objetivo:
-// - MR puede pedir ?clId=
-// - Cliente toma clId de sesión
-if ($isMR) {
-  $clId = isset($_GET['clId']) ? (int)$_GET['clId'] : (int)($clIdSes ?? 0);
-} else {
-  $clId = (int)($clIdSes ?? 0);
-}
-
-if (!$clId) {
-  echo json_encode(['success' => false, 'error' => 'Cliente no definido']);
+function jok(array $data): void {
+  echo json_encode(array_merge(['success' => true], $data), JSON_UNESCAPED_UNICODE);
   exit;
 }
-
-// Sede opcional (si viene, filtramos)
-$csIdParam = isset($_GET['csId']) ? (int)$_GET['csId'] : null;
 
 // ===============================
 // Helper: prefijo 3 letras
 // ===============================
 function clPrefix(string $name): string {
-  // quitar acentos/raros de manera simple + solo letras
-  $name = strtoupper($name);
-  $name = preg_replace('/[^A-Z]/', '', $name ?? '');
+  $name = strtoupper((string)$name);
+  $name = preg_replace('/[^A-Z]/', '', $name);
   $p = substr($name, 0, 3);
   return $p !== '' ? $p : 'CLI';
 }
 
 try {
+  // --- Auth ---
+  $usId  = $_SESSION['usId']  ?? null;
+  $usRol = $_SESSION['usRol'] ?? null;
+  $clIdSes = $_SESSION['clId'] ?? null;
+
+  if (!$usId || !$usRol) jfail('No autenticado', 401);
+
+  $usId = (int)$usId;
+  $usRol = (string)$usRol;
+
+  // Roles MR internos
+  $isMR = in_array($usRol, ['MRA', 'MRV', 'MRSA'], true);
+
+  // Cliente objetivo:
+  // - MR puede pedir ?clId=
+  // - Cliente toma clId de sesión
+  if ($isMR) {
+    $clId = isset($_GET['clId']) ? (int)$_GET['clId'] : (int)($clIdSes ?? 0);
+  } else {
+    $clId = (int)($clIdSes ?? 0);
+  }
+  if (!$clId) jfail('Cliente no definido', 400);
+
+  // Sede opcional (si viene, filtramos)
+  $csIdParam = isset($_GET['csId']) ? (int)$_GET['csId'] : null;
+
+  $pdo = db();
+
+  
+  // MRA: global
+  // MRSA/MRV: solo clientes ligados en cuentas
+  if ($isMR && $usRol !== 'MRSA') {
+    $stPerm = $pdo->prepare("SELECT 1 FROM cuentas WHERE usId = ? AND clId = ? LIMIT 1");
+    $stPerm->execute([$usId, $clId]);
+    if (!$stPerm->fetchColumn()) jfail('Sin permisos para este cliente', 403);
+  }
+
   // ==========================================
-  // 0) Obtener nombre de cliente (para prefijo)
+  // 0.1) Obtener nombre de cliente (prefijo)
   // ==========================================
-  $stmt = $conectar->prepare("SELECT clNombre FROM clientes WHERE clId = ? LIMIT 1");
-  $stmt->bind_param("i", $clId);
-  $stmt->execute();
-  $clRow = $stmt->get_result()->fetch_assoc();
-  $clienteNombre = $clRow['clNombre'] ?? '';
+  $stCl = $pdo->prepare("SELECT clNombre FROM clientes WHERE clId = ? LIMIT 1");
+  $stCl->execute([$clId]);
+  $clRow = $stCl->fetch(PDO::FETCH_ASSOC);
+  $clienteNombre = (string)($clRow['clNombre'] ?? '');
   $prefix = clPrefix($clienteNombre);
 
   // ==========================================
-  // 1) Resolver sedes permitidas (si NO es MR)
+  // 1) Resolver sedes permitidas
   // ==========================================
   // - MR: sin restricción, salvo que venga csIdParam
-  // - Cliente: se arma allowedCsIds desde usuario_cliente_rol
+  // - Cliente: sedes permitidas desde usuario_cliente_rol
   $allowedCsIds = null; // null => sin restricción
 
   if ($isMR) {
     if ($csIdParam) $allowedCsIds = [$csIdParam];
   } else {
-    $allowedCsIds = [];
-
-    // Leer roles del usuario
-    $stmt = $conectar->prepare("
+    // cliente / usuario final
+    $stRoles = $pdo->prepare("
       SELECT clId, czId, csId, ucrRol
       FROM usuario_cliente_rol
       WHERE usId = ?
         AND ucrEstatus = 'Activo'
     ");
-    $stmt->bind_param("i", $usId);
-    $stmt->execute();
-    $rolesRes = $stmt->get_result();
+    $stRoles->execute([$usId]);
+    $roles = $stRoles->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($rolesRes->num_rows === 0) {
-      // sin alcance
-      echo json_encode([
-        'success' => true,
+    if (!$roles) {
+      jok([
         'poliza' => 'Sin póliza',
         'ticketsAbiertos' => 0,
         'equipos' => 0,
+        'clientePrefix' => $prefix,
         'tickets' => [],
+        'healthChecksCount' => 0,
+        'healthChecks' => [],
       ]);
-      exit;
     }
 
-    $adminGlobalClIds = [];
-    $adminZonaCzIds   = [];
-    $directCsIds      = [];
+    $adminGlobalForClient = false;
+    $zonaIds = [];
+    $directCsIds = [];
 
-    while ($r = $rolesRes->fetch_assoc()) {
-      $ucrRol = $r['ucrRol'];
-      $clIdR  = (int)$r['clId'];
-      $czIdR  = $r['czId'] !== null ? (int)$r['czId'] : null;
-      $csIdR  = $r['csId'] !== null ? (int)$r['csId'] : null;
-
-      // Solo roles de ESTE cliente
+    foreach ($roles as $r) {
+      $clIdR = (int)($r['clId'] ?? 0);
       if ($clIdR !== $clId) continue;
 
+      $ucrRol = (string)($r['ucrRol'] ?? '');
+      $czIdR  = isset($r['czId']) ? (int)$r['czId'] : 0;
+      $csIdR  = isset($r['csId']) ? (int)$r['csId'] : 0;
+
       if ($ucrRol === 'ADMIN_GLOBAL') {
-        $adminGlobalClIds[] = $clIdR;
-      } elseif ($ucrRol === 'ADMIN_ZONA' && $czIdR) {
-        $adminZonaCzIds[] = $czIdR;
-      } elseif (in_array($ucrRol, ['ADMIN_SEDE', 'USUARIO', 'VISOR'], true) && $csIdR) {
+        $adminGlobalForClient = true;
+      } elseif ($ucrRol === 'ADMIN_ZONA' && $czIdR > 0) {
+        $zonaIds[] = $czIdR;
+      } elseif (in_array($ucrRol, ['ADMIN_SEDE', 'USUARIO', 'VISOR'], true) && $csIdR > 0) {
         $directCsIds[] = $csIdR;
       }
     }
@@ -120,66 +131,52 @@ try {
     $csIds = [];
 
     // ADMIN_GLOBAL -> todas las sedes del cliente
-    if (!empty($adminGlobalClIds)) {
-      $adminGlobalClIds = array_values(array_unique($adminGlobalClIds));
-      $placeholders = implode(',', array_fill(0, count($adminGlobalClIds), '?'));
-      $sql = "SELECT csId FROM cliente_sede WHERE clId IN ($placeholders)";
-      $stmt = $conectar->prepare($sql);
-      $types = str_repeat('i', count($adminGlobalClIds));
-      $stmt->bind_param($types, ...$adminGlobalClIds);
-      $stmt->execute();
-      $tmp = $stmt->get_result();
-      while ($row = $tmp->fetch_assoc()) $csIds[] = (int)$row['csId'];
+    if ($adminGlobalForClient) {
+      $st = $pdo->prepare("SELECT csId FROM cliente_sede WHERE clId = ? AND csEstatus='Activo'");
+      $st->execute([$clId]);
+      foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) $csIds[] = (int)$row['csId'];
     }
 
     // ADMIN_ZONA -> sedes de esas zonas
-    if (!empty($adminZonaCzIds)) {
-      $adminZonaCzIds = array_values(array_unique($adminZonaCzIds));
-      $placeholders = implode(',', array_fill(0, count($adminZonaCzIds), '?'));
-      $sql = "SELECT csId FROM cliente_sede WHERE czId IN ($placeholders)";
-      $stmt = $conectar->prepare($sql);
-      $types = str_repeat('i', count($adminZonaCzIds));
-      $stmt->bind_param($types, ...$adminZonaCzIds);
-      $stmt->execute();
-      $tmp = $stmt->get_result();
-      while ($row = $tmp->fetch_assoc()) $csIds[] = (int)$row['csId'];
+    $zonaIds = array_values(array_unique(array_filter($zonaIds)));
+    if ($zonaIds) {
+      $ph = implode(',', array_fill(0, count($zonaIds), '?'));
+      $st = $pdo->prepare("SELECT csId FROM cliente_sede WHERE czId IN ($ph) AND csEstatus='Activo'");
+      $st->execute($zonaIds);
+      foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) $csIds[] = (int)$row['csId'];
     }
 
     // Sedes directas
-    if (!empty($directCsIds)) {
-      foreach ($directCsIds as $id) $csIds[] = (int)$id;
-    }
+    foreach ($directCsIds as $id) $csIds[] = (int)$id;
 
-    $csIds = array_values(array_unique($csIds));
+    $csIds = array_values(array_unique(array_filter($csIds)));
 
     // Si además viene ?csId=, se reduce a esa sede (si está permitida)
     if ($csIdParam) {
-      if (!in_array($csIdParam, $csIds, true)) {
-        echo json_encode(['success' => false, 'error' => 'Sede no permitida']);
-        exit;
-      }
+      if (!in_array($csIdParam, $csIds, true)) jfail('Sede no permitida', 403);
       $csIds = [$csIdParam];
     }
 
     $allowedCsIds = $csIds;
 
     // Si no hay sedes permitidas => no hay data
-    if (empty($allowedCsIds)) {
-      echo json_encode([
-        'success' => true,
+    if (!$allowedCsIds) {
+      jok([
         'poliza' => 'Sin póliza',
         'ticketsAbiertos' => 0,
         'equipos' => 0,
+        'clientePrefix' => $prefix,
         'tickets' => [],
+        'healthChecksCount' => 0,
+        'healthChecks' => [],
       ]);
-      exit;
     }
   }
 
   // ==========================
-  // 1) Tipo de póliza vigente
+  // 2) Tipo de póliza vigente
   // ==========================
-  $stmt = $conectar->prepare("
+  $stPol = $pdo->prepare("
     SELECT pcTipoPoliza
     FROM polizascliente
     WHERE clId = ?
@@ -187,45 +184,41 @@ try {
     ORDER BY pcFechaFin DESC
     LIMIT 1
   ");
-  $stmt->bind_param("i", $clId);
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $tipoPoliza = $result->num_rows > 0 ? ($result->fetch_assoc()['pcTipoPoliza'] ?? 'Sin póliza') : 'Sin póliza';
+  $stPol->execute([$clId]);
+  $rowPol = $stPol->fetch(PDO::FETCH_ASSOC);
+  $tipoPoliza = $rowPol ? (string)($rowPol['pcTipoPoliza'] ?? 'Sin póliza') : 'Sin póliza';
+
+  // Helper para IN csId
+  $csFilterSql = '';
+  $csParams = [];
+  if (is_array($allowedCsIds)) {
+    $ph = implode(',', array_fill(0, count($allowedCsIds), '?'));
+    $csFilterSql = " AND t.csId IN ($ph) ";
+    $csParams = $allowedCsIds;
+  } elseif ($csIdParam) {
+    $csFilterSql = " AND t.csId = ? ";
+    $csParams = [$csIdParam];
+  }
 
   // ==========================
-  // 2) Tickets abiertos (con filtro de sede si aplica)
+  // 3) Tickets abiertos
   // ==========================
-  $sql = "
+  $sqlOpen = "
     SELECT COUNT(*) AS total
     FROM ticket_soporte t
     WHERE t.clId = ?
       AND t.tiEstatus != 'Cerrado'
       AND t.estatus = 'Activo'
+    $csFilterSql
   ";
-  $types = "i";
-  $params = [$clId];
-
-  if (is_array($allowedCsIds)) {
-    $placeholders = implode(',', array_fill(0, count($allowedCsIds), '?'));
-    $sql .= " AND t.csId IN ($placeholders)";
-    $types .= str_repeat('i', count($allowedCsIds));
-    $params = array_merge($params, $allowedCsIds);
-  } elseif ($csIdParam) {
-    // por si acaso (MR con csId)
-    $sql .= " AND t.csId = ?";
-    $types .= "i";
-    $params[] = $csIdParam;
-  }
-
-  $stmt = $conectar->prepare($sql);
-  $stmt->bind_param($types, ...$params);
-  $stmt->execute();
-  $ticketsAbiertos = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+  $stOpen = $pdo->prepare($sqlOpen);
+  $stOpen->execute(array_merge([$clId], $csParams));
+  $ticketsAbiertos = (int)($stOpen->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
   // ==========================
-  // 3) Equipos en póliza
+  // 4) Equipos en póliza
   // ==========================
-  $stmt = $conectar->prepare("
+  $stEq = $pdo->prepare("
     SELECT COUNT(DISTINCT pe.eqId) AS total
     FROM polizasequipo pe
     INNER JOIN polizascliente pc ON pc.pcId = pe.pcId
@@ -233,14 +226,13 @@ try {
       AND pc.pcEstatus = 'Activo'
       AND pe.peEstatus = 'Activo'
   ");
-  $stmt->bind_param("i", $clId);
-  $stmt->execute();
-  $equipos = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+  $stEq->execute([$clId]);
+  $equipos = (int)($stEq->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
   // ==========================
-  // 4) Lista de tickets abiertos (con sede si aplica) + folio ENE-17
+  // 5) Lista tickets abiertos + folio prefijado
   // ==========================
-  $sql = "
+  $sqlTickets = "
     SELECT
       t.tiId,
       t.tiDescripcion,
@@ -258,38 +250,35 @@ try {
     WHERE t.clId = ?
       AND t.tiEstatus != 'Cerrado'
       AND t.estatus = 'Activo'
+    $csFilterSql
+    ORDER BY t.tiFechaCreacion DESC, t.tiId DESC
   ";
-  $types = "i";
-  $params = [$clId];
+  $stT = $pdo->prepare($sqlTickets);
+  $stT->execute(array_merge([$clId], $csParams));
+  $tickets = $stT->fetchAll(PDO::FETCH_ASSOC);
 
-  if (is_array($allowedCsIds)) {
-    $placeholders = implode(',', array_fill(0, count($allowedCsIds), '?'));
-    $sql .= " AND t.csId IN ($placeholders)";
-    $types .= str_repeat('i', count($allowedCsIds));
-    $params = array_merge($params, $allowedCsIds);
-  } elseif ($csIdParam) {
-    $sql .= " AND t.csId = ?";
-    $types .= "i";
-    $params[] = $csIdParam;
-  }
-
-  $sql .= " ORDER BY t.tiFechaCreacion DESC, t.tiId DESC";
-
-  $stmt = $conectar->prepare($sql);
-  $stmt->bind_param($types, ...$params);
-  $stmt->execute();
-  $tickets = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-  // Agregar folio prefijado
   foreach ($tickets as &$t) {
-    $t['folio'] = $prefix . '-' . $t['tiId']; // ENE-17
+    $t['folio'] = $prefix . '-' . (int)$t['tiId'];
   }
   unset($t);
 
   // ==========================
-// 5) Health Checks programados (próximos)
-// ==========================
-$stmt = $conectar->prepare("
+  // 6) Health Checks programados (próximos)
+  // ==========================
+  // Si tienes allowedCsIds, filtramos por sedes permitidas
+  $hcWhere = " WHERE hc.clId = ? AND hc.hcEstatus = 'Programado' ";
+  $hcParams = [$clId];
+
+  if (is_array($allowedCsIds)) {
+    $ph = implode(',', array_fill(0, count($allowedCsIds), '?'));
+    $hcWhere .= " AND hc.csId IN ($ph) ";
+    $hcParams = array_merge($hcParams, $allowedCsIds);
+  } elseif ($csIdParam) {
+    $hcWhere .= " AND hc.csId = ? ";
+    $hcParams[] = $csIdParam;
+  }
+
+  $stHC = $pdo->prepare("
     SELECT 
         hc.hcId,
         hc.hcFechaHora,
@@ -303,37 +292,28 @@ $stmt = $conectar->prepare("
         ) AS equiposCount
     FROM health_check hc
     INNER JOIN cliente_sede cs ON cs.csId = hc.csId
-    WHERE hc.clId = ?
-      AND hc.hcEstatus = 'Programado'
+    $hcWhere
     ORDER BY hc.hcFechaHora ASC
     LIMIT 10
-");
-$stmt->bind_param("i", $clId);
-$stmt->execute();
-$healthChecks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-$healthChecksCount = count($healthChecks);
-
+  ");
+  $stHC->execute($hcParams);
+  $healthChecks = $stHC->fetchAll(PDO::FETCH_ASSOC);
+  $healthChecksCount = count($healthChecks);
 
   // ==========================
   // Respuesta
   // ==========================
-  echo json_encode([
-    'success'         => true,
+  jok([
     'poliza'          => $tipoPoliza,
     'ticketsAbiertos' => $ticketsAbiertos,
     'equipos'         => $equipos,
     'clientePrefix'   => $prefix,
     'tickets'         => $tickets,
-
     'healthChecksCount' => $healthChecksCount,
-    'healthChecks'      => $healthChecks
+    'healthChecks'      => $healthChecks,
   ]);
 
 } catch (Throwable $e) {
-  echo json_encode([
-    'success' => false,
-    'error'   => 'Error interno',
-    'detail'  => $e->getMessage()
-  ]);
+  // En producción NO devuelvas detail (evita fuga)
+  jfail('Error interno', 500);
 }

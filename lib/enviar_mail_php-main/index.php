@@ -6,14 +6,14 @@ $u        = $_GET['uId'];
 // $value = $_POST['value'];
 // $editid = $_POST['id'];
 // echo 1;
-// $query = $conn->query("SELECT * FROM citas WHERE ctFolio = '$editid'");
+// $query = $conectar->query("SELECT * FROM citas WHERE ctFolio = '$editid'");
 // while ($row = $query->fetch_object()) {
 //     $ctFolio = $row->ctFolio;
 //     $ctDoc = $row->ctDocCoti;
 //     $ctCosto = $row->ctCosto;
 //     $uNumCliente = $row->uNumCliente;
 // }
-// $query3 = $conn->query("SELECT * FROM iusuarios WHERE uNumCliente = '$uNumCliente'");
+// $query3 = $conectar->query("SELECT * FROM iusuarios WHERE uNumCliente = '$uNumCliente'");
 // while ($row3 = $query3->fetch_object()) {
 //     $correo = $row3->uEmail;
 //     $nombre = $row3->uNombre;

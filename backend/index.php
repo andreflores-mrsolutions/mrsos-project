@@ -2,7 +2,9 @@
 // admin/index.php
 declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../php/csrf.php';
+$csrf = csrf_token();
+
 
 // Seguridad mínima (vista)
 if (empty($_SESSION['usId'])) {
@@ -12,6 +14,10 @@ if (empty($_SESSION['usId'])) {
 
 $theme = $_COOKIE['mrs_theme'] ?? 'light';
 ?>
+<script>
+  window.MRS_CSRF = <?= json_encode($csrf) ?>;
+</script>
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -279,7 +285,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
             <button class="btn btn-sm btn-outline-secondary" id="btnTheme" type="button" title="Tema">
               <i class="bi bi-moon"></i>
             </button>
-            <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php" title="Salir">
+            <a class="btn btn-sm btn-outline-danger" href="../../php/logout.php" title="Salir">
               <i class="bi bi-box-arrow-right"></i>
             </a>
           </div>

@@ -3,23 +3,26 @@
 declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
-if (session_status() === PHP_SESSION_NONE) session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../php/conexion.php';
 
 // --- Seguridad ---
 if (empty($_SESSION['usId'])) {
   http_response_code(401);
-  echo json_encode(['success' => false, 'error' => 'No autenticado']);
+  echo json_encode(['success' => false, 'error' => 'No autenticado'], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
 $US_ROL = (string)($_SESSION['usRol'] ?? 'CLI');
 if (!in_array($US_ROL, ['MRA', 'MRSA'], true)) {
   http_response_code(403);
-  echo json_encode(['success' => false, 'error' => 'Sin permisos']);
+  echo json_encode(['success' => false, 'error' => 'Sin permisos'], JSON_UNESCAPED_UNICODE);
   exit;
 }
+
+$pdo = db();
 
 // --- Helpers ---
 function daysDiff(string $dateYmd): int {
@@ -61,8 +64,9 @@ function groupByLetter(string $name): string {
 }
 
 function findClientLogoUrl(int $clId, string $clNombre): string {
-  // URL pública
+  // URL pública (desde /admin/api/ -> sube 2 niveles)
   $urlBase = "../../img/Clientes/";
+
   // FS real
   $fsBase = realpath(__DIR__ . "/../../img/Clientes");
   if (!$fsBase) return $urlBase . "cliente_default.png";
@@ -83,93 +87,136 @@ function findClientLogoUrl(int $clId, string $clNombre): string {
   return $urlBase . "cliente_default.png";
 }
 
+// --- Permisos de alcance (anti Telcel) ---
+// MRA: ve todo
+// MRSA: solo ve clientes ligados en `cuentas` por usId
+$usId = (int)($_SESSION['usId'] ?? 0);
+$restrictByCuentas = ($US_ROL === 'MRV');
+
 // --- Data ---
-$clientes = [];
-$sqlClientes = "SELECT clId, clNombre, clEstatus
-                FROM clientes
-                WHERE clEstatus='Activo'
-                ORDER BY clNombre ASC";
-$res = $conectar->query($sqlClientes);
-if ($res) {
-  while ($row = $res->fetch_assoc()) $clientes[] = $row;
-  $res->free();
+// 1) Clientes
+if ($restrictByCuentas) {
+  $stmt = $pdo->prepare("
+    SELECT c.clId, c.clNombre, c.clEstatus
+    FROM clientes c
+    INNER JOIN cuentas cu ON cu.clId = c.clId
+    WHERE c.clEstatus = 'Activo' AND cu.usId = ?
+    GROUP BY c.clId, c.clNombre, c.clEstatus
+    ORDER BY c.clNombre ASC
+  ");
+  $stmt->execute([$usId]);
+} else {
+  $stmt = $pdo->prepare("
+    SELECT clId, clNombre, clEstatus
+    FROM clientes
+    WHERE clEstatus = 'Activo'
+    ORDER BY clNombre ASC
+  ");
+  $stmt->execute();
 }
 
-// sedes
+$clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Si no hay clientes para este admin, responde vacío (sin error)
+if (!$clientes) {
+  echo json_encode([
+    'success' => true,
+    'kpi' => ['open'=>0,'risk'=>0,'critical'=>0,'clients'=>0],
+    'cards' => [],
+    'user' => [
+      'name' => (string)($_SESSION['usUsername'] ?? 'Admin'),
+      'rol'  => $US_ROL,
+    ],
+  ], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
+// lista de clIds (para filtrar los agregados)
+$clIds = array_map(fn($c) => (int)$c['clId'], $clientes);
+$placeholders = implode(',', array_fill(0, count($clIds), '?'));
+
+// 2) Sedes por cliente
 $sedesCount = [];
-$res = $conectar->query("SELECT clId, COUNT(*) AS n
-                         FROM cliente_sede
-                         WHERE csEstatus='Activo'
-                         GROUP BY clId");
-if ($res) {
-  while ($row = $res->fetch_assoc()) $sedesCount[(int)$row['clId']] = (int)$row['n'];
-  $res->free();
+$stmt = $pdo->prepare("
+  SELECT clId, COUNT(*) AS n
+  FROM cliente_sede
+  WHERE csEstatus = 'Activo'
+    AND clId IN ($placeholders)
+  GROUP BY clId
+");
+$stmt->execute($clIds);
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+  $sedesCount[(int)$row['clId']] = (int)$row['n'];
 }
 
-// pólizas
+// 3) Pólizas por cliente
 $polizasByClient = [];
 $polizasCount = [];
-$res = $conectar->query("SELECT pcId, clId, pcTipoPoliza, pcFechaInicio, pcFechaFin, pcEstatus
-                         FROM polizascliente
-                         WHERE pcEstatus <> 'Error'");
-if ($res) {
-  while ($row = $res->fetch_assoc()) {
-    $clId = (int)$row['clId'];
-    $polizasByClient[$clId][] = $row;
-    $polizasCount[$clId] = ($polizasCount[$clId] ?? 0) + 1;
-  }
-  $res->free();
+
+$stmt = $pdo->prepare("
+  SELECT pcId, clId, pcTipoPoliza, pcFechaInicio, pcFechaFin, pcEstatus
+  FROM polizascliente
+  WHERE pcEstatus <> 'Error'
+    AND clId IN ($placeholders)
+");
+$stmt->execute($clIds);
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+  $cid = (int)$row['clId'];
+  $polizasByClient[$cid][] = $row;
+  $polizasCount[$cid] = ($polizasCount[$cid] ?? 0) + 1;
 }
 
-// tickets por cliente
+// 4) Tickets por cliente (abiertos/riesgo/críticos)
 $ticketsOpen = [];
 $ticketsRisk = [];
 $ticketsCritical = [];
 
-$res = $conectar->query("SELECT clId,
-                SUM(tiEstatus='Abierto') AS abiertos,
-                SUM(tiEstatus='Abierto' AND tiNivelCriticidad IN ('1','2')) AS riesgo,
-                SUM(tiEstatus='Abierto' AND tiNivelCriticidad='1') AS criticos
-         FROM ticket_soporte
-         WHERE estatus='Activo'
-         GROUP BY clId");
-if ($res) {
-  while ($row = $res->fetch_assoc()) {
-    $clId = (int)$row['clId'];
-    $ticketsOpen[$clId]     = (int)$row['abiertos'];
-    $ticketsRisk[$clId]     = (int)$row['riesgo'];
-    $ticketsCritical[$clId] = (int)$row['criticos'];
-  }
-  $res->free();
+$stmt = $pdo->prepare("
+  SELECT
+    clId,
+    SUM(CASE WHEN tiEstatus='Abierto' THEN 1 ELSE 0 END) AS abiertos,
+    SUM(CASE WHEN tiEstatus='Abierto' AND tiNivelCriticidad IN ('1','2') THEN 1 ELSE 0 END) AS riesgo,
+    SUM(CASE WHEN tiEstatus='Abierto' AND tiNivelCriticidad='1' THEN 1 ELSE 0 END) AS criticos
+  FROM ticket_soporte
+  WHERE estatus='Activo'
+    AND clId IN ($placeholders)
+  GROUP BY clId
+");
+$stmt->execute($clIds);
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+  $cid = (int)$row['clId'];
+  $ticketsOpen[$cid]     = (int)$row['abiertos'];
+  $ticketsRisk[$cid]     = (int)$row['riesgo'];
+  $ticketsCritical[$cid] = (int)$row['criticos'];
 }
 
-// KPIs
+// 5) KPIs
 $kpi = [
-  'open'    => array_sum($ticketsOpen),
-  'risk'    => array_sum($ticketsRisk),
-  'critical'=> array_sum($ticketsCritical),
-  'clients' => count($clientes),
+  'open'     => array_sum($ticketsOpen),
+  'risk'     => array_sum($ticketsRisk),
+  'critical' => array_sum($ticketsCritical),
+  'clients'  => count($clientes),
 ];
 
-// cards
+// 6) Cards
 $cards = [];
 foreach ($clientes as $c) {
-  $clId = (int)$c['clId'];
+  $cid  = (int)$c['clId'];
   $name = (string)$c['clNombre'];
-  $pols = $polizasByClient[$clId] ?? [];
+  $pols = $polizasByClient[$cid] ?? [];
 
   $status = computeClientStatus($pols);
 
   $cards[] = [
-    'clId' => $clId,
+    'clId' => $cid,
     'name' => $name,
     'group' => groupByLetter($name),
-    'logo' => findClientLogoUrl($clId, $name),
-    'sedes' => (int)($sedesCount[$clId] ?? 0),
-    'polizas' => (int)($polizasCount[$clId] ?? 0),
-    'open' => (int)($ticketsOpen[$clId] ?? 0),
-    'risk' => (int)($ticketsRisk[$clId] ?? 0),
-    'critical' => (int)($ticketsCritical[$clId] ?? 0),
+    'logo' => findClientLogoUrl($cid, $name),
+    'sedes' => (int)($sedesCount[$cid] ?? 0),
+    'polizas' => (int)($polizasCount[$cid] ?? 0),
+    'open' => (int)($ticketsOpen[$cid] ?? 0),
+    'risk' => (int)($ticketsRisk[$cid] ?? 0),
+    'critical' => (int)($ticketsCritical[$cid] ?? 0),
     'status' => $status,
   ];
 }
@@ -192,4 +239,4 @@ echo json_encode([
     'name' => (string)($_SESSION['usUsername'] ?? 'Admin'),
     'rol'  => $US_ROL,
   ],
-]);
+], JSON_UNESCAPED_UNICODE);

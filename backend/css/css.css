@@ -1,0 +1,119 @@
+:root {
+            --mr-bg: #f5f7fb;
+            --mr-card: #ffffff;
+            --mr-border: rgba(15, 23, 42, .10);
+            --mr-text: #0f172a;
+            --mr-muted: rgba(15, 23, 42, .65);
+            --mr-shadow: 0 8px 22px rgba(15, 23, 42, .08);
+            --mr-radius: 14px;
+        }
+
+        body {
+            background: var(--mr-bg);
+        }
+
+        body.dark-mode {
+            background: #0b1220;
+            color: #e5e7eb;
+        }
+
+        .admin-topbar {
+            background: rgba(255, 255, 255, .85);
+            border-bottom: 1px solid var(--mr-border);
+            backdrop-filter: blur(10px);
+        }
+
+        body.dark-mode .admin-topbar {
+            background: rgba(15, 23, 42, .65);
+            border-bottom: 1px solid rgba(148, 163, 184, .18);
+        }
+
+        .panel {
+            background: var(--mr-card);
+            border: 1px solid var(--mr-border);
+            border-radius: var(--mr-radius);
+            box-shadow: var(--mr-shadow);
+            padding: 16px;
+        }
+
+        body.dark-mode .panel {
+            background: rgba(15, 23, 42, .6);
+            border-color: rgba(148, 163, 184, .18);
+        }
+
+        .muted {
+            color: var(--mr-muted);
+        }
+
+        body.dark-mode .muted {
+            color: rgba(226, 232, 240, .75);
+        }
+
+        .badge-pill-soft {
+            border-radius: 999px;
+            padding: .2rem .6rem;
+            font-weight: 700;
+            font-size: .75rem;
+            display: inline-block;
+        }
+
+        .ticket-card {
+            background: var(--mr-card);
+            border: 1px solid var(--mr-border);
+            border-radius: 12px;
+            box-shadow: var(--mr-shadow);
+            padding: 12px;
+            height: 100%;
+        }
+
+        body.dark-mode .ticket-card {
+            background: rgba(15, 23, 42, .6);
+            border-color: rgba(148, 163, 184, .18);
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 999px;
+        }
+
+        .progress-bar {
+            border-radius: 999px;
+        }
+
+        .empty-state {
+            border: 1px dashed var(--mr-border);
+            border-radius: var(--mr-radius);
+            padding: 22px;
+            text-align: center;
+            background: rgba(255, 255, 255, .6);
+        }
+
+        body.dark-mode .empty-state {
+            background: rgba(15, 23, 42, .35);
+            border-color: rgba(148, 163, 184, .18);
+        }
+
+        .table thead th {
+            font-size: .85rem;
+            color: var(--mr-muted);
+            font-weight: 800;
+            text-transform: none;
+        }
+
+        body.dark-mode .table {
+            color: #e5e7eb;
+        }
+
+        body.dark-mode .table thead th {
+            color: rgba(226, 232, 240, .75);
+        }
+
+        .row-crit-1 {
+            border-left: 6px solid #ef4444;
+        }
+
+        .row-crit-2 {
+            border-left: 3px solid #f59e0b;
+        }
+
+        /* .row-crit-3{ border-left: 6px solid #22c55e; } */

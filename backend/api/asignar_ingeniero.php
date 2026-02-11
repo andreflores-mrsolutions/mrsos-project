@@ -21,14 +21,14 @@ try {
   }
 
   // require_once __DIR__.'/db.php';
-  $DB_HOST = 'localhost';
-  $DB_NAME = 'u140302554_mrsos';
-  $DB_USER = 'u140302554_mrsos';
-  $DB_PASS = 'MRsolutions552312#$';
   // $DB_HOST = 'localhost';
-  // $DB_NAME = 'mrsos';
-  // $DB_USER = 'root';
-  // $DB_PASS = '';
+  // $DB_NAME = 'u140302554_mrsos';
+  // $DB_USER = 'u140302554_mrsos';
+  // $DB_PASS = 'MRsolutions552312#$';
+  $DB_HOST = 'localhost';
+  $DB_NAME = 'mrsos';
+  $DB_USER = 'root';
+  $DB_PASS = '';
   $DB_CHARSET = 'utf8mb4';
   $pdo = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME;charset=$DB_CHARSET", $DB_USER, $DB_PASS, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

@@ -67,13 +67,20 @@ if ($_SESSION['usEstatus'] === 'NewPass' || empty($_SESSION['usEstatus'])) {
                                 <a class="me-3 py-2 text-dark text-decoration-none nav-link active" href="#">Inicio</a>
                             </li>
                             <?php
-                            if ($_SESSION['clId'] === 1) {
+                            if ($_SESSION['usRol'] === 'MRA' || $_SESSION['usRol'] === 'MRSA') {
                             ?>
                                 <li class="nav-item">
                                     <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="backend/">Dashboard Admin</a>
                                 </li>
                             <?php
-                            } else {
+                            } if ($_SESSION['usRol'] === 'MRV') {
+ ?>
+                                <li class="nav-item">
+                                    <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="vendedor/">Dashboard Ventas</a>
+                                </li>
+                            <?php
+                            }
+                            else {
                             ?>
                                 <li class="nav-item">
                                     <a class="me-3 py-2 text-dark text-decoration-none nav-link" href="dashboard/poliza.php">Mi Póliza</a>

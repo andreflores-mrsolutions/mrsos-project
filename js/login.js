@@ -37,6 +37,7 @@ $(document).ready(function () {
       data: {
         usId: usId,
         usPass: usPass,
+        csrf_token: window.MRS_CSRF
       },
       dataType: "json", // importante: esperamos JSON
       success: function (response) {

@@ -1,6 +1,32 @@
 <?php
-// headers.php (parte superior)
+declare(strict_types=1);
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+require_once __DIR__ . '/../php/conexion.php';
+require_once __DIR__ . '/../php/auth_guard.php';
+require_once __DIR__ . '/../php/csrf.php';
+require_once __DIR__ . '/../php/json.php';
+require_once __DIR__ . '/../php/admin_bootstrap.php';
+
+$ROL = $_SESSION['usRol'] ?? null;
+
+$ROLES_PERMITIDOS = ['CLI', 'MRV', 'MRA', 'MRSA'];
+
+if (!$ROL || !in_array($ROL, $ROLES_PERMITIDOS, true)) {
+    http_response_code(403);
+    exit('Acceso no autorizado');
+}
+
+
+// CSRF para JS
+$csrf = csrf_token();
+
+// Tema
 $theme = $_COOKIE['mrs_theme'] ?? 'light';
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . "/../php/conexion.php"; // ajusta la ruta si aplica
 
@@ -129,6 +155,9 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <!-- css -->
   <link href="../css/style.css" rel="stylesheet">
 
+<script>
+  window.MRS_CSRF = <?= json_encode($csrf) ?>;
+</script>
 
 </head>
 
@@ -1019,3 +1048,6 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
     <i class="bi bi-plus mx-auto my-auto"></i>
   </div>
 </a>
+
+
+</script>
