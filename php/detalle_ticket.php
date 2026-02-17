@@ -30,7 +30,7 @@ if (!$tiId) {
 $sql = "
 SELECT
   t.tiId, t.clId, t.peId, t.csId,
-  t.tiDescripcion, t.tiEstatus, t.tiProceso, t.tiTipoTicket, t.tiExtra,
+  t.tiDescripcion, t.tiEstatus, t.tiProceso, t.tiTipoTicket, t.tiExtra,tiDiagnostico,
   t.tiNivelCriticidad, t.tiFechaCreacion, t.tiVisita,
   t.tiNombreContacto, t.tiNumeroContacto, t.tiCorreoContacto,
   t.tiMeetFecha,

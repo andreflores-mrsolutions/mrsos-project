@@ -411,107 +411,272 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
     </div>
 
 
+    <!-- OFFCANVAS: Ver logs (ADMIN) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offVerLogs" aria-labelledby="offVerLogsLabel" style="width: 980px;">
+        <div class="offcanvas-header">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="offVerLogsLabel">Ver Logs</h5>
+                <div class="text-muted" style="font-size:.9rem;">Revisa y descarga los logs del ticket</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+            <!-- contexto del ticket -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                    <div class="fw-bold" id="asgTicketCodigoLogs">—</div>
+                    <div class="text-muted" style="font-size:.9rem;" id="asgTicketEquipoLogs">—</div>
+                    <div class="text-muted" style="font-size:.85rem;" id="asgTicketSNLogs">—</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <span class="badge rounded-pill text-bg-light" id="asgTicketPasoLogs">—</span>
+                    <span class="badge rounded-pill text-bg-secondary" id="asgTicketEstadoLogs">—</span>
+                </div>
+            </div>
+
+            <div id="logsLoading" class="text-muted">Cargando logs...</div>
+            <div id="logsEmpty" class="alert alert-warning d-none">No hay logs para este ticket.</div>
+
+            <div class="row g-3 mt-1">
+                <!-- LISTA -->
+                <div class="col-12 col-lg-4">
+                    <div class="p-3 border rounded-4" style="background:#fff;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="fw-bold">Archivos</div>
+                            <span class="text-muted" style="font-size:.85rem;" id="logsCount">—</span>
+                        </div>
+                        <div id="logsList"></div>
+                    </div>
+                </div>
+
+                <!-- VISOR -->
+                <div class="col-12 col-lg-8">
+                    <div class="p-3 border rounded-4 h-100" style="background:#fff;">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-bold" id="asgLogViewTitle">Selecciona un archivo</div>
+                                <div class="text-muted" style="font-size:.85rem;" id="asgLogViewMeta">—</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-secondary btn-sm d-none" id="btnDownloadLog" href="#" download>
+                                    <i class="bi bi-download"></i> Descargar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 d-none" id="logTooLarge">
+                            Este archivo es muy extenso para mostrarse en pantalla. Descárgalo para revisarlo completo.
+                        </div>
+
+                        <pre id="logViewer"
+                            class="mt-3 p-3 rounded-3"
+                            style="min-height:420px; max-height:620px; overflow:auto; background:#0b1220; color:#e5e7eb; font-size:.85rem; border:1px solid rgba(15,23,42,.10);"></pre>
+                    </div>
+                </div>
+            </div>
+            <!-- Acciones de Logs (ADMIN) -->
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <button class="btn btn-outline-warning" id="btnSolicitarLogs">
+                    <i class="bi bi-bell"></i> Solicitar nuevamente logs
+                </button>
+
+                <button class="btn btn-outline-success" id="btnLogsOK">
+                    <i class="bi bi-check2-circle"></i> Logs correctos · Continuar
+                </button>
+
+                <div class="ms-auto text-muted" style="font-size:.9rem;" id="logsHint">
+                    Si los archivos no coinciden o son antiguos, solicita nuevamente los logs.
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex justify-content-end gap-2">
+
+                <button class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- OFFCANVAS: Meet (Admin) -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offMeet" aria-labelledby="offMeetLabel" style="width: 440px;">
-  <div class="offcanvas-header">
-    <div>
-      <h5 class="offcanvas-title fw-bold" id="offMeetLabel">Meet de apoyo</h5>
-      <div class="muted" style="font-size:.85rem;">
-        El cliente propone 3 horarios. El ingeniero/admin confirma 1.
-      </div>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offMeet" aria-labelledby="offMeetLabel" style="width: 440px;">
+        <div class="offcanvas-header">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="offMeetLabel">Meet de apoyo</h5>
+                <div class="muted" style="font-size:.85rem;">
+                    El cliente propone 3 horarios. El ingeniero/admin confirma 1.
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+            <!-- Header ticket -->
+            <div class="p-3 rounded-3 mb-3" style="border:1px solid rgba(15,23,42,.10);">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-bold" id="meetCodigo">—</div>
+                        <div class="muted" style="font-size:.9rem;" id="meetEquipo">—</div>
+                        <div class="muted" style="font-size:.85rem;" id="meetSN">—</div>
+                    </div>
+                    <div class="text-end">
+                        <span id="meetEstadoBadge" class="badge text-bg-secondary">—</span>
+                        <div class="muted mt-1" style="font-size:.8rem;" id="meetAutor"> </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Estado del Meet</div>
+                <div id="meetStatusBox" class="p-3 rounded-3" style="border:1px solid rgba(15,23,42,.10);">
+                    <div class="muted">Cargando…</div>
+                </div>
+            </div>
+
+            <!-- Propuestas -->
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Opciones propuestas</div>
+                <div id="meetOptions" class="d-grid gap-2"></div>
+                <div class="muted mt-2" style="font-size:.8rem;">
+                    Al aceptar una opción, el Meet queda confirmado y el resto se rechaza.
+                </div>
+            </div>
+
+            <!-- Proponer por ingeniero (opcional) -->
+            <div class="mb-2" id="meetProponerWrap">
+                <div class="fw-bold mb-2">Proponer horarios (Ingeniero)</div>
+
+                <div class="p-3 rounded-3" style="border:1px solid rgba(15,23,42,.10);">
+                    <div class="muted mb-2" style="font-size:.85rem;">
+                        Úsalo cuando el cliente no pueda proponer o para planes de trabajo. (No es lo común, pero está disponible.)
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 1</label>
+                        <input type="datetime-local" class="form-control" id="meetOp1">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 2</label>
+                        <input type="datetime-local" class="form-control" id="meetOp2">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 3</label>
+                        <input type="datetime-local" class="form-control" id="meetOp3">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label muted mb-1" style="font-size:.85rem;">Plataforma (opcional)</label>
+                        <select class="form-select" id="meetPlataforma">
+                            <option value="">—</option>
+                            <option value="Teams">Teams</option>
+                            <option value="Google Meet">Google Meet</option>
+                            <option value="Zoom">Zoom</option>
+                            <option value="Llamada">Llamada</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label muted mb-1" style="font-size:.85rem;">Motivo (opcional)</label>
+                        <input class="form-control" id="meetMotivo" placeholder="Ej: Apoyo extracción de logs">
+                    </div>
+
+                    <button class="btn btn-outline-primary w-100" id="btnMeetProponer">
+                        <i class="bi bi-calendar-plus"></i> Enviar 3 opciones
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-outline-secondary flex-grow-1" id="btnMeetReload">
+                    <i class="bi bi-arrow-clockwise"></i> Recargar
+                </button>
+                <button class="btn btn-primary flex-grow-1" id="btnMeetCerrar" data-bs-dismiss="offcanvas">
+                    Cerrar
+                </button>
+            </div>
+        </div>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
 
-  <div class="offcanvas-body">
-    <!-- Header ticket -->
-    <div class="p-3 rounded-3 mb-3" style="border:1px solid rgba(15,23,42,.10);">
-      <div class="d-flex justify-content-between align-items-start gap-2">
-        <div>
-          <div class="fw-bold" id="meetCodigo">—</div>
-          <div class="muted" style="font-size:.9rem;" id="meetEquipo">—</div>
-          <div class="muted" style="font-size:.85rem;" id="meetSN">—</div>
+    <!-- OFFCANVAS: Logs · Acción (ADMIN) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offLogsAccion" aria-labelledby="offLogsAccionLabel" style="width: 520px;">
+        <div class="offcanvas-header">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="offLogsAccionLabel">Acción</h5>
+                <div class="text-muted" style="font-size:.9rem;" id="offLogsAccionSub">—</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
-        <div class="text-end">
-          <span id="meetEstadoBadge" class="badge text-bg-secondary">—</span>
-          <div class="muted mt-1" style="font-size:.8rem;" id="meetAutor"> </div>
+
+        <div class="offcanvas-body">
+            <!-- Contexto -->
+            <div class="p-3 rounded-4 border bg-white mb-3">
+                <div class="fw-bold" id="laCodigo">—</div>
+                <div class="text-muted" style="font-size:.9rem;" id="laEquipo">—</div>
+                <div class="text-muted" style="font-size:.85rem;" id="laSN">—</div>
+            </div>
+
+            <!-- Texto -->
+            <label class="form-label fw-bold" id="laLabel">Descripción</label>
+            <textarea class="form-control" id="laTexto" rows="6" maxlength="1200"
+                placeholder="Describe el diagnóstico / motivo (síntomas, evidencia, impacto). Si no hay info suficiente: “Faltan datos”."></textarea>
+
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <div class="text-muted" style="font-size:.85rem;">
+                    Tip: usa formato corto tipo checklist para mejor lectura.
+                </div>
+                <div class="text-muted" style="font-size:.85rem;">
+                    <span id="laCount">0</span>/1200
+                </div>
+            </div>
+
+            <!-- Autorrellenos -->
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-fill="Faltan datos">Insertar “Faltan datos”</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-fill="Falla de disco duro">Falla de disco duro</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-fill="Logs antiguos (fecha fuera de ventana) · Solicito recaptura.">Logs antiguos</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-fill="Logs incorrectos (no corresponde al equipo / SN) · Solicito logs correctos.">Logs incorrectos</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-fill="Checklist:\n- Síntoma:\n- Evidencia:\n- Hipótesis:\n- Impacto:\n- Siguiente paso:">Insertar checklist</button>
+                <button class="btn btn-outline-danger btn-sm ms-auto" type="button" id="laClear">Limpiar</button>
+            </div>
+
+            <!-- Siguiente paso (solo cuando sea “continuar”) -->
+            <div class="mt-3 d-none" id="laNextWrap">
+                <label class="form-label fw-bold">Siguiente paso del ticket</label>
+                <select class="form-select" id="laNextStep"></select>
+                <div class="text-muted mt-1" style="font-size:.85rem;">
+                    Elige el proceso al que se moverá el ticket. (Admin decide)
+                </div>
+            </div>
+
+            <hr class="my-3" style="opacity:.15;">
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary w-50" data-bs-dismiss="offcanvas">Cancelar</button>
+                <button class="btn btn-primary w-50" id="laSubmit">Guardar</button>
+            </div>
         </div>
-      </div>
     </div>
-
-    <!-- Estado -->
-    <div class="mb-3">
-      <div class="fw-bold mb-2">Estado del Meet</div>
-      <div id="meetStatusBox" class="p-3 rounded-3" style="border:1px solid rgba(15,23,42,.10);">
-        <div class="muted">Cargando…</div>
-      </div>
+    <!-- Toast container -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+        <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ✅ Ticket creado exitosamente.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+        <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ❌ Error al crear el ticket.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
     </div>
-
-    <!-- Propuestas -->
-    <div class="mb-3">
-      <div class="fw-bold mb-2">Opciones propuestas</div>
-      <div id="meetOptions" class="d-grid gap-2"></div>
-      <div class="muted mt-2" style="font-size:.8rem;">
-        Al aceptar una opción, el Meet queda confirmado y el resto se rechaza.
-      </div>
-    </div>
-
-    <!-- Proponer por ingeniero (opcional) -->
-    <div class="mb-2" id="meetProponerWrap">
-      <div class="fw-bold mb-2">Proponer horarios (Ingeniero)</div>
-
-      <div class="p-3 rounded-3" style="border:1px solid rgba(15,23,42,.10);">
-        <div class="muted mb-2" style="font-size:.85rem;">
-          Úsalo cuando el cliente no pueda proponer o para planes de trabajo. (No es lo común, pero está disponible.)
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 1</label>
-          <input type="datetime-local" class="form-control" id="meetOp1">
-        </div>
-        <div class="mb-2">
-          <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 2</label>
-          <input type="datetime-local" class="form-control" id="meetOp2">
-        </div>
-        <div class="mb-2">
-          <label class="form-label muted mb-1" style="font-size:.85rem;">Opción 3</label>
-          <input type="datetime-local" class="form-control" id="meetOp3">
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label muted mb-1" style="font-size:.85rem;">Plataforma (opcional)</label>
-          <select class="form-select" id="meetPlataforma">
-            <option value="">—</option>
-            <option value="Teams">Teams</option>
-            <option value="Google Meet">Google Meet</option>
-            <option value="Zoom">Zoom</option>
-            <option value="Llamada">Llamada</option>
-          </select>
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label muted mb-1" style="font-size:.85rem;">Motivo (opcional)</label>
-          <input class="form-control" id="meetMotivo" placeholder="Ej: Apoyo extracción de logs">
-        </div>
-
-        <button class="btn btn-outline-primary w-100" id="btnMeetProponer">
-          <i class="bi bi-calendar-plus"></i> Enviar 3 opciones
-        </button>
-      </div>
-    </div>
-
-    <div class="mt-3 d-flex gap-2">
-      <button class="btn btn-outline-secondary flex-grow-1" id="btnMeetReload">
-        <i class="bi bi-arrow-clockwise"></i> Recargar
-      </button>
-      <button class="btn btn-primary flex-grow-1" id="btnMeetCerrar" data-bs-dismiss="offcanvas">
-        Cerrar
-      </button>
-    </div>
-  </div>
-</div>
-
-
 
 
     <style>

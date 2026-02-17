@@ -52,61 +52,30 @@ class NotificationService
 
   public function dispatch(string $action, array $ctx, string $folio): array
   {
+    $tiId = intval($ctx['tiId'] ?? 0);
+    $texto = trim(strval($ctx['texto'] ?? ''));
+    $titulo = trim(strval($ctx['titulo'] ?? ''));
+
+    if (!$tiId) throw new Exception("tiId requerido");
+
+    $folio = $folio ?? '';
+    if (!$folio) throw new Exception("folio requerido");
+
+    $actors = $this->getTicketActors($tiId);
+    $usIdCliente = $actors['cliente'];
     // ctx típico: ['tiId'=>123, 'byUsId'=>1, ...]
-    switch ($action) {
-
-      case 'solicitar_logs': {
-          $tiId = intval($ctx['tiId'] ?? 0);
-          if (!$tiId) throw new Exception("tiId requerido");
-
-          $folio = $folio ?? '';
-          if (!$folio) throw new Exception("folio requerido");
-
-          $actors = $this->getTicketActors($tiId);
-          $usIdCliente = $actors['cliente'];
-
-          $title = "MR SOS • Solicitud de logs";
-          $body  = "Por favor sube los logs del ticket $folio para continuar el diagnóstico.";
-
-          $tokens = $this->getUserTokens($usIdCliente);
-          return $this->fcm->sendToTokens($tokens, $title, $body, [
-            'type' => 'solicitar_logs',
-            'data' => [
-              'type' => 'solicitar_logs',
-              'tiId' => (string)$tiId,
-              'folio' => (string)$folio
-            ]
-          ]);
-        }
-
-      case 'cambio_estado': {
-          $tiId = intval($ctx['tiId'] ?? 0);
-          $estado = trim(strval($ctx['estado'] ?? ''));
-          if (!$tiId || $estado === '') throw new Exception("tiId y estado requeridos");
-
-          $folio = $folio ?? '';
-          if (!$folio) throw new Exception("folio requerido");
-
-          $actors = $this->getTicketActors($tiId);
-          $usIdCliente = $actors['cliente'];
-
-          $title = "MR SOS • Actualización de ticket";
-          $body  = "Tu ticket #$folio cambió a: $estado";
-
-          $tokens = $this->getUserTokens($usIdCliente);
-          return $this->fcm->sendToTokens($tokens, $title, $body, [
-            'type' => 'cambio_estado',
-            'data' => [
-              'type' => 'cambio_estado',
-              'tiId' => (string)$tiId,
-              'folio' => (string)$folio,
-              'estado' => $estado,
-            ]
-          ]);
-        }
-
-      default:
-        throw new Exception("Acción no soportada: $action");
+    try {
+      $tokens = $this->getUserTokens($usIdCliente);
+      return $this->fcm->sendToTokens($tokens, $titulo, $texto, [
+        'type' => $action,
+        'data' => [
+          'type' => $action,
+          'tiId' => (string)$tiId,
+          'folio' => (string)$folio
+        ]
+      ]);
+    } catch (Exception $e) {
+      return ['ok' => false, 'error' => $e->getMessage()];
     }
   }
 }

@@ -45,13 +45,7 @@ try {
   if (!$t) json_fail('Ticket no encontrado', 404);
   if (($t['estatus'] ?? '') !== 'Activo') json_fail('Ticket no activo', 409);
 
-  // ✅ Regla mínima (por ahora): permitir avanzar desde MEET a REVISION ESPECIAL
-  // (Si quieres luego metemos matriz de transiciones)
-  $actual = mb_strtolower((string)($t['tiProceso'] ?? ''));
-  if ($procesoN === 'revision especial' && $actual !== 'meet') {
-    // ojo: si luego quieres permitir logs -> revision especial, aquí lo abres
-    json_fail("Transición no permitida: {$actual} -> {$procesoN}", 409);
-  }
+
 
   $up = $pdo->prepare("UPDATE ticket_soporte SET tiProceso=? WHERE tiId=? LIMIT 1");
   $up->execute([$procesoN, $tiId]);

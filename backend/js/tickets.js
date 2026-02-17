@@ -1,3 +1,6 @@
+
+const NOTIFY_URL = '../php/notify.php';
+
 function getCsrf() {
     // ajusta aquí el nombre REAL que estás imprimiendo en PHP
     return (window.MRS_CSRF && window.MRS_CSRF.csrf) ? window.MRS_CSRF.csrf : '';
@@ -76,6 +79,181 @@ const state = {
 // -------------------------
 // STEPS (tu flujo real)
 // -------------------------
+
+// -------------------------
+// Logs · Acciones ADMIN
+// -------------------------
+const logsActionState = {
+    mode: null, // 'solicitar' | 'continuar'
+    tiId: 0,
+};
+
+const ADMIN_STEPSs = [
+    'asignacion', 'revision inicial', 'logs', 'meet', 'revision especial', 'espera refaccion',
+    'visita', 'fecha asignada', 'espera ventana', 'espera visita', 'en camino',
+    'espera documentacion', 'encuesta satisfaccion', 'finalizado', 'cancelado',
+    'fuera de alcance', 'servicio por evento'
+];
+
+function fillNextStepsSelect(currentStep) {
+    const $sel = $('#laNextStep');
+    $sel.empty();
+
+    // regla: no muestres "logs" como siguiente en continuar (ya lo pasaste)
+    const list = ADMIN_STEPSs.filter(x => x !== 'logs');
+
+    list.forEach(s => {
+        $sel.append(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
+    });
+
+    // sugerencia default: si vienes de logs, normalmente a revision especial
+    if ((currentStep || '') === 'logs') $sel.val('revision especial');
+}
+
+function openLogsAccionOffcanvas(mode, tiId) {
+    const t = findTicketById(tiId);
+    if (!t) return;
+
+    logsActionState.mode = mode;
+    logsActionState.tiId = Number(tiId);
+
+    const pref = clientePrefix(state.meta.clNombre);
+    $('#laCodigo').text(`${pref}-${Number(t.tiId)}`);
+    $('#laEquipo').text((t.eqModelo || 'Equipo') + (t.eqVersion ? ' · ' + t.eqVersion : ''));
+    $('#laSN').text(t.peSN ? ('SN: ' + t.peSN) : 'SN: —');
+
+    const step = normalizeStep(t.tiProceso);
+
+    if (mode === 'solicitar') {
+        $('#offLogsAccionLabel').text('Solicitar nuevamente logs');
+        $('#offLogsAccionSub').text('Envía solicitud al cliente y regresa el ticket a “logs”.');
+        $('#laLabel').text('Motivo de solicitud');
+        $('#laTexto').attr('placeholder', 'Ej: Logs antiguos / incorrectos / incompletos. Indica qué se requiere.');
+        $('#laNextWrap').addClass('d-none');
+        $('#laSubmit').text('Solicitar logs');
+    } else {
+        $('#offLogsAccionLabel').text('Diagnóstico y continuar');
+        $('#offLogsAccionSub').text('Guarda diagnóstico y mueve el ticket al siguiente proceso.');
+        $('#laLabel').text('Diagnóstico / estado');
+        $('#laTexto').attr('placeholder', 'Describe diagnóstico (evidencia, hipótesis, impacto) y qué sigue.');
+        $('#laNextWrap').removeClass('d-none');
+        fillNextStepsSelect(step);
+        $('#laSubmit').text('Guardar y continuar');
+    }
+
+    // contador
+    const v = $('#laTexto').val() || '';
+    $('#laCount').text(v.length);
+
+    const el = document.getElementById('offLogsAccion');
+    bootstrap.Offcanvas.getOrCreateInstance(el, { backdrop: true, scroll: false }).show();
+}
+
+// UI helpers del offcanvas
+$(document).on('input', '#laTexto', function () {
+    $('#laCount').text((this.value || '').length);
+});
+$(document).on('click', '[data-fill]', function () {
+    const txt = String($(this).data('fill') || '');
+    const $ta = $('#laTexto');
+    const cur = $ta.val() || '';
+    $ta.val(cur ? (cur + '\n' + txt) : txt).trigger('input');
+});
+$('#laClear').on('click', () => $('#laTexto').val('').trigger('input'));
+
+// Botones en offVerLogs
+$('#btnSolicitarLogs').on('click', function () {
+    if (!asgContext?.tiId) return;            // o tu contexto real de logs
+    openLogsAccionOffcanvas('solicitar', asgContext.tiId);
+});
+
+$('#btnLogsOK').on('click', function () {
+    if (!asgContext?.tiId) return;
+    openLogsAccionOffcanvas('continuar', asgContext.tiId);
+});
+
+// ---- APIs ----
+async function apiSolicitarLogs(tiId, motivo) {
+    console.log('apiSolicitarLogs', { tiId, motivo });
+    const csrf = (window.MRS_CSRF?.csrf || '');
+    const res = await fetch(`api/logs_solicitar.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf
+        },
+        body: JSON.stringify({ tiId: Number(tiId), motivo: motivo || '' })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error logs_solicitar');
+    await sendTicketNotificationByProceso('solicitar_logs', tiId);
+    return json;
+}
+
+async function apiDiagnosticoContinuar(tiId, diagnostico, nextStep) {
+    const csrf = (window.MRS_CSRF?.csrf || '');
+    const res = await fetch(`api/ticket_diagnostico.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf
+        },
+        body: JSON.stringify({
+            tiId: Number(tiId),
+            diagnostico: diagnostico || '',
+            nextStep: nextStep || ''
+        })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) { throw new Error(json.error || 'Error ticket_diagnostico'); return; }
+    await sendTicketNotificationByProceso(nextStep, tiId);
+    mostrarToast('success', 'Ingeniero asignado correctamente y notificado al cliente.');
+    return json;
+
+}
+
+// Submit del offcanvas
+$('#laSubmit').on('click', async function () {
+    const tiId = logsActionState.tiId;
+    const texto = ($('#laTexto').val() || '').trim();
+
+
+    try {
+        $(this).prop('disabled', true);
+        console.log('Submit acción logs', { mode: logsActionState.mode, tiId, texto });
+
+        if (logsActionState.mode === 'solicitar') {
+            await apiSolicitarLogs(tiId, texto || 'Solicito nuevamente logs.');
+        } else {
+            const nextStep = String($('#laNextStep').val() || '').trim();
+            await apiDiagnosticoContinuar(tiId, texto || 'Faltan datos', nextStep);
+
+        }
+
+        // Cerrar offcanvas
+        bootstrap.Offcanvas.getInstance(document.getElementById('offLogsAccion'))?.hide();
+        // Recargar tickets para reflejar nuevo estado/proceso
+        await fetchTickets();
+        // (opcional) reabrir el ticket offcanvas principal si quieres
+        // openTicketOffcanvasById(tiId);
+
+    } catch (err) {
+        alert(err?.message || 'Error');
+    } finally {
+        $(this).prop('disabled', false);
+    }
+});
+
+async function notifyCambioProceso(t, nuevoProceso, nota) {
+    return sendTicketNotification('cambio_estado', t, {
+        proceso: nuevoProceso,
+        texto: nota || `El ticket avanzó a: ${nuevoProceso}`,
+        titulo: 'Actualización de ticket'
+    });
+}
+
 const STEPS = [
     'asignacion',
     'revision inicial',
@@ -443,22 +621,13 @@ function accionesDeTicket(t) {
         },];
     }
     if (a.key === 'admin_revision_especial') {
+
         return [{
-            label: 'Descargar Logs',
-            kind: 'primary',
-            action: 'logs_revisar'
-        },
-        {
-            label: 'Solicitar Logs',
-            kind: 'outline',
-            action: 'logs_solicitar'
-        },
-        {
-            label: 'Revisión Especial',
+            label: 'Revisión',
             kind: 'outline',
             action: 'revision_especial'
-        }
-        ];
+        },];
+
     }
 
     // default: una sola acción principal
@@ -1032,19 +1201,32 @@ $(document).on('click', '.btnAccion', function (e) {
 });
 
 // Acciones principales dentro del offcanvas (placeholder)
-$(document).on('click', '#offPrimaryAction', function () {
+$(document).on('click', '#offPrimaryAction', async function () {
     const tiId = Number($(this).data('ti'));
+    const t = findTicketById(tiId);
     const tifolio = ticketCodigo(findTicketById(tiId));
     const action = String($(this).data('action') || '');
 
     if (action === 'admin_logs') {
 
-        solicitarLogs(tiId, tifolio);
+        // Ej: después de guardar en API el cambio de proceso:
+        // await notifyCambioProceso(t, 'solicitar_logs', 'Se requieren los logs para continuar con el diagnóstico. Por favor, súbelos usando el botón "Subir Logs".');
+        await sendTicketNotification('solicitar_logs', t, {
+            proceso: 'logs',
+            texto: 'Necesitamos que vuelvas a cargar los logs. Los anteriores no son válidos / están desactualizados.',
+            titulo: 'Solicitud de logs'
+        });
         return;
     }
+    if (action === 'admin_revision_especial') {
+        verLogsOffcanvas(tiId);
+        // reivisionLogs(tiId, tifolio);
+        return;
+    }
+
     if (action === 'asignar_ingeniero') {
         openAsignarIngenieroOffcanvas(tiId);
-        cambiarEstadoTicket(tiId, 'Asignación en proceso');
+
         return;
     }
 
@@ -1084,6 +1266,7 @@ const API_INGENIEROS = 'api/obtener_ingenieros.php';
 const API_ASIGNAR = 'api/asignar_ingeniero.php';
 
 let offAsignarIngInstance = null;
+let verLogsInstance = null;
 let asgContext = {
     tiId: 0,
     ticket: null,
@@ -1131,6 +1314,54 @@ async function openAsignarIngenieroOffcanvas(tiId) {
     buildExpertoOptions(asgContext.ingenieros);
     renderIngenierosAsignacion();
 }
+
+async function verLogsOffcanvas(tiId) {
+    const t = findTicketById(tiId);
+    if (!t) return;
+
+    asgContext.tiId = Number(tiId);
+    asgContext.ticket = t;
+
+    // header (usa tus ids actuales)
+    const pref = clientePrefix(state.meta.clNombre);
+    $('#asgTicketCodigoLogs').text(`${pref}-${Number(t.tiId)}`);
+    $('#asgTicketEquipoLogs').text((t.eqModelo || 'Equipo') + (t.eqVersion ? ' · ' + t.eqVersion : ''));
+    $('#asgTicketSNLogs').text(t.peSN ? ('SN: ' + t.peSN) : 'SN: —');
+    $('#asgTicketPasoLogs').text(`Paso: ${t.tiProceso || '—'}`);
+    $('#asgTicketEstadoLogs').text(t.tiEstatus || '—');
+
+    // UI
+    $('#logsLoading, #asgLoading').removeClass('d-none').text('Cargando logs...');
+    $('#logsEmpty, #asgEmpty').addClass('d-none');
+    $('#logsList, #asgWrap').empty();
+    $('#logViewer').text('');
+    $('#logTooLarge').addClass('d-none');
+
+    const el = document.getElementById('offVerLogs');
+    verLogsInstance = bootstrap.Offcanvas.getOrCreateInstance(el, { backdrop: true, scroll: false });
+    verLogsInstance.show();
+
+    // ✅ ahora sí: trae archivos y rindea
+    const files = await fetchLogs(asgContext.tiId);
+    renderLogs(files);
+}
+async function fetchLogs(tiId) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+
+    const res = await fetch(`api/logs_list.php?tiId=${encodeURIComponent(Number(tiId))}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrf }, // no es obligatorio en GET, pero ok
+        cache: 'no-store'
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error logs_list');
+
+    // json.files debe ser arreglo
+    return Array.isArray(json.files) ? json.files : [];
+}
+
 
 async function fetchIngenieros() {
     try {
@@ -1215,6 +1446,164 @@ function ingAvatar(usId) {
     // ejemplo que ya manejas: /img/Ingeniero/idUsIng.svg
     return `../img/Ingeniero/${Number(usId)}.svg`;
 }
+
+function bytesToHuman(bytes) {
+    const b = Number(bytes || 0);
+    if (!b) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+    return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+function isTxtLike(name) {
+    const n = (name || '').toLowerCase();
+    return n.endsWith('.txt') || n.endsWith('.log') || n.endsWith('.out') || n.endsWith('.cfg') || n.endsWith('.ini');
+}
+
+/**
+ * Renderiza la vista de logs:
+ * - panel izquierdo: lista de archivos
+ * - panel derecho: visor (preview) o aviso “muy extenso”
+ */
+function renderLogs(files) {
+    files = Array.isArray(files) ? files : [];
+
+    $('#logsLoading').addClass('d-none');
+    $('#logsEmpty').toggleClass('d-none', files.length !== 0);
+    $('#logsCount').text(files.length ? `${files.length} archivo(s)` : '0');
+
+    $('#logsList').empty();
+    $('#logViewer').text('');
+    $('#logViewTitle').text('Selecciona un archivo');
+    $('#logViewMeta').text('—');
+    $('#logTooLarge').addClass('d-none');
+    $('#btnDownloadLog').addClass('d-none').attr('href', '#');
+
+    if (!files.length) return;
+
+    files.forEach(f => {
+        const filename = f.filename || 'archivo.txt';
+        const sizeTxt = bytesToHuman(f.size_bytes);
+        const uploaded = f.uploaded_at ? String(f.uploaded_at).substring(0, 19).replace('T', ' ') : '—';
+        const badge = isTxtLike(filename)
+            ? `<span class="badge rounded-pill text-bg-light border">TXT</span>`
+            : `<span class="badge rounded-pill text-bg-secondary">ARCHIVO</span>`;
+
+        const canPreview = !!f.can_preview; // ideal que venga del server por size/mime
+        const btnVer = canPreview
+            ? `<button class="btn btn-dark btn-sm px-3 btnVerLog" data-id="${Number(f.id)}">Ver</button>`
+            : `<button class="btn btn-outline-secondary btn-sm px-3 btnVerLog" data-id="${Number(f.id)}">Ver</button>`;
+
+        const card = $(`
+      <div class="p-3 border rounded-4 mb-2" style="background:#fff; cursor:pointer;">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="fw-bold" style="font-size:.95rem;">${escapeHtml(filename)}</div>
+          ${badge}
+        </div>
+
+        <div class="text-muted mt-1" style="font-size:.85rem;">
+          <div class="d-flex justify-content-between"><span>Tamaño</span><span>${escapeHtml(sizeTxt)}</span></div>
+          <div class="d-flex justify-content-between"><span>Subido</span><span>${escapeHtml(uploaded)}</span></div>
+        </div>
+
+        <div class="mt-2 d-flex gap-2">
+          ${btnVer}
+          <a class="btn btn-outline-secondary btn-sm px-3"
+             href="${escapeHtml(f.download_url || '#')}"
+             ${f.download_url ? 'download' : ''}
+             onclick="event.stopPropagation();">
+             Descargar
+          </a>
+        </div>
+      </div>
+    `);
+
+        // click al card = ver (si se puede)
+        card.on('click', function () {
+            const id = Number(f.id);
+            if (id) openLogPreview(id);
+        });
+
+        $('#logsList').append(card);
+    });
+}
+
+async function apiLogPreview(fileId) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+
+    const res = await fetch(`api/logs_preview.php?id=${encodeURIComponent(Number(fileId))}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrf },
+        cache: 'no-store'
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error logs_preview');
+    return json;
+}
+
+function setDownload(url) {
+    if (url) {
+        $('#btnDownloadLog').removeClass('d-none').attr('href', url);
+    } else {
+        $('#btnDownloadLog').addClass('d-none').attr('href', '#');
+    }
+}
+
+function bytesToHuman(bytes) {
+    const b = Number(bytes || 0);
+    if (!b) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+    return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+/**
+ * Abre vista previa del txt/log.
+ * - si too_large: muestra aviso + botón descargar
+ * - si ok: imprime contenido en <pre>
+ */
+async function openLogPreview(fileId) {
+    try {
+        $('#logTooLarge').addClass('d-none');
+        $('#logViewer').text('Cargando...');
+        $('#logViewTitle').text('Cargando...');
+        $('#logViewMeta').text('—');
+        setDownload(null);
+
+        const data = await apiLogPreview(fileId);
+
+        const filename = data.filename || 'Log';
+        const sizeTxt = bytesToHuman(data.size_bytes);
+
+        $('#logViewTitle').text(filename);
+
+        if (data.download_url) setDownload(data.download_url);
+
+        if (data.too_large) {
+            $('#logViewMeta').text(`${sizeTxt} · Vista previa deshabilitada`);
+            $('#logViewer').text('');
+            $('#logTooLarge')
+                .removeClass('d-none')
+                .text('Este archivo es muy extenso para mostrarse en pantalla. Descárgalo para revisarlo completo.');
+            return;
+        }
+
+        const content = (data.content ?? '').toString();
+        $('#logViewMeta').text(`${sizeTxt} · Vista previa`);
+        $('#logViewer').text(content || '(Archivo vacío)');
+    } catch (err) {
+        console.error(err);
+        $('#logViewTitle').text('No se pudo cargar');
+        $('#logViewMeta').text('—');
+        $('#logViewer').text('');
+        $('#logTooLarge')
+            .removeClass('d-none')
+            .text('No se pudo cargar la vista previa. Descarga el archivo para revisarlo.');
+    }
+}
+
 
 function renderIngenierosAsignacion() {
     const list = filtrarIngenieros();
@@ -1367,6 +1756,12 @@ $(document).on('click', '.btnAsignarIng', async function (e) {
         const el = document.getElementById('offAsignarIng');
         bootstrap.Offcanvas.getInstance(el)?.hide();
 
+        await sendTicketNotification('solicitar_logs', t, {
+            proceso: 'asignar_ingeniero',
+            texto: 'Se te ha asignado un ingeniero para revisar tu caso. Por favor, sube los logs necesarios para que pueda comenzar con el diagnóstico.',
+            titulo: 'Asignación de ingeniero'
+        });
+        mostrarToast('success', 'Ingeniero asignado correctamente y notificado al cliente.');
         // refrescar UI principal
         applyAndRender();
 
@@ -1502,7 +1897,12 @@ $('#revGuardar').on('click', async function () {
         // cerrar offcanvas
         const el = document.getElementById('offRevisionInicial');
         bootstrap.Offcanvas.getInstance(el)?.hide();
-
+        await sendTicketNotification('revision_inicial', t, {
+            proceso: 'revision_inicial',
+            texto: 'Se ha completado la revisión inicial de tu caso. Por favor, revisa el diagnóstico y sigue las indicaciones para el siguiente paso.',
+            titulo: 'Revisión inicial completada'
+        });
+        mostrarToast('success', 'Revisión inicial guardada y cliente notificado.');
         // refrescar vista
         applyAndRender();
         openTicketOffcanvasById(tiId);
@@ -1513,20 +1913,20 @@ $('#revGuardar').on('click', async function () {
     }
 });
 
-async function apiSetProceso(tiId, proceso){
-  const csrf = (window.MRS_CSRF?.csrf || '');
-  const res = await fetch(`api/ticket_set_proceso.php`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': csrf
-    },
-    body: JSON.stringify({ tiId: Number(tiId), proceso: String(proceso||'') })
-  });
-  const json = await res.json().catch(()=>({}));
-  if(!res.ok || json.success === false) throw new Error(json.error || 'Error ticket_set_proceso');
-  return json;
+async function apiSetProceso(tiId, proceso) {
+    const csrf = (window.MRS_CSRF?.csrf || '');
+    const res = await fetch(`api/ticket_set_proceso.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf
+        },
+        body: JSON.stringify({ tiId: Number(tiId), proceso: String(proceso || '') })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error ticket_set_proceso');
+    return json;
 }
 
 
@@ -1631,7 +2031,7 @@ function paintMeetStatus(meet) {
         Ya existe una opción aceptada. Si se requiere cambio, el solicitante debe enviar 3 nuevas opciones.
       </div>
        <button class="btn btn-primary w-100 mt-3" id="btnMeetContinuar" data-ti="${__MEET_TI_ID}">
-          <i class="bi bi-arrow-right-circle"></i> Continuar a Revisión especial
+          <i class="bi bi-arrow-right-circle"></i> Continuar proceso
         </button>
 
     `);
@@ -1648,15 +2048,7 @@ function paintMeetStatus(meet) {
 // click (delegado)
 $(document).on('click', '#btnMeetContinuar', async function () {
     const tiId = Number($(this).data('ti'));
-    try {
-        await apiSetProceso(tiId, 'revision especial');
-
-        // ✅ refresca UI
-        await fetchTickets();               // o tu función de refresh
-        openTicketOffcanvasById(tiId);      // reabre ya en “revisión especial”
-    } catch (err) {
-        alert(err?.message || 'No se pudo avanzar el ticket');
-    }
+    openLogsAccionOffcanvas('continuar', tiId);
 });
 
 
@@ -1697,7 +2089,7 @@ async function loadMeetIntoOffcanvas(tiId) {
     $('#meetOptions').html('');
 
     const meet = await apiGetMeet(tiId);
-    
+
     paintMeetStatus(meet);
     paintMeetOptions(meet);
 }
@@ -1757,84 +2149,160 @@ $('#btnMeetProponer').on('click', async function () {
 
 $('#btnMeetReload').on('click', () => loadMeetIntoOffcanvas(__MEET_TI_ID));
 
-async function solicitarLogs(tiId, folio) {
-    try {
+async function sendTicketNotification(action, ticket, extra = {}) {
+    console.log('sendTicketNotification', { action, ticket, extra });
+    if (!action) throw new Error('action requerido');
+    if (!ticket) throw new Error('ticket inválido sendTicketNotification');
 
-        const fd = new FormData();
-        fd.append('action', 'solicitar_logs');
-        fd.append('tiId', tiId);
-        fd.append('folio', folio);
+    const folio = ticketCodigo(findTicketById(ticket.tiId));
 
-        const response = await fetch('/php/notify.php', {
-            method: 'POST',
-            body: fd
-        });
+    const fd = new FormData();
+    fd.append('action', action);
+    fd.append('folio', folio);
 
-        const data = await response.json();
+    // contexto base (lo que tu NotificationService puede usar)
+    fd.append('tiId', String(ticket.tiId));
+    fd.append('proceso', String(extra.proceso ?? ticket.tiProceso ?? ''));
+    fd.append('estado', String(extra.estado ?? ticket.tiEstatus ?? ''));
+    fd.append('texto', String(extra.texto ?? ''));      // opcional (para body)
+    fd.append('titulo', String(extra.titulo ?? ''));    // opcional (para title)
 
-        if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Logs solicitados',
-                text: 'Se notificó al cliente correctamente.'
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'No se pudo enviar la notificación.'
-            });
-        }
+    // extras arbitrarios (motivo, etc.)
+    Object.entries(extra).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        if (['proceso', 'estado', 'texto', 'titulo'].includes(k)) return;
+        fd.append(k, String(v));
+    });
 
-    } catch (error) {
-        console.error(error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error inesperado',
-            text: 'Ocurrió un problema enviando la notificación.'
-        });
+    const res = await fetch(NOTIFY_URL, {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) {
+        throw new Error(json.message || json.error || 'Error notify');
     }
+    return json; // {success, sent, errors}
 }
 
-async function cambiarEstadoTicket(tiId, folio) {
-    try {
-
-        const fd = new FormData();
-        fd.append('action', 'cambio_estado');
-        fd.append('tiId', tiId);
-        fd.append('folio', folio);
-
-        const response = await fetch('/php/notify.php', {
-            method: 'POST',
-            body: fd
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Logs solicitados',
-                text: 'Se notificó al cliente correctamente.'
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'No se pudo enviar la notificación.'
-            });
-        }
-
-    } catch (error) {
-        console.error(error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error inesperado',
-            text: 'Ocurrió un problema enviando la notificación.'
-        });
+async function sendTicketNotificationByProceso(action, ticket) {
+    ticket = findTicketById(ticket);
+    console.log('sendTicketNotification by proceso', { action, ticket });
+    if (!action) throw new Error('action requerido');
+    if (!ticket) throw new Error('ticket inválido by proceso');
+    if (action === 'asignacion') {
+        extra = {
+            proceso: 'asignacion',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta asignando un ingeniero a tu caso. En breve recibirás una notificación con el nombre del ingeniero asignado y los siguientes pasos a seguir.',
+            titulo: 'Asignación de ingeniero'
+        };
     }
+    if (action === 'revision inicial') {
+        extra = {
+            proceso: 'revision_inicial',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta realizando la revisión inicial de tu caso. Tranquilo, tu caso está siendo atendido y en breve recibirás una notificación con el diagnóstico y los siguientes pasos a seguir.',
+            titulo: 'Revisión inicial completada'
+        };
+    }
+if (action === 'logs') {
+        extra = {
+            proceso: 'logs',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se requieren los logs para el diagnóstico de tu caso. Por favor, sube los logs necesarios para continuar con el proceso.',
+            titulo: 'Solicitud de logs'
+        };
+    }
+
+    if (action === 'logs solicitados') {
+        extra = {
+            proceso: 'logs_solicitados',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se han solicitado los logs para el diagnóstico de tu caso. Por favor, sube los logs necesarios para continuar con el proceso.',
+            titulo: 'Solicitud de logs'
+        };
+    }
+    if (action === 'meet solicitado') {
+        extra = {
+            proceso: 'meet_solicitado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha solicitado una reunión para el diagnóstico de tu caso. Por favor, confirma la reunión para continuar con el proceso.',
+            titulo: 'Solicitud de reunión'
+        };
+    }
+    if (action === 'meet confirmado') {
+        extra = {
+            proceso: 'meet_confirmado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha confirmado la reunión para el diagnóstico de tu caso. Por favor, asiste a la reunión para continuar con el proceso.',
+            titulo: 'Reunión confirmada'
+        };
+    }
+    if (action === 'revision especial') {
+        extra = {
+            proceso: 'revision_especial',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se han subido con éxito los logs necesarios para la revisión especial de tu caso. El ingeniero asignado está revisando la información proporcionada y en breve recibirás una notificación con el diagnóstico y los siguientes pasos a seguir.',
+            titulo: 'Revisión especial completada'
+        };
+    }
+    if (action === 'espera refaccion') {
+        extra = {
+            proceso: 'espera_refaccion',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta en espera de refacción para tu caso. Por favor, aguarda a que llegue la refacción para continuar con el proceso.',
+            titulo: 'Espera de refacción'
+        };
+    }
+    if (action === 'solicitud visita') {
+        extra = {
+            proceso: 'solicitud_visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha solicitado una visita técnica para tu caso. Por favor, ACEPTA/RECHAZA/ASIGNA una visita técnica para continuar con el proceso.',
+            titulo: 'Solicitud de visita técnica'
+        };
+    }
+    if (action === 'confirmacion visita') {
+        extra = {
+            proceso: 'confirmacion visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha confirmado la visita técnica para tu caso. Es importante que estés presente en la fecha y hora programada para que el ingeniero pueda realizar el diagnóstico y resolver tu caso lo antes posible.',
+            titulo: 'Confirmación de visita técnica'
+        };
+    }
+    if (action === 'en camino') {
+        extra = {
+            proceso: 'en_camino',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', el ingeniero se encuentra en camino para visitar tu caso. Por favor, mantente disponible para recibir al ingeniero.',
+            titulo: 'Ingeniero en camino'
+        };
+    }
+    if (action === 'espera documentacion') {
+        extra = {
+            proceso: 'espera documentacion',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta en espera de documentación para tu caso. Por favor, aguarda a que llegue la documentación para continuar con el proceso.',
+            titulo: 'Espera de documentación'
+        };
+    }
+    if (action === 'encuesta satisfaccion') {
+        extra = {
+            proceso: 'encuesta_satisfaccion',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha generado una encuesta de satisfacción. Agradecemos tu elección de MRSolutions para el soporte de tu equipo. Para ayudarnos a mejorar nuestro servicio, te invitamos a completar una breve encuesta de satisfacción. Tu opinión es muy valiosa para nosotros y nos ayudará a brindarte un mejor servicio en el futuro.',
+            titulo: 'Encuesta de satisfacción'
+        };
+    }
+
+
+    await sendTicketNotification(action, ticket, extra);
+
 }
 
+function mostrarToast(tipo, mensaje) {
+    const toastId = tipo === 'success' ? '#toastSuccess' : '#toastError';
+    const $toastElem = $(toastId);
+
+    if ($toastElem.length === 0) {
+        alert(mensaje); // fallback por si no están los toasts
+        return;
+    }
+
+    $(`${toastId} .toast-body`).text(mensaje);
+    const toast = new bootstrap.Toast($toastElem[0]);
+    toast.show();
+}
 
 
 // -------------------------
