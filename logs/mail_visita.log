@@ -14,3 +14,7 @@ SMTP:
 SMTP:
 
 
+[2026-02-20 15:07:52] tiId=9 ex=SMTP Error: Could not authenticate.
+SMTP:
+
+

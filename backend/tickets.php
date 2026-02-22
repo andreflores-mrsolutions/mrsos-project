@@ -678,6 +678,180 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
         </div>
     </div>
 
+    <!-- OFFCANVAS: Visita (ADMIN) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offVisita" aria-labelledby="offVisitaLabel" style="width: 980px;">
+        <div class="offcanvas-header">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="offVisitaLabel">Visita</h5>
+                <div class="text-muted" style="font-size:.9rem;">Coordina y confirma la visita del ticket</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <!-- Contexto ticket -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                    <div class="fw-bold" id="viTicketCodigo">—</div>
+                    <div class="text-muted" style="font-size:.9rem;" id="viTicketEquipo">—</div>
+                    <div class="text-muted" style="font-size:.85rem;" id="viTicketSN">—</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <span class="badge rounded-pill text-bg-light" id="viTicketPaso">—</span>
+                    <span class="badge rounded-pill text-bg-secondary" id="viTicketEstado">—</span>
+                    <span id="viTicketCrit"></span>
+                </div>
+            </div>
+
+            <hr class="my-3" style="opacity:.12;">
+
+            <!-- BLOQUE 1: Ventanas propuestas -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <div class="fw-bold">Ventanas propuestas</div>
+                    <div class="text-muted" style="font-size:.85rem;" id="viEstadoMini">—</div>
+                </div>
+
+                <div class="alert alert-light border" id="viNoPropuestas">
+                    Aún no hay ventanas propuestas. El cliente debe proponer 3 opciones (o el ingeniero/admin puede proponer si aplica).
+                </div>
+
+                <div id="viPropuestasWrap" class="d-none">
+                    <div class="row g-2" id="viPropuestasGrid"></div>
+
+                    <div class="text-muted mt-2" style="font-size:.85rem;">
+                        Nota: al confirmar una ventana, se bloquea la cancelación del lado cliente (salvo administración).
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: Confirmación / Bloqueo -->
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Confirmación</div>
+
+                <div class="p-3 border rounded-4 bg-white">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <div class="fw-semibold">Ventana confirmada</div>
+                            <div class="text-muted" style="font-size:.9rem;" id="viConfirmadaTxt">—</div>
+                        </div>
+
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge rounded-pill text-bg-light border" id="viLockBadge">—</span>
+                            <button class="btn btn-outline-danger btn-sm" id="viBtnUnlock">Desbloquear cancelación</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-primary" id="viBtnConfirmarVentanaPaso">
+                            Confirmar y pasar a siguiente paso
+                        </button>
+                        <button class="btn btn-outline-secondary" id="viBtnNotificar">
+                            Notificar cliente
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 3: Folio / Autorización -->
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Folio de entrada / autorización</div>
+
+                <div class="p-3 border rounded-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-semibold" id="viFolioNombre">—</div>
+                            <div class="text-muted" style="font-size:.85rem;" id="viFolioEstado">Sin archivo</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" id="viBtnVerFolio">Ver</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="viBtnDescargarFolio">Descargar</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label text-muted" style="font-size:.9rem;">Subir nuevo folio (PDF/JPG/PNG)</label>
+                        <input type="file" class="form-control" id="viFolioFile" accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="mt-2 d-flex gap-2">
+                            <button class="btn btn-success" id="viBtnSubirFolio">Subir folio</button>
+                            <button class="btn btn-outline-secondary" id="viBtnSolicitarFolio">Solicitar folio al cliente</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 4: Datos de acceso (ingeniero/visita) -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold">Datos para acceso al sitio</div>
+                <a class="btn btn-outline-primary btn-sm" id="viBtnEditarPaquete" href="#" target="_blank">
+                    <i class="bi bi-pencil-square"></i> Editar Paquete
+                </a>                
+            </div>
+            <div class="mb-3">
+                <div class="p-3 border rounded-4 bg-white" id="viAccesoWrap">
+                    <div class="text-muted">—</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 5: Historial corto -->
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Historial (últimos 3)</div>
+                <div class="p-3 border rounded-4 bg-white" id="viHistorialWrap">
+                    <div class="text-muted">—</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 6: Acciones admin -->
+            <div class="mb-4">
+                <div class="fw-bold mb-2">Acciones</div>
+
+                <div class="p-3 border rounded-4 bg-white">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label text-muted" style="font-size:.9rem;">Avanzar proceso</label>
+                            <select class="form-select" id="viNextProceso">
+                                <option value="">Selecciona…</option>
+                                <option value="fecha asignada">fecha asignada</option>
+                                <option value="espera ventana">espera ventana</option>
+                                <option value="espera visita">espera visita</option>
+                                <option value="en camino">en camino</option>
+                                <option value="espera documentacion">espera documentacion</option>
+                                <option value="finalizado">finalizado</option>
+                                <option value="cancelado">cancelado</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label text-muted" style="font-size:.9rem;">Nota / motivo (opcional)</label>
+                            <input class="form-control" id="viNotaAccion" placeholder="Ej: Ventana confirmada, logística en curso…">
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary" id="viBtnPasarSiguiente">
+                            Guardar proceso
+                        </button>
+
+                        <button class="btn btn-outline-danger" id="viBtnCancelar">
+                            Cancelar visita / ticket (admin)
+                        </button>
+                    </div>
+
+                    <div class="text-muted mt-2" style="font-size:.85rem;">
+                        Si la visita está “lock”, el cliente no podrá cancelar. Aquí solo admin puede desbloquear o cancelar con motivo.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">Cerrar</button>
+            </div>
+
+        </div>
+    </div>
+
+
 
     <style>
         /* micro-estilo offcanvas tipo screenshot */

@@ -1,4 +1,9 @@
 
+
+/* ============================================================
+   tickets.js — REORGANIZADO (misma lógica, más control)
+   ============================================================ */
+
 const NOTIFY_URL = '../php/notify.php';
 
 function getCsrf() {
@@ -59,7 +64,6 @@ async function postForm(url, dataObj) {
     if (!res.ok || json.success === false) throw new Error(json.error || 'Error');
     return json;
 }
-
 // -------------------------
 // STATE
 // -------------------------
@@ -79,181 +83,6 @@ const state = {
 // -------------------------
 // STEPS (tu flujo real)
 // -------------------------
-
-// -------------------------
-// Logs · Acciones ADMIN
-// -------------------------
-const logsActionState = {
-    mode: null, // 'solicitar' | 'continuar'
-    tiId: 0,
-};
-
-const ADMIN_STEPSs = [
-    'asignacion', 'revision inicial', 'logs', 'meet', 'revision especial', 'espera refaccion',
-    'visita', 'fecha asignada', 'espera ventana', 'espera visita', 'en camino',
-    'espera documentacion', 'encuesta satisfaccion', 'finalizado', 'cancelado',
-    'fuera de alcance', 'servicio por evento'
-];
-
-function fillNextStepsSelect(currentStep) {
-    const $sel = $('#laNextStep');
-    $sel.empty();
-
-    // regla: no muestres "logs" como siguiente en continuar (ya lo pasaste)
-    const list = ADMIN_STEPSs.filter(x => x !== 'logs');
-
-    list.forEach(s => {
-        $sel.append(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
-    });
-
-    // sugerencia default: si vienes de logs, normalmente a revision especial
-    if ((currentStep || '') === 'logs') $sel.val('revision especial');
-}
-
-function openLogsAccionOffcanvas(mode, tiId) {
-    const t = findTicketById(tiId);
-    if (!t) return;
-
-    logsActionState.mode = mode;
-    logsActionState.tiId = Number(tiId);
-
-    const pref = clientePrefix(state.meta.clNombre);
-    $('#laCodigo').text(`${pref}-${Number(t.tiId)}`);
-    $('#laEquipo').text((t.eqModelo || 'Equipo') + (t.eqVersion ? ' · ' + t.eqVersion : ''));
-    $('#laSN').text(t.peSN ? ('SN: ' + t.peSN) : 'SN: —');
-
-    const step = normalizeStep(t.tiProceso);
-
-    if (mode === 'solicitar') {
-        $('#offLogsAccionLabel').text('Solicitar nuevamente logs');
-        $('#offLogsAccionSub').text('Envía solicitud al cliente y regresa el ticket a “logs”.');
-        $('#laLabel').text('Motivo de solicitud');
-        $('#laTexto').attr('placeholder', 'Ej: Logs antiguos / incorrectos / incompletos. Indica qué se requiere.');
-        $('#laNextWrap').addClass('d-none');
-        $('#laSubmit').text('Solicitar logs');
-    } else {
-        $('#offLogsAccionLabel').text('Diagnóstico y continuar');
-        $('#offLogsAccionSub').text('Guarda diagnóstico y mueve el ticket al siguiente proceso.');
-        $('#laLabel').text('Diagnóstico / estado');
-        $('#laTexto').attr('placeholder', 'Describe diagnóstico (evidencia, hipótesis, impacto) y qué sigue.');
-        $('#laNextWrap').removeClass('d-none');
-        fillNextStepsSelect(step);
-        $('#laSubmit').text('Guardar y continuar');
-    }
-
-    // contador
-    const v = $('#laTexto').val() || '';
-    $('#laCount').text(v.length);
-
-    const el = document.getElementById('offLogsAccion');
-    bootstrap.Offcanvas.getOrCreateInstance(el, { backdrop: true, scroll: false }).show();
-}
-
-// UI helpers del offcanvas
-$(document).on('input', '#laTexto', function () {
-    $('#laCount').text((this.value || '').length);
-});
-$(document).on('click', '[data-fill]', function () {
-    const txt = String($(this).data('fill') || '');
-    const $ta = $('#laTexto');
-    const cur = $ta.val() || '';
-    $ta.val(cur ? (cur + '\n' + txt) : txt).trigger('input');
-});
-$('#laClear').on('click', () => $('#laTexto').val('').trigger('input'));
-
-// Botones en offVerLogs
-$('#btnSolicitarLogs').on('click', function () {
-    if (!asgContext?.tiId) return;            // o tu contexto real de logs
-    openLogsAccionOffcanvas('solicitar', asgContext.tiId);
-});
-
-$('#btnLogsOK').on('click', function () {
-    if (!asgContext?.tiId) return;
-    openLogsAccionOffcanvas('continuar', asgContext.tiId);
-});
-
-// ---- APIs ----
-async function apiSolicitarLogs(tiId, motivo) {
-    console.log('apiSolicitarLogs', { tiId, motivo });
-    const csrf = (window.MRS_CSRF?.csrf || '');
-    const res = await fetch(`api/logs_solicitar.php`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrf
-        },
-        body: JSON.stringify({ tiId: Number(tiId), motivo: motivo || '' })
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || json.success === false) throw new Error(json.error || 'Error logs_solicitar');
-    await sendTicketNotificationByProceso('solicitar_logs', tiId);
-    return json;
-}
-
-async function apiDiagnosticoContinuar(tiId, diagnostico, nextStep) {
-    const csrf = (window.MRS_CSRF?.csrf || '');
-    const res = await fetch(`api/ticket_diagnostico.php`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrf
-        },
-        body: JSON.stringify({
-            tiId: Number(tiId),
-            diagnostico: diagnostico || '',
-            nextStep: nextStep || ''
-        })
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || json.success === false) { throw new Error(json.error || 'Error ticket_diagnostico'); return; }
-    await sendTicketNotificationByProceso(nextStep, tiId);
-    mostrarToast('success', 'Ingeniero asignado correctamente y notificado al cliente.');
-    return json;
-
-}
-
-// Submit del offcanvas
-$('#laSubmit').on('click', async function () {
-    const tiId = logsActionState.tiId;
-    const texto = ($('#laTexto').val() || '').trim();
-
-
-    try {
-        $(this).prop('disabled', true);
-        console.log('Submit acción logs', { mode: logsActionState.mode, tiId, texto });
-
-        if (logsActionState.mode === 'solicitar') {
-            await apiSolicitarLogs(tiId, texto || 'Solicito nuevamente logs.');
-        } else {
-            const nextStep = String($('#laNextStep').val() || '').trim();
-            await apiDiagnosticoContinuar(tiId, texto || 'Faltan datos', nextStep);
-
-        }
-
-        // Cerrar offcanvas
-        bootstrap.Offcanvas.getInstance(document.getElementById('offLogsAccion'))?.hide();
-        // Recargar tickets para reflejar nuevo estado/proceso
-        await fetchTickets();
-        // (opcional) reabrir el ticket offcanvas principal si quieres
-        // openTicketOffcanvasById(tiId);
-
-    } catch (err) {
-        alert(err?.message || 'Error');
-    } finally {
-        $(this).prop('disabled', false);
-    }
-});
-
-async function notifyCambioProceso(t, nuevoProceso, nota) {
-    return sendTicketNotification('cambio_estado', t, {
-        proceso: nuevoProceso,
-        texto: nota || `El ticket avanzó a: ${nuevoProceso}`,
-        titulo: 'Actualización de ticket'
-    });
-}
-
 const STEPS = [
     'asignacion',
     'revision inicial',
@@ -299,7 +128,7 @@ function normalizeStep(raw) {
     const s = (raw || '').toString().trim().toLowerCase();
     if (!s) return 'asignacion';
 
-    if (s.includes('asign')) return 'asignacion';
+    if (s.includes('asignac')) return 'asignacion';
     if (s.includes('rev') && s.includes('inicial')) return 'revision inicial';
     if (s.includes('log')) return 'logs';
     if (s.includes('meet')) return 'meet';
@@ -443,7 +272,7 @@ function currentAdminActionForStep(step, t) {
     if (step === 'fecha asignada') {
         return {
             key: 'fecha_asignada',
-            title: 'Asignar fecha de visita',
+            title: 'Fecha asignada',
             required: true,
             mode: 'admin_action'
         };
@@ -452,7 +281,7 @@ function currentAdminActionForStep(step, t) {
     if (step === 'espera ventana') {
         return {
             key: 'ventana',
-            title: 'Asignar / proponer ventana',
+            title: 'Espera Ventana',
             required: true,
             mode: 'admin_action'
         };
@@ -470,7 +299,7 @@ function currentAdminActionForStep(step, t) {
     if (step === 'en camino') {
         return {
             key: 'en_camino',
-            title: 'Marcar “En camino”',
+            title: 'Espera de documento',
             required: true,
             mode: 'admin_action'
         };
@@ -527,7 +356,6 @@ function currentAdminActionForStep(step, t) {
 function ownerForStep(step) {
     return ADMIN_STEPS.has(step) ? 'Cliente' : 'Administrador';
 }
-
 // -------------------------
 // Recientes (localStorage)
 // -------------------------
@@ -552,7 +380,6 @@ function markVisto(tiId) {
     state.recientes.add(Number(tiId));
     saveRecientes();
 }
-
 // -------------------------
 // Helpers UI
 // -------------------------
@@ -602,14 +429,9 @@ function accionesDeTicket(t) {
     // Botones (1-2 máximo) para Admin
     if (a.key === 'ventana') {
         return [{
-            label: 'Asignar Ventana',
+            label: 'Espera ventana',
             kind: 'success',
             action: 'ventana_asignar'
-        },
-        {
-            label: 'Proponer Ventana',
-            kind: 'outline',
-            action: 'ventana_proponer'
         }
         ];
     }
@@ -618,7 +440,11 @@ function accionesDeTicket(t) {
             label: 'Notificar Logs',
             kind: 'primary',
             action: 'logs_revisar'
-        },];
+        }, {
+            label: 'Cambiar Proceso',
+            kind: 'primary',
+            action: 'cambiar_proceso'
+        }];
     }
     if (a.key === 'admin_revision_especial') {
 
@@ -657,7 +483,6 @@ function formatDate(iso) {
     const s = (iso || '').toString();
     return s.length >= 10 ? s.substring(0, 10) : '—';
 }
-
 // -------------------------
 // Fetch
 // -------------------------
@@ -692,7 +517,218 @@ async function fetchTickets() {
 
     applyAndRender();
 }
+// -------------------------
+// FILTROS JS
+// -------------------------
+function aplicarFiltros() {
+    const q = (state.search || '').trim().toLowerCase();
+    const prefix = clientePrefix(state.meta.clNombre);
+    const sedesFiltradas = [];
 
+    (state.sedes || []).forEach(s => {
+        const tickets = (s.tickets || []).filter(t => {
+            // estado
+            if (state.estado !== 'all') {
+                if ((t.tiEstatus || '') !== state.estado) return false;
+            }
+
+            // scope
+            if (state.scope === 'acciones') {
+                if (accionesDeTicket(t).length === 0) return false;
+            }
+            if (state.scope === 'recientes') {
+                if (!state.recientes.has(Number(t.tiId))) return false;
+            }
+
+            // búsqueda
+            if (q) {
+                const modelo = (t.eqModelo || '').toLowerCase();
+                const marca = (t.maNombre || '').toLowerCase();
+                const sn = (t.peSN || '').toLowerCase();
+                const codigo = `${prefix}-${Number(t.tiId) || ''}`.toLowerCase();
+                if (!modelo.includes(q) && !marca.includes(q) && !sn.includes(q) && !codigo.includes(q)) return false;
+            }
+
+            return true;
+        });
+
+        if (tickets.length) sedesFiltradas.push({
+            ...s,
+            tickets
+        });
+    });
+
+    return sedesFiltradas;
+}
+
+function applyAndRender() {
+    const sedes = aplicarFiltros();
+    const totalVisibles = sedes.reduce((acc, s) => acc + (s.tickets || []).length, 0);
+
+    if (totalVisibles === 0) {
+        $('#wrapTickets').html('');
+        $('#emptyState').removeClass('d-none');
+        return;
+    }
+
+    $('#emptyState').addClass('d-none');
+
+    if (state.vista === 'cards') renderCards(sedes);
+    else renderTabla(sedes);
+}
+// -------------------------
+// RENDER TABLA
+// -------------------------
+function renderTabla(sedes) {
+    const wrap = $('#wrapTickets');
+    wrap.empty();
+
+    sedes.forEach(s => {
+        const sedeTitle = `${escapeHtml(state.meta.clNombre)} · ${escapeHtml(s.csNombre)}`;
+        const count = (s.tickets || []).length;
+
+        const block = $(`
+        <div class="mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-bold">${sedeTitle}</div>
+            <div class="muted" style="font-size:.85rem;">${count} ticket(s)</div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th style="width:120px;"># Ticket</th>
+                  <th style="width:120px;">Estado</th>
+                  <th style="width:220px;">Proceso actual</th>
+                  <th>Información del equipo</th>
+                  <th style="width:120px;">Criticidad</th>
+                  <th style="width:160px;">Fecha</th>
+                  <th style="width:240px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      `);
+
+        const tbody = block.find('tbody');
+        const prefix = clientePrefix(state.meta.clNombre);
+
+        (s.tickets || []).forEach(t => {
+            const codigo = `${prefix}-${Number(t.tiId)}`;
+            const acciones = accionesDeTicket(t);
+            const proc = progresoDeProceso(t);
+
+            const btns = acciones.length ?
+                acciones.map(a => {
+                    const cls = a.kind === 'primary' ? 'btn btn-sm btn-outline-primary' :
+                        a.kind === 'success' ? 'btn btn-sm btn-outline-success' :
+                            'btn btn-sm btn-outline-secondary';
+                    return `<button class="${cls} me-1 mb-1 btnAccion" data-ti="${t.tiId}" data-action="${a.action}">${escapeHtml(a.label)}</button>`;
+                }).join('') :
+                `<span class="muted">—</span>`;
+
+            const tr = $(`
+          <tr class="${critClass(t.tiNivelCriticidad)} ticket-row" data-ti="${t.tiId}">
+            <td class="fw-bold">${escapeHtml(codigo)}</td>
+            <td><span class="${badgeEstado(t.tiEstatus)}">${escapeHtml(t.tiEstatus)}</span></td>
+            <td class="muted">
+              <div>${escapeHtml(procesoLabel(t))}</div>
+              <div class="muted" style="font-size:.8rem;">${proc.done}/${proc.total}</div>
+            </td>
+            <td>
+              <div class="fw-semibold">${escapeHtml(t.eqModelo || 'Equipo')}</div>
+              <div class="muted" style="font-size:.85rem;">
+                ${escapeHtml(t.maNombre || '')} ${escapeHtml(t.eqVersion || '')}
+                ${t.peSN ? `· SN: ${escapeHtml(t.peSN)}` : ''}
+              </div>
+            </td>
+            <td>${critBadge(t.tiNivelCriticidad)}</td>
+            <td class="muted" style="font-size:.9rem;">${escapeHtml(formatDate(t.tiFechaCreacion))}</td>
+            <td>${btns}</td>
+          </tr>
+        `);
+
+            tr.css('cursor', 'pointer');
+            tbody.append(tr);
+        });
+
+        wrap.append(block);
+    });
+}
+// -------------------------
+// RENDER CARDS
+// -------------------------
+function renderCards(sedes) {
+    const wrap = $('#wrapTickets');
+    wrap.empty();
+
+    sedes.forEach(s => {
+        const sedeTitle = `${escapeHtml(state.meta.clNombre)} · ${escapeHtml(s.csNombre)}`;
+        const count = (s.tickets || []).length;
+
+        wrap.append(`
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-bold">${sedeTitle}</div>
+          <div class="muted" style="font-size:.85rem;">${count} ticket(s)</div>
+        </div>
+      `);
+
+        const row = $('<div class="row g-3 mb-4"></div>');
+        const prefix = clientePrefix(state.meta.clNombre);
+
+        (s.tickets || []).forEach(t => {
+            const codigo = `${prefix}-${Number(t.tiId)}`;
+            const acciones = accionesDeTicket(t);
+            const proc = progresoDeProceso(t);
+
+            const btns = acciones.length ?
+                acciones.map(a => {
+                    const cls = a.kind === 'primary' ? 'btn btn-sm btn-outline-primary' :
+                        a.kind === 'success' ? 'btn btn-sm btn-outline-success' :
+                            'btn btn-sm btn-outline-secondary';
+                    return `<button class="${cls} me-1 btnAccion" data-ti="${t.tiId}" data-action="${a.action}">${escapeHtml(a.label)}</button>`;
+                }).join('') :
+                `<span class="muted">—</span>`;
+
+            row.append(`
+          <div class="col-12 col-md-6 col-xl-4">
+            <div class="ticket-card ${critClass(t.tiNivelCriticidad)}" data-ti="${t.tiId}" style="cursor:pointer;">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div class="d-flex gap-2 flex-wrap">
+                  <span class="${badgeEstado(t.tiEstatus)}">${escapeHtml(t.tiEstatus)}</span>
+                  ${critBadge(t.tiNivelCriticidad)}
+                </div>
+                <div class="fw-bold">${escapeHtml(codigo)}</div>
+              </div>
+
+              <div class="fw-semibold">${escapeHtml(t.eqModelo || 'Equipo')}</div>
+              <div class="muted" style="font-size:.85rem;">
+                ${escapeHtml(t.maNombre || '')} ${escapeHtml(t.eqVersion || '')}
+                ${t.peSN ? `· SN: ${escapeHtml(t.peSN)}` : ''}
+              </div>
+
+              <div class="mt-2">
+                <div class="muted" style="font-size:.85rem;"><b>Paso actual:</b> ${escapeHtml(procesoLabel(t))}</div>
+                <div class="progress mt-2">
+                  <div class="progress-bar" style="width:${proc.pct}%"></div>
+                </div>
+                <div class="muted mt-1" style="font-size:.8rem;">${proc.done}/${proc.total}</div>
+              </div>
+
+              <div class="mt-3">
+                ${btns}
+              </div>
+            </div>
+          </div>
+        `);
+        });
+
+        wrap.append(row);
+    });
+}
 // -------------------------
 // Offcanvas: Ticket details
 // -------------------------
@@ -897,367 +933,6 @@ function openTicketOffcanvasById(tiId) {
     });
     offTicketInstance.show();
 }
-
-// -------------------------
-// FILTROS JS
-// -------------------------
-function aplicarFiltros() {
-    const q = (state.search || '').trim().toLowerCase();
-    const prefix = clientePrefix(state.meta.clNombre);
-    const sedesFiltradas = [];
-
-    (state.sedes || []).forEach(s => {
-        const tickets = (s.tickets || []).filter(t => {
-            // estado
-            if (state.estado !== 'all') {
-                if ((t.tiEstatus || '') !== state.estado) return false;
-            }
-
-            // scope
-            if (state.scope === 'acciones') {
-                if (accionesDeTicket(t).length === 0) return false;
-            }
-            if (state.scope === 'recientes') {
-                if (!state.recientes.has(Number(t.tiId))) return false;
-            }
-
-            // búsqueda
-            if (q) {
-                const modelo = (t.eqModelo || '').toLowerCase();
-                const marca = (t.maNombre || '').toLowerCase();
-                const sn = (t.peSN || '').toLowerCase();
-                const codigo = `${prefix}-${Number(t.tiId) || ''}`.toLowerCase();
-                if (!modelo.includes(q) && !marca.includes(q) && !sn.includes(q) && !codigo.includes(q)) return false;
-            }
-
-            return true;
-        });
-
-        if (tickets.length) sedesFiltradas.push({
-            ...s,
-            tickets
-        });
-    });
-
-    return sedesFiltradas;
-}
-
-function applyAndRender() {
-    const sedes = aplicarFiltros();
-    const totalVisibles = sedes.reduce((acc, s) => acc + (s.tickets || []).length, 0);
-
-    if (totalVisibles === 0) {
-        $('#wrapTickets').html('');
-        $('#emptyState').removeClass('d-none');
-        return;
-    }
-
-    $('#emptyState').addClass('d-none');
-
-    if (state.vista === 'cards') renderCards(sedes);
-    else renderTabla(sedes);
-}
-
-// -------------------------
-// RENDER TABLA
-// -------------------------
-function renderTabla(sedes) {
-    const wrap = $('#wrapTickets');
-    wrap.empty();
-
-    sedes.forEach(s => {
-        const sedeTitle = `${escapeHtml(state.meta.clNombre)} · ${escapeHtml(s.csNombre)}`;
-        const count = (s.tickets || []).length;
-
-        const block = $(`
-        <div class="mb-4">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-bold">${sedeTitle}</div>
-            <div class="muted" style="font-size:.85rem;">${count} ticket(s)</div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th style="width:120px;"># Ticket</th>
-                  <th style="width:120px;">Estado</th>
-                  <th style="width:220px;">Proceso actual</th>
-                  <th>Información del equipo</th>
-                  <th style="width:120px;">Criticidad</th>
-                  <th style="width:160px;">Fecha</th>
-                  <th style="width:240px;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      `);
-
-        const tbody = block.find('tbody');
-        const prefix = clientePrefix(state.meta.clNombre);
-
-        (s.tickets || []).forEach(t => {
-            const codigo = `${prefix}-${Number(t.tiId)}`;
-            const acciones = accionesDeTicket(t);
-            const proc = progresoDeProceso(t);
-
-            const btns = acciones.length ?
-                acciones.map(a => {
-                    const cls = a.kind === 'primary' ? 'btn btn-sm btn-outline-primary' :
-                        a.kind === 'success' ? 'btn btn-sm btn-outline-success' :
-                            'btn btn-sm btn-outline-secondary';
-                    return `<button class="${cls} me-1 btnAccion" data-ti="${t.tiId}" data-action="${a.action}">${escapeHtml(a.label)}</button>`;
-                }).join('') :
-                `<span class="muted">—</span>`;
-
-            const tr = $(`
-          <tr class="${critClass(t.tiNivelCriticidad)} ticket-row" data-ti="${t.tiId}">
-            <td class="fw-bold">${escapeHtml(codigo)}</td>
-            <td><span class="${badgeEstado(t.tiEstatus)}">${escapeHtml(t.tiEstatus)}</span></td>
-            <td class="muted">
-              <div>${escapeHtml(procesoLabel(t))}</div>
-              <div class="muted" style="font-size:.8rem;">${proc.done}/${proc.total}</div>
-            </td>
-            <td>
-              <div class="fw-semibold">${escapeHtml(t.eqModelo || 'Equipo')}</div>
-              <div class="muted" style="font-size:.85rem;">
-                ${escapeHtml(t.maNombre || '')} ${escapeHtml(t.eqVersion || '')}
-                ${t.peSN ? `· SN: ${escapeHtml(t.peSN)}` : ''}
-              </div>
-            </td>
-            <td>${critBadge(t.tiNivelCriticidad)}</td>
-            <td class="muted" style="font-size:.9rem;">${escapeHtml(formatDate(t.tiFechaCreacion))}</td>
-            <td>${btns}</td>
-          </tr>
-        `);
-
-            tr.css('cursor', 'pointer');
-            tbody.append(tr);
-        });
-
-        wrap.append(block);
-    });
-}
-
-// -------------------------
-// RENDER CARDS
-// -------------------------
-function renderCards(sedes) {
-    const wrap = $('#wrapTickets');
-    wrap.empty();
-
-    sedes.forEach(s => {
-        const sedeTitle = `${escapeHtml(state.meta.clNombre)} · ${escapeHtml(s.csNombre)}`;
-        const count = (s.tickets || []).length;
-
-        wrap.append(`
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="fw-bold">${sedeTitle}</div>
-          <div class="muted" style="font-size:.85rem;">${count} ticket(s)</div>
-        </div>
-      `);
-
-        const row = $('<div class="row g-3 mb-4"></div>');
-        const prefix = clientePrefix(state.meta.clNombre);
-
-        (s.tickets || []).forEach(t => {
-            const codigo = `${prefix}-${Number(t.tiId)}`;
-            const acciones = accionesDeTicket(t);
-            const proc = progresoDeProceso(t);
-
-            const btns = acciones.length ?
-                acciones.map(a => {
-                    const cls = a.kind === 'primary' ? 'btn btn-sm btn-outline-primary' :
-                        a.kind === 'success' ? 'btn btn-sm btn-outline-success' :
-                            'btn btn-sm btn-outline-secondary';
-                    return `<button class="${cls} me-1 btnAccion" data-ti="${t.tiId}" data-action="${a.action}">${escapeHtml(a.label)}</button>`;
-                }).join('') :
-                `<span class="muted">—</span>`;
-
-            row.append(`
-          <div class="col-12 col-md-6 col-xl-4">
-            <div class="ticket-card ${critClass(t.tiNivelCriticidad)}" data-ti="${t.tiId}" style="cursor:pointer;">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                <div class="d-flex gap-2 flex-wrap">
-                  <span class="${badgeEstado(t.tiEstatus)}">${escapeHtml(t.tiEstatus)}</span>
-                  ${critBadge(t.tiNivelCriticidad)}
-                </div>
-                <div class="fw-bold">${escapeHtml(codigo)}</div>
-              </div>
-
-              <div class="fw-semibold">${escapeHtml(t.eqModelo || 'Equipo')}</div>
-              <div class="muted" style="font-size:.85rem;">
-                ${escapeHtml(t.maNombre || '')} ${escapeHtml(t.eqVersion || '')}
-                ${t.peSN ? `· SN: ${escapeHtml(t.peSN)}` : ''}
-              </div>
-
-              <div class="mt-2">
-                <div class="muted" style="font-size:.85rem;"><b>Paso actual:</b> ${escapeHtml(procesoLabel(t))}</div>
-                <div class="progress mt-2">
-                  <div class="progress-bar" style="width:${proc.pct}%"></div>
-                </div>
-                <div class="muted mt-1" style="font-size:.8rem;">${proc.done}/${proc.total}</div>
-              </div>
-
-              <div class="mt-3">
-                ${btns}
-              </div>
-            </div>
-          </div>
-        `);
-        });
-
-        wrap.append(row);
-    });
-}
-
-// -------------------------
-// UI EVENTS
-// -------------------------
-$('#vistaToggle').on('click', 'button[data-vista]', function () {
-    $('#vistaToggle button[data-vista]').removeClass('active');
-    $(this).addClass('active');
-    state.vista = $(this).data('vista');
-    applyAndRender();
-});
-
-$('#btnReload').on('click', fetchTickets);
-
-$('#tabScope').on('click', 'button[data-scope]', function () {
-    $('#tabScope button').removeClass('active');
-    $(this).addClass('active');
-    state.scope = $(this).data('scope');
-    applyAndRender();
-});
-
-$('#tabEstado').on('click', 'button[data-estado]', function () {
-    $('#tabEstado button').removeClass('active');
-    $(this).addClass('active');
-    state.estado = $(this).data('estado');
-    applyAndRender();
-});
-
-$('#searchTickets').on('input', function () {
-    state.search = $(this).val() || '';
-    applyAndRender();
-});
-
-$('#btnClear').on('click', function () {
-    state.search = '';
-    $('#searchTickets').val('');
-    applyAndRender();
-});
-
-function resetAll() {
-    state.vista = 'tabla';
-    state.scope = 'todo';
-    state.estado = 'Abierto';
-    state.search = '';
-
-    $('#vistaToggle button[data-vista]').removeClass('active');
-    $('#vistaToggle button[data-vista="tabla"]').addClass('active');
-
-    $('#tabScope button').removeClass('active');
-    $('#tabScope button[data-scope="todo"]').addClass('active');
-
-    $('#tabEstado button').removeClass('active');
-    $('#tabEstado button[data-estado="Abierto"]').addClass('active');
-
-    $('#searchTickets').val('');
-    applyAndRender();
-}
-$('#btnReset, #btnReset2').on('click', resetAll);
-
-// Click fila completa => offcanvas
-$(document).on('click', '.ticket-row', function (e) {
-    if ($(e.target).closest('button, a, input, label').length) return;
-    const tiId = Number($(this).data('ti'));
-    if (tiId) openTicketOffcanvasById(tiId);
-});
-
-// Click card completo => offcanvas
-$(document).on('click', '.ticket-card', function (e) {
-    if ($(e.target).closest('button, a, input, label').length) return;
-    const tiId = Number($(this).data('ti'));
-    if (tiId) openTicketOffcanvasById(tiId);
-});
-
-// Click botones de acción => abre offcanvas + enfoca acción
-$(document).on('click', '.btnAccion', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const tiId = Number($(this).data('ti'));
-    const action = String($(this).data('action') || '');
-
-    openTicketOffcanvasById(tiId);
-
-    setTimeout(() => {
-        const btn = document.getElementById('offPrimaryAction');
-        if (btn) btn.focus();
-    }, 150);
-});
-
-// Acciones principales dentro del offcanvas (placeholder)
-$(document).on('click', '#offPrimaryAction', async function () {
-    const tiId = Number($(this).data('ti'));
-    const t = findTicketById(tiId);
-    const tifolio = ticketCodigo(findTicketById(tiId));
-    const action = String($(this).data('action') || '');
-
-    if (action === 'admin_logs') {
-
-        // Ej: después de guardar en API el cambio de proceso:
-        // await notifyCambioProceso(t, 'solicitar_logs', 'Se requieren los logs para continuar con el diagnóstico. Por favor, súbelos usando el botón "Subir Logs".');
-        await sendTicketNotification('solicitar_logs', t, {
-            proceso: 'logs',
-            texto: 'Necesitamos que vuelvas a cargar los logs. Los anteriores no son válidos / están desactualizados.',
-            titulo: 'Solicitud de logs'
-        });
-        return;
-    }
-    if (action === 'admin_revision_especial') {
-        verLogsOffcanvas(tiId);
-        // reivisionLogs(tiId, tifolio);
-        return;
-    }
-
-    if (action === 'asignar_ingeniero') {
-        openAsignarIngenieroOffcanvas(tiId);
-
-        return;
-    }
-
-    if (action === 'revision_inicial') {
-        openRevisionInicialOffcanvas(tiId);
-        return;
-    }
-
-
-    if (action === 'meet') {
-        openMeetOffcanvasByTicketId(tiId);
-        return;
-    }
-    if (action === 'visita') {
-        alert('Abrir flujo CONFIRMAR VISITA para tiId ' + tiId);
-        return;
-    }
-    if (action === 'encuesta') {
-        alert('Abrir flujo ENCUESTA para tiId ' + tiId);
-        return;
-    }
-});
-
-$(document).on('click', '#offHelpAction', function () {
-    alert('Abrir ayuda guiada del paso actual.');
-});
-
-$(document).on('click', '#offMailHelp', function () {
-    alert('Abrir “Pedir ayuda por correo” (placeholder).');
-});
-
 // ==============================
 // OFFCANVAS ASIGNAR INGENIERO
 // ==============================
@@ -1447,13 +1122,6 @@ function ingAvatar(usId) {
     return `../img/Ingeniero/${Number(usId)}.svg`;
 }
 
-function bytesToHuman(bytes) {
-    const b = Number(bytes || 0);
-    if (!b) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
-    return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
-}
 
 function isTxtLike(name) {
     const n = (name || '').toLowerCase();
@@ -1774,7 +1442,6 @@ $(document).on('click', '.btnAsignarIng', async function (e) {
         $(this).prop('disabled', false).text('Asignar');
     }
 });
-
 const API_GUARDAR_ANALISIS = 'api/guardar_analisis.php';
 
 let offRevisionInstance = null;
@@ -1928,10 +1595,6 @@ async function apiSetProceso(tiId, proceso) {
     if (!res.ok || json.success === false) throw new Error(json.error || 'Error ticket_set_proceso');
     return json;
 }
-
-
-
-
 let offMeetInstance = null;
 let __MEET_TI_ID = 0;
 
@@ -1963,6 +1626,8 @@ async function apiAcceptMeet(mpId) {
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || json.success === false) throw new Error(json.error || 'Error meet_accept');
+    mostrarToast('success', 'Propuesta de meet aceptada correctamente');
+    sendTicketNotificationByProceso('meet confirmado', Number(mpId));
     return json;
 }
 
@@ -1987,6 +1652,8 @@ async function apiCreateMeet(tiId, opciones, plataforma, motivo) {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok || json.success === false) throw new Error(json.error || 'Error meet_create');
+    mostrarToast('success', 'Propuesta de meet creada correctamente');
+    sendTicketNotificationByProceso('meet solicitado', tiId);
     return json;
 }
 
@@ -2146,9 +1813,522 @@ $('#btnMeetProponer').on('click', async function () {
         alert(err.message || String(err));
     }
 });
+let offVisitaInstance = null;
+let visitaCtx = { tiId: 0, ticket: null, data: null };
+
+async function openVisitaOffcanvasById(tiId) {
+    const t = findTicketById(tiId);
+    if (!t) return;
+
+    visitaCtx.tiId = Number(tiId);
+    visitaCtx.ticket = t;
+
+    // Header
+    const pref = clientePrefix(state.meta.clNombre);
+    $('#viTicketCodigo').text(`${pref}-${Number(t.tiId)}`);
+    $('#viTicketEquipo').text((t.eqModelo || 'Equipo') + (t.eqVersion ? ' · ' + t.eqVersion : ''));
+    $('#viTicketSN').text(t.peSN ? ('SN: ' + t.peSN) : 'SN: —');
+    $('#viTicketPaso').text(`Paso: ${(t.tiProceso || '').toString() || '—'}`);
+    $('#viTicketEstado').text(t.tiEstatus || '—');
+    $('#viTicketCrit').html(critBadge(t.tiNivelCriticidad));
+    // Link a pantalla de paquete (admin)
+    $('#viBtnEditarPaquete').attr('href', `admin/visita_paquete.php?tiId=${encodeURIComponent(tiId)}`);
+
+
+    const el = document.getElementById('offVisita');
+    offVisitaInstance = bootstrap.Offcanvas.getOrCreateInstance(el, { backdrop: true, scroll: false });
+    offVisitaInstance.show();
+
+    await visitaFetchAndRender();
+}
+async function apiVisitaGet(tiId) {
+    const res = await fetch(`api/visita_get.php?tiId=${encodeURIComponent(tiId)}`, {
+        credentials: 'include',
+        cache: 'no-store'
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_get');
+    return json;
+}
+
+async function visitaFetchAndRender() {
+    $('#viEstadoMini').text('Cargando…');
+    visitaCtx.data = await apiVisitaGet(visitaCtx.tiId);
+    renderVisita(visitaCtx.tiId, visitaCtx.data);
+    $('#viEstadoMini').text('Listo');
+}
+function renderVisita(ticket, data) {
+    // Propuestas
+    const props = data.propuestas || [];
+    const conf = data.confirmada || null;
+
+    if (props.length === 0) {
+        $('#viNoPropuestas').removeClass('d-none');
+        $('#viPropuestasWrap').addClass('d-none');
+    } else {
+        $('#viNoPropuestas').addClass('d-none');
+        $('#viPropuestasWrap').removeClass('d-none');
+
+        const $g = $('#viPropuestasGrid');
+        $g.empty();
+
+        props.forEach(p => {
+            const id = Number(p.opcion);
+            const ini = (p.inicio_txt || p.inicio || '').toString();
+            const fin = (p.fin_txt || p.fin || '').toString();
+            const aceptada = Number(p.aceptada || 0) === 1;
+
+            $g.append(`
+        <div class="col-12 col-md-4">
+          <div class="p-3 border rounded-4 ${aceptada ? 'bg-success-subtle' : ''}">
+            <div class="fw-semibold">Opción ${id}</div>
+            <div class="text-muted" style="font-size:.9rem;">${escapeHtml(ini)} → ${escapeHtml(fin)}</div>
+            <div class="mt-2">
+              <button class="btn btn-primary btn-sm w-100 btnVisitaAceptar" data-op="${id}" ${conf ? 'disabled' : ''}>
+                Confirmar esta ventana
+              </button>
+            </div>
+          </div>
+        </div>
+      `);
+        });
+    }
+
+    // Confirmada
+    if (conf) {
+        $('#viConfirmadaTxt').text(`${conf.inicio_txt || conf.inicio} → ${conf.fin_txt || conf.fin}`);
+    } else {
+        $('#viConfirmadaTxt').text('—');
+    }
+
+    // Lock cancel
+    const locked = Number(data.lock_cancel || 0) === 1;
+    $('#viLockBadge').text(locked ? 'Cancelación bloqueada' : 'Cancelación permitida');
+    $('#viBtnUnlock').toggleClass('d-none', !locked);
+
+    // Folio
+    if (data.folio?.path) {
+        $('#viFolioNombre').text(data.folio.nombre || 'Folio');
+        $('#viFolioEstado').text('Archivo cargado');
+        $('#viBtnVerFolio, #viBtnDescargarFolio').prop('disabled', false);
+    } else {
+        $('#viFolioNombre').text('—');
+        $('#viFolioEstado').text('Sin archivo');
+        $('#viBtnVerFolio, #viBtnDescargarFolio').prop('disabled', true);
+    }
+
+    // Acceso (ing + vehículo + piezas)
+    const a = data.acceso || {};
+    const accesoReady = Number(data.acceso_ready || 0) === 1;
+    console.log('Acceso ready:', accesoReady);
+    // Si no hay paquete, el CTA principal debe ser “Editar Paquete”
+    if (!accesoReady || accesoReady === false) {
+        // console.log('Acceso no listo, mostrando aviso para configurar paquete');
+        $('#viAccesoWrap').html(`
+    <div class="alert alert-warning border mb-0">
+      <div class="fw-bold mb-1">Falta configurar el Paquete de Acceso</div>
+      <div class="text-muted" style="font-size:.9rem;">
+        Antes de solicitar folio o coordinar visita, debes definir ingeniero(s), credencial, equipos y (si aplica) vehículo/piezas.
+      </div>
+      <div class="mt-2">
+        <a class="btn btn-primary btn-sm" href="admin/visita_paquete.php?tiId=${encodeURIComponent(ticket)}" target="_blank">
+          Configurar Paquete
+        </a>
+      </div>
+    </div>
+  `);
+
+        // Bloquea acciones dependientes
+        $('#viBtnSolicitarFolio, #viBtnSubirFolio').prop('disabled', true);
+    } else {
+        // habilita
+        $('#viBtnSolicitarFolio, #viBtnSubirFolio').prop('disabled', false);
+    }
+    if (accesoReady) {
+        // console.log('Acceso listo, mostrando detalles en UI');
+        $('#viAccesoWrap').html(`
+    <div class="row g-2">
+      <div class="col-12 col-lg-6">
+        <div class="fw-semibold mb-1">Ingeniero</div>
+        <div class="text-muted" style="font-size:.9rem;">
+          <div><i class="bi bi-person"></i> ${escapeHtml(a.ing_nombre || '—')}</div>
+          <div><i class="bi bi-telephone"></i> ${escapeHtml(a.ing_tel || '—')}</div>
+          <div><i class="bi bi-envelope"></i> ${escapeHtml(a.ing_email || '—')}</div>
+          <div><i class="bi bi-award"></i> ${escapeHtml(a.expertis || '—')}</div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="fw-semibold mb-1">Vehículo</div>
+        <div class="text-muted" style="font-size:.9rem;">
+          <div><i class="bi bi-truck"></i> ${escapeHtml(a.vehiculo || '—')}</div>
+          <div><i class="bi bi-credit-card-2-front"></i> Placas: ${escapeHtml(a.placas || '—')}</div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="fw-semibold mb-1">Piezas / Nota</div>
+        <div class="text-muted" style="font-size:.9rem;">${escapeHtml(a.piezas_txt || '—')}</div>
+      </div>
+      <div class="col-12">
+        <div class="fw-semibold mb-1">Vestimenta</div>
+        <div class="text-muted" style="font-size:.9rem;">Pantalón mezclilla · Camisa/Polo · Botas/Zapatos</div>
+      </div>
+    </div>
+  `);
+    }
+    wireFolioButtonsFromData(data);
+}
+$(document).on('click', '.btnVisitaAceptar', async function (e) {
+    e.preventDefault();
+    const op = Number($(this).data('op'));
+    try {
+        await apiVisitaAccept(visitaCtx.tiId, op);
+
+        // Notificación: visita confirmada
+        await sendTicketNotificationByProceso('visita_confirmada', visitaCtx.tiId);
+
+        await visitaFetchAndRender();
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+// ==============================
+// VISITA · BOTONES (ADMIN)
+// ==============================
+
+// helper: decide notificación rápida según estado
+function visitaNotifyHint(ticket, data) {
+    const hasProps = Array.isArray(data?.propuestas) && data.propuestas.length > 0;
+    const hasConfirm = !!data?.confirmada;
+    const hasFolio = !!data?.folio?.download_url || !!data?.folio?.view_url;
+
+    if (!hasProps) return 'visita_propuestas';
+    if (hasConfirm && !hasFolio) return 'visita_solicitar_folios';
+    if (hasConfirm) return 'visita_confirmada';
+    return 'solicitud visita';
+}
+
+// Ajuste: renderVisita debe guardar URLs para botones Ver/Descargar
+// (si tu API no los manda aún, deja disabled y no hace nada)
+function wireFolioButtonsFromData(data) {
+    const viewUrl = data?.folio?.view_url || '';
+    const dlUrl = data?.folio?.download_url || '';
+
+    $('#viBtnVerFolio')
+        .data('url', viewUrl)
+        .prop('disabled', !viewUrl);
+
+    $('#viBtnDescargarFolio')
+        .data('url', dlUrl)
+        .prop('disabled', !dlUrl);
+}
+
+// Click: Ver folio
+$('#viBtnVerFolio').off('click').on('click', function () {
+    const url = String($(this).data('url') || '');
+    if (!url) return;
+    window.open(url, '_blank', 'noopener');
+});
+
+// Click: Descargar folio
+$('#viBtnDescargarFolio').off('click').on('click', function () {
+    const url = String($(this).data('url') || '');
+    if (!url) return;
+    // descarga en nueva pestaña (tu endpoint debe forzar Content-Disposition si aplica)
+    window.open(url, '_blank', 'noopener');
+});
+
+// Click: Desbloquear/Toggle lock cancel
+$('#viBtnUnlock').off('click').on('click', async function () {
+    try {
+        if (!visitaCtx?.tiId) return;
+
+        const locked = Number(visitaCtx?.data?.lock_cancel || 0) === 1;
+        const nextLock = locked ? 0 : 1;
+
+        const ok = confirm(nextLock === 0
+            ? '¿Desbloquear cancelación del lado cliente? (solo admin puede volver a bloquear)'
+            : '¿Bloquear cancelación del lado cliente?');
+
+        if (!ok) return;
+
+        await apiVisitaUnlockCancel(visitaCtx.tiId, nextLock);
+
+        // notificación opcional (si quieres avisar cambios de política)
+        await sendTicketNotification('cambio_estado', visitaCtx.tiId, {
+            proceso: 'visita',
+            texto: nextLock ? 'La cancelación quedó bloqueada por administración.' : 'La cancelación quedó desbloqueada por administración.',
+            titulo: 'Actualización de visita'
+        });
+
+        await visitaFetchAndRender();
+        mostrarToast('success', nextLock ? 'Cancelación bloqueada.' : 'Cancelación desbloqueada.');
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+// Click: Subir folio
+$('#viBtnSubirFolio').off('click').on('click', async function () {
+    try {
+        const f = document.getElementById('viFolioFile')?.files?.[0];
+        if (!f) return alert('Selecciona un archivo.');
+
+        await apiVisitaUploadFolio(visitaCtx.tiId, f);
+
+        await sendTicketNotificationByProceso('folio_cargado', visitaCtx.tiId);
+
+        await visitaFetchAndRender();
+        mostrarToast('success', 'Folio cargado.');
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+// Click: Solicitar folio
+$('#viBtnSolicitarFolio').off('click').on('click', async function () {
+    try {
+        const motivo = prompt(
+            'Motivo / instrucción para solicitar folio al cliente:',
+            'Por favor sube el folio de entrada/autorización para permitir el acceso del ingeniero.'
+        );
+        if (motivo === null) return;
+
+        await apiVisitaRequestFolio(visitaCtx.tiId, motivo.trim());
+
+        await sendTicketNotificationByProceso('visita_solicitar_folios', visitaCtx.tiId);
+
+        await visitaFetchAndRender();
+        mostrarToast('success', 'Solicitud de folio enviada.');
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+// Click: Notificar cliente (según estado real)
+$('#viBtnNotificar').off('click').on('click', async function () {
+    try {
+        const action = visitaNotifyHint(visitaCtx.tiId, visitaCtx.data);
+        await sendTicketNotificationByProceso(action, visitaCtx.tiId);
+        mostrarToast('success', 'Notificación enviada.');
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+// Click: Confirmar y pasar a siguiente paso (UI actual: sin dropdown)
+$('#viBtnPasarSiguiente').off('click').on('click', async function () {
+    try {
+        const hasConfirm = !!visitaCtx?.data?.confirmada;
+        if (!hasConfirm) {
+            return alert('Primero confirma una ventana para poder avanzar el proceso.');
+        }
+
+        // Tu regla: al aceptar ventana, pasamos a "fecha asignada"
+        await apiSetProceso(visitaCtx.tiId, 'fecha asignada');
+
+        // notificación de cambio
+        await sendTicketNotificationByProceso('fecha asignada', visitaCtx.tiId);
+
+        await fetchTickets();          // refresca lista principal
+        await visitaFetchAndRender();  // refresca visita
+        mostrarToast('success', 'Proceso actualizado a "fecha asignada".');
+    } catch (err) {
+        alert(err.message || String(err));
+    }
+});
+
+
+
+
+$('#viBtnCancelar').on('click', async function () {
+    try {
+        const motivo = prompt('Motivo de cancelación (obligatorio):');
+        if (!motivo || !motivo.trim()) return;
+        await apiVisitaCancel(visitaCtx.tiId, motivo.trim());
+        await sendTicketNotificationByProceso('cancelado', visitaCtx.tiId);
+        await fetchTickets();
+        await visitaFetchAndRender();
+        mostrarToast('success', 'Cancelado.');
+    } catch (err) { alert(err.message || String(err)); }
+});
+
+
 
 $('#btnMeetReload').on('click', () => loadMeetIntoOffcanvas(__MEET_TI_ID));
+// -------------------------
+// Logs · Acciones ADMIN
+// -------------------------
+const logsActionState = {
+    mode: null, // 'solicitar' | 'continuar'
+    tiId: 0,
+};
 
+const ADMIN_STEPSs = [
+    'asignacion', 'revision inicial', 'logs', 'meet', 'revision especial', 'espera refaccion',
+    'visita', 'fecha asignada', 'espera ventana', 'espera visita', 'en camino',
+    'espera documentacion', 'encuesta satisfaccion', 'finalizado', 'cancelado',
+    'fuera de alcance', 'servicio por evento'
+];
+
+function fillNextStepsSelect(currentStep) {
+    const $sel = $('#laNextStep');
+    $sel.empty();
+
+    // regla: no muestres "logs" como siguiente en continuar (ya lo pasaste)
+    const list = ADMIN_STEPSs.filter(x => x !== 'logs');
+
+    list.forEach(s => {
+        $sel.append(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
+    });
+
+    // sugerencia default: si vienes de logs, normalmente a revision especial
+    if ((currentStep || '') === 'logs') $sel.val('revision especial');
+}
+
+function openLogsAccionOffcanvas(mode, tiId) {
+    const t = findTicketById(tiId);
+    if (!t) return;
+
+    logsActionState.mode = mode;
+    logsActionState.tiId = Number(tiId);
+
+    const pref = clientePrefix(state.meta.clNombre);
+    $('#laCodigo').text(`${pref}-${Number(t.tiId)}`);
+    $('#laEquipo').text((t.eqModelo || 'Equipo') + (t.eqVersion ? ' · ' + t.eqVersion : ''));
+    $('#laSN').text(t.peSN ? ('SN: ' + t.peSN) : 'SN: —');
+
+    const step = normalizeStep(t.tiProceso);
+
+    if (mode === 'solicitar') {
+        $('#offLogsAccionLabel').text('Solicitar nuevamente logs');
+        $('#offLogsAccionSub').text('Envía solicitud al cliente y regresa el ticket a “logs”.');
+        $('#laLabel').text('Motivo de solicitud');
+        $('#laTexto').attr('placeholder', 'Ej: Logs antiguos / incorrectos / incompletos. Indica qué se requiere.');
+        $('#laNextWrap').addClass('d-none');
+        $('#laSubmit').text('Solicitar logs');
+    } else {
+        $('#offLogsAccionLabel').text('Diagnóstico y continuar');
+        $('#offLogsAccionSub').text('Guarda diagnóstico y mueve el ticket al siguiente proceso.');
+        $('#laLabel').text('Diagnóstico / estado');
+        $('#laTexto').attr('placeholder', 'Describe diagnóstico (evidencia, hipótesis, impacto) y qué sigue.');
+        $('#laNextWrap').removeClass('d-none');
+        fillNextStepsSelect(step);
+        $('#laSubmit').text('Guardar y continuar');
+    }
+
+    // contador
+    const v = $('#laTexto').val() || '';
+    $('#laCount').text(v.length);
+
+    const el = document.getElementById('offLogsAccion');
+    bootstrap.Offcanvas.getOrCreateInstance(el, { backdrop: true, scroll: false }).show();
+}
+
+// UI helpers del offcanvas
+$(document).on('input', '#laTexto', function () {
+    $('#laCount').text((this.value || '').length);
+});
+$(document).on('click', '[data-fill]', function () {
+    const txt = String($(this).data('fill') || '');
+    const $ta = $('#laTexto');
+    const cur = $ta.val() || '';
+    $ta.val(cur ? (cur + '\n' + txt) : txt).trigger('input');
+});
+$('#laClear').on('click', () => $('#laTexto').val('').trigger('input'));
+
+// Botones en offVerLogs
+$('#btnSolicitarLogs').on('click', function () {
+    if (!asgContext?.tiId) return;            // o tu contexto real de logs
+    openLogsAccionOffcanvas('solicitar', asgContext.tiId);
+});
+
+$('#btnLogsOK').on('click', function () {
+    if (!asgContext?.tiId) return;
+    openLogsAccionOffcanvas('continuar', asgContext.tiId);
+});
+
+// ---- APIs ----
+async function apiSolicitarLogs(tiId, motivo) {
+    console.log('apiSolicitarLogs', { tiId, motivo });
+    const csrf = (window.MRS_CSRF?.csrf || '');
+    const res = await fetch(`api/logs_solicitar.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf
+        },
+        body: JSON.stringify({ tiId: Number(tiId), motivo: motivo || '' })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error logs_solicitar');
+    await sendTicketNotificationByProceso('solicitar_logs', tiId);
+    return json;
+}
+
+async function apiDiagnosticoContinuar(tiId, diagnostico, nextStep) {
+    const csrf = (window.MRS_CSRF?.csrf || '');
+    const res = await fetch(`api/ticket_diagnostico.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf
+        },
+        body: JSON.stringify({
+            tiId: Number(tiId),
+            diagnostico: diagnostico || '',
+            nextStep: nextStep || ''
+        })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) { throw new Error(json.error || 'Error ticket_diagnostico'); return; }
+    await sendTicketNotificationByProceso(nextStep, tiId);
+    mostrarToast('success', 'El ticket se actualizó correctamente al proceso "' + nextStep + '" y se ha notificado al cliente.');
+    return json;
+
+}
+
+// Submit del offcanvas
+$('#laSubmit').on('click', async function () {
+    const tiId = logsActionState.tiId;
+    const texto = ($('#laTexto').val() || '').trim();
+
+
+    try {
+        $(this).prop('disabled', true);
+        console.log('Submit acción logs', { mode: logsActionState.mode, tiId, texto });
+
+        if (logsActionState.mode === 'solicitar') {
+            await apiSolicitarLogs(tiId, texto || 'Solicito nuevamente logs.');
+        } else {
+            const nextStep = String($('#laNextStep').val() || '').trim();
+            await apiDiagnosticoContinuar(tiId, texto || 'Faltan datos', nextStep);
+
+        }
+
+        // Cerrar offcanvas
+        bootstrap.Offcanvas.getInstance(document.getElementById('offLogsAccion'))?.hide();
+        // Recargar tickets para reflejar nuevo estado/proceso
+        await fetchTickets();
+        // (opcional) reabrir el ticket offcanvas principal si quieres
+        // openTicketOffcanvasById(tiId);
+
+    } catch (err) {
+        alert(err?.message || 'Error');
+    } finally {
+        $(this).prop('disabled', false);
+    }
+});
+
+async function notifyCambioProceso(t, nuevoProceso, nota) {
+    return sendTicketNotification('cambio_estado', t, {
+        proceso: nuevoProceso,
+        texto: nota || `El ticket avanzó a: ${nuevoProceso}`,
+        titulo: 'Actualización de ticket'
+    });
+}
 async function sendTicketNotification(action, ticket, extra = {}) {
     console.log('sendTicketNotification', { action, ticket, extra });
     if (!action) throw new Error('action requerido');
@@ -2187,11 +2367,12 @@ async function sendTicketNotification(action, ticket, extra = {}) {
     return json; // {success, sent, errors}
 }
 
+//Notificaciones específicas por proceso (para no tener que armar todo el extra cada vez)
 async function sendTicketNotificationByProceso(action, ticket) {
     ticket = findTicketById(ticket);
     console.log('sendTicketNotification by proceso', { action, ticket });
-    if (!action) throw new Error('action requerido');
-    if (!ticket) throw new Error('ticket inválido by proceso');
+    if (!action) throw new Error('action requerido by sendTicketNotificationByProceso');
+    if (!ticket) throw new Error('ticket inválido by sendTicketNotificationByProceso');
     if (action === 'asignacion') {
         extra = {
             proceso: 'asignacion',
@@ -2206,7 +2387,7 @@ async function sendTicketNotificationByProceso(action, ticket) {
             titulo: 'Revisión inicial completada'
         };
     }
-if (action === 'logs') {
+    if (action === 'logs') {
         extra = {
             proceso: 'logs',
             texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se requieren los logs para el diagnóstico de tu caso. Por favor, sube los logs necesarios para continuar con el proceso.',
@@ -2256,11 +2437,63 @@ if (action === 'logs') {
             titulo: 'Solicitud de visita técnica'
         };
     }
-    if (action === 'confirmacion visita') {
+    if (action === 'visita_solicitar_folios') {
+        extra = {
+            proceso: 'solicitud_visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', es necesariala signación de un folio de entrada/autorización para coordinar el acceso. Por favor súbelo desde el ticket.',
+            titulo: 'Solicitud de visita técnica'
+        };
+    }
+
+    if (action === 'visita_propuestas') {
+        extra = {
+            proceso: 'confirmacion visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + 'es necesario proponer 3 ventanas (fecha y hora). Una vez confirmada, no podrá cancelarse sin autorización.',
+            titulo: 'Confirmación de visita técnica'
+        };
+    }
+    if (action === 'visita_confirmada') {
         extra = {
             proceso: 'confirmacion visita',
             texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha confirmado la visita técnica para tu caso. Es importante que estés presente en la fecha y hora programada para que el ingeniero pueda realizar el diagnóstico y resolver tu caso lo antes posible.',
             titulo: 'Confirmación de visita técnica'
+        };
+    }
+    if (action === 'visita_en_camino') {
+        extra = {
+            proceso: 'confirmacion visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha confirmado la visita técnica para tu caso. Es importante que estés presente en la fecha y hora programada para que el ingeniero pueda realizar el diagnóstico y resolver tu caso lo antes posible.',
+            titulo: 'Confirmación de visita técnica'
+        };
+    }
+    if (action === 'fecha asignada') {
+        extra = {
+            proceso: 'fecha asignada',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha asignado una fecha para la visita técnica. Por favor, mantente disponible en la fecha y hora programada.',
+            titulo: 'Fecha asignada'
+        };
+    }
+
+    if (action === 'espera ventana') {
+        extra = {
+            proceso: 'espera ventana',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta en espera de que se confirme una ventana para la visita técnica de tu caso. Por favor, aguarda a que se confirme la ventana para continuar con el proceso.',
+            titulo: 'Espera ventana'
+        };
+    }
+    if (action === 'espera visita') {
+        extra = {
+            proceso: 'espera visita',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se esta en espera de que el ingeniero llegue a tu domicilio para realizar la visita técnica. Por favor, mantente disponible para recibir al ingeniero.',
+            titulo: 'Espera de visita técnica'
+        };
+    }
+
+    if (action === 'folio_cargado') {
+        extra = {
+            proceso: 'folio_cargado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha cargado el folio de la visita técnica para tu caso. Es importante que estés presente en la fecha y hora programada para que el ingeniero pueda realizar el diagnóstico y resolver tu caso lo antes posible.',
+            titulo: 'Folio cargado'
         };
     }
     if (action === 'en camino') {
@@ -2277,6 +2510,13 @@ if (action === 'logs') {
             titulo: 'Espera de documentación'
         };
     }
+    if (action === 'finalizado') {
+        extra = {
+            proceso: 'finalizado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha finalizado el proceso de visita técnica. Gracias por utilizar nuestros servicios.',
+            titulo: 'Ticket finalizado'
+        };
+    }
     if (action === 'encuesta satisfaccion') {
         extra = {
             proceso: 'encuesta_satisfaccion',
@@ -2285,11 +2525,115 @@ if (action === 'logs') {
         };
     }
 
+    if (action === 'cancelado') {
+        extra = {
+            proceso: 'cancelado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha cancelado el proceso de visita técnica. Gracias por utilizar nuestros servicios.',
+            titulo: 'Ticket cancelado'
+        };
+    }
+    if (action === 'fuera de alcance') {
+        extra = {
+            proceso: 'fuera_alcance',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', el ticket se encuentra fuera de alcance. Por favor, contacta con el soporte técnico para más información.',
+            titulo: 'Ticket fuera de alcance'
+        };
+    }
+    if (action === 'servicio por evento') {
+        extra = {
+            proceso: 'servicio_por_evento',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', el ticket se encuentra marcado como servicio por evento. Por favor, contacta con el soporte técnico para más información.',
+            titulo: 'Este ticket es para servicio por evento'
+        };
+    }
+
 
     await sendTicketNotification(action, ticket, extra);
 
 }
 
+async function apiVisitaPropose(tiId, opciones) { // opciones: [{inicio,fin,opcion}]
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const res = await fetch(`api/visita_propose.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ tiId: Number(tiId), opciones, csrf_token: csrf })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_propose');
+    return json;
+}
+
+async function apiVisitaAccept(tiId, opcion) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const res = await fetch(`api/visita_accept.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ tiId: Number(tiId), opcion: Number(opcion), csrf_token: csrf })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_accept');
+    return json;
+}
+
+async function apiVisitaUploadFolio(tiId, file) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const fd = new FormData();
+    fd.append('tiId', String(tiId));
+    fd.append('csrf_token', csrf);
+    fd.append('folioFile', file);
+
+    const res = await fetch(`api/visita_upload_folio.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrf },
+        body: fd
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_upload_folio');
+    return json;
+}
+
+async function apiVisitaRequestFolio(tiId, motivo) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const res = await fetch(`api/visita_request_folio.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ tiId: Number(tiId), motivo: String(motivo || ''), csrf_token: csrf })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_request_folio');
+    return json;
+}
+
+async function apiVisitaUnlockCancel(tiId, lock) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const res = await fetch(`api/visita_unlock_cancel.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ tiId: Number(tiId), lock: Number(lock), csrf_token: csrf })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_unlock_cancel');
+    return json;
+}
+
+async function apiVisitaCancel(tiId, motivo) {
+    const csrf = (window.MRS_CSRF?.csrf || window.MRS_CSRF || '');
+    const res = await fetch(`api/visita_cancel.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ tiId: Number(tiId), motivo: String(motivo || ''), csrf_token: csrf })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error || 'Error visita_cancel');
+    return json;
+}
 function mostrarToast(tipo, mensaje) {
     const toastId = tipo === 'success' ? '#toastSuccess' : '#toastError';
     const $toastElem = $(toastId);
@@ -2303,7 +2647,289 @@ function mostrarToast(tipo, mensaje) {
     const toast = new bootstrap.Toast($toastElem[0]);
     toast.show();
 }
+// -------------------------
+// UI EVENTS
+// -------------------------
+$('#vistaToggle').on('click', 'button[data-vista]', function () {
+    $('#vistaToggle button[data-vista]').removeClass('active');
+    $(this).addClass('active');
+    state.vista = $(this).data('vista');
+    applyAndRender();
+});
 
+$('#btnReload').on('click', fetchTickets);
+
+$('#tabScope').on('click', 'button[data-scope]', function () {
+    $('#tabScope button').removeClass('active');
+    $(this).addClass('active');
+    state.scope = $(this).data('scope');
+    applyAndRender();
+});
+
+$('#tabEstado').on('click', 'button[data-estado]', function () {
+    $('#tabEstado button').removeClass('active');
+    $(this).addClass('active');
+    state.estado = $(this).data('estado');
+    applyAndRender();
+});
+
+$('#searchTickets').on('input', function () {
+    state.search = $(this).val() || '';
+    applyAndRender();
+});
+
+$('#btnClear').on('click', function () {
+    state.search = '';
+    $('#searchTickets').val('');
+    applyAndRender();
+});
+
+function resetAll() {
+    state.vista = 'tabla';
+    state.scope = 'todo';
+    state.estado = 'Abierto';
+    state.search = '';
+
+    $('#vistaToggle button[data-vista]').removeClass('active');
+    $('#vistaToggle button[data-vista="tabla"]').addClass('active');
+
+    $('#tabScope button').removeClass('active');
+    $('#tabScope button[data-scope="todo"]').addClass('active');
+
+    $('#tabEstado button').removeClass('active');
+    $('#tabEstado button[data-estado="Abierto"]').addClass('active');
+
+    $('#searchTickets').val('');
+    applyAndRender();
+}
+$('#btnReset, #btnReset2').on('click', resetAll);
+
+// Click fila completa => offcanvas
+$(document).on('click', '.ticket-row', function (e) {
+    if ($(e.target).closest('button, a, input, label').length) return;
+    const tiId = Number($(this).data('ti'));
+    if (tiId) openTicketOffcanvasById(tiId);
+});
+
+// Click card completo => offcanvas
+$(document).on('click', '.ticket-card', function (e) {
+    if ($(e.target).closest('button, a, input, label').length) return;
+    const tiId = Number($(this).data('ti'));
+    if (tiId) openTicketOffcanvasById(tiId);
+});
+
+// Click botones de acción => abre offcanvas + enfoca acción
+$(document).on('click', '.btnAccion', async function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const tiId = Number($(this).data('ti'));
+    const action = String($(this).data('action') || '');
+    // openTicketOffcanvasById(tiId);
+    if (!tiId || !action) return;
+    if (action === 'cambiar_proceso') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+
+    if (action === 'logs_revisar') {
+        openTicketOffcanvasById(tiId);
+        // reivisionLogs(tiId, tifolio);
+        return;
+    }
+    if (action === 'admin_logs') {
+
+        // Ej: después de guardar en API el cambio de proceso:
+        // await notifyCambioProceso(t, 'solicitar_logs', 'Se requieren los logs para continuar con el diagnóstico. Por favor, súbelos usando el botón "Subir Logs".');
+        await sendTicketNotification('solicitar_logs', t, {
+            proceso: 'logs',
+            texto: 'Necesitamos que vuelvas a cargar los logs. Los anteriores no son válidos / están desactualizados.',
+            titulo: 'Solicitud de logs'
+        });
+        mostrarToast('success', 'Notificación enviada', `Se ha solicitado a cliente que vuelva a subir los logs para el ticket ${tifolio}.`);
+        return;
+    }
+    if (action === 'admin_revision_especial') {
+        verLogsOffcanvas(tiId);
+        // reivisionLogs(tiId, tifolio);
+        return;
+    }
+
+    if (action === 'asignar_ingeniero') {
+        openAsignarIngenieroOffcanvas(tiId);
+
+        return;
+    }
+
+    if (action === 'revision_inicial') {
+        openRevisionInicialOffcanvas(tiId);
+        return;
+    }
+
+    if (action === 'fecha_asignada') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+
+    if (action === 'refaccion') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'ventana') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'espera_visita') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'en_camino') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'finalizado') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'cancelado') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'fuera_alcance') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'servicio_evento') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+
+    if (action === 'meet') {
+        openMeetOffcanvasByTicketId(tiId);
+        return;
+    }
+    if (action === 'admin_visita') {
+        openVisitaOffcanvasById(tiId);
+        return;
+    }
+    if (action === 'encuesta') {
+        alert('Abrir flujo ENCUESTA para tiId ' + tiId);
+        return;
+    }
+
+
+    setTimeout(() => {
+        const btn = document.getElementById('offPrimaryAction');
+        if (btn) btn.focus();
+    }, 150);
+});
+
+// Acciones principales dentro del offcanvas (placeholder)
+$(document).on('click', '#offPrimaryAction', async function () {
+    const tiId = Number($(this).data('ti'));
+    const t = findTicketById(tiId);
+    const tifolio = ticketCodigo(findTicketById(tiId));
+    const action = String($(this).data('action') || '');
+
+    if (action === 'admin_logs') {
+
+        // Ej: después de guardar en API el cambio de proceso:
+        // await notifyCambioProceso(t, 'solicitar_logs', 'Se requieren los logs para continuar con el diagnóstico. Por favor, súbelos usando el botón "Subir Logs".');
+        await sendTicketNotification('solicitar_logs', t, {
+            proceso: 'logs',
+            texto: 'Necesitamos que vuelvas a cargar los logs. Los anteriores no son válidos / están desactualizados.',
+            titulo: 'Solicitud de logs'
+        });
+        mostrarToast('success', 'Notificación enviada', `Se ha solicitado a cliente que vuelva a subir los logs para el ticket ${tifolio}.`);
+        return;
+    }
+    if (action === 'admin_revision_especial') {
+        verLogsOffcanvas(tiId);
+        // reivisionLogs(tiId, tifolio);
+        return;
+    }
+
+    if (action === 'asignar_ingeniero') {
+        openAsignarIngenieroOffcanvas(tiId);
+
+        return;
+    }
+
+    if (action === 'revision_inicial') {
+        openRevisionInicialOffcanvas(tiId);
+        return;
+    }
+
+    if (action === 'fecha_asignada') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+
+    if (action === 'refaccion') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'ventana') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'espera_visita') {
+        openLogsAccionOffcanvas('continuar', tiId);
+
+        return;
+    }
+    if (action === 'en_camino') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'finalizado') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'cancelado') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'fuera_alcance') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+    if (action === 'servicio_evento') {
+        openLogsAccionOffcanvas('continuar', tiId);
+        return;
+    }
+
+    if (action === 'meet') {
+        openMeetOffcanvasByTicketId(tiId);
+        return;
+    }
+    if (action === 'admin_visita') {
+        openVisitaOffcanvasById(tiId);
+        return;
+    }
+    if (action === 'encuesta') {
+        alert('Abrir flujo ENCUESTA para tiId ' + tiId);
+        return;
+    }
+
+
+
+});
+
+$(document).on('click', '#offHelpAction', function () {
+    alert('Abrir ayuda guiada del paso actual.');
+});
+
+$(document).on('click', '#offMailHelp', function () {
+    alert('Abrir “Pedir ayuda por correo” (placeholder).');
+});
 
 // -------------------------
 // INIT
