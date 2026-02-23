@@ -2821,6 +2821,12 @@ $(document).on('click', '.btnAccion', async function (e) {
         return;
     }
 
+    if (action === 'documentacion') {
+  window.location = 'admin/documentacion.php?tiId=' + tiId;
+  return;
+}
+
+
 
     setTimeout(() => {
         const btn = document.getElementById('offPrimaryAction');
@@ -2918,6 +2924,10 @@ $(document).on('click', '#offPrimaryAction', async function () {
         alert('Abrir flujo ENCUESTA para tiId ' + tiId);
         return;
     }
+    if (action === 'documentacion') {
+  window.location = 'admin/documentacion.php?tiId=' + tiId;
+  return;
+}
 
 
 
