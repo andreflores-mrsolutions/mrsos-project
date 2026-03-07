@@ -88,27 +88,34 @@ try {
   $html = build_hs_html($in, $t, $hsFolio);
 
   // 6) PDF
-  $tmp = (realpath(__DIR__ . '/../../..') ?: (__DIR__ . '/../../..'))
-     . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . 'mpdf';
+  $templatePdf = (realpath(__DIR__ . '/../../..') ?: (__DIR__ . '/../../..'))
+  . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'HOJA_DE_SERVICIO.pdf';
 
-if (!is_dir($tmp) && !mkdir($tmp, 0775, true)) {
-  throw new RuntimeException('No se pudo crear tempDir de mPDF');
-}
-if (!is_writable($tmp)) {
-  throw new RuntimeException('tempDir de mPDF no es escribible: ' . $tmp);
+if (!is_file($templatePdf)) {
+  throw new RuntimeException('No se encontró plantilla: ' . $templatePdf);
 }
 
-$mpdf = new Mpdf([
+$mpdf = new \Mpdf\Mpdf([
   'mode' => 'utf-8',
   'format' => 'A4',
-  'margin_left' => 10,
-  'margin_right' => 10,
-  'margin_top' => 10,
-  'margin_bottom' => 10,
-  'tempDir' => $tmp,  // ✅ clave
+  'margin_left' => 0,
+  'margin_right' => 0,
+  'margin_top' => 0,
+  'margin_bottom' => 0,
+  'tempDir' => $tmp, // el que ya configuraste
 ]);
-  $mpdf->WriteHTML($html);
-  $mpdf->Output($absPath, Destination::FILE);
+
+$mpdf->SetDisplayMode('fullpage');
+$mpdf->showImageErrors = true;
+
+// Esto pone la hoja original como “fondo” en cada página
+$mpdf->SetDocTemplate($templatePdf, true);
+
+// Escribimos SOLO overlays (posicionados)
+$html = build_hs_overlay_html($in, $t, $hsFolio);
+$mpdf->WriteHTML($html);
+
+$mpdf->Output($absPath, \Mpdf\Output\Destination::FILE);
 
   // 7) Insert BD
   $hsNombreEquipo = trim(($t['eqModelo'] ?? '') . ' ' . ($t['eqVersion'] ?? ''));
@@ -163,7 +170,127 @@ function hs_chk(string $label, bool $on): string {
 function hs_radio(string $label, bool $on): string {
   return '<span class="check '.($on?'on':'').'"></span>'.esc($label).'&nbsp;&nbsp;&nbsp;';
 }
+function build_hs_overlay_html(array $in, array $t, string $hsFolio): string {
 
+  // helpers
+  $e = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+  $mm = fn($x) => rtrim(rtrim(number_format((float)$x, 2, '.', ''), '0'), '.') . 'mm';
+
+  $posText = function($x,$y,$w,$h,$txt,$size=9,$bold=false) use ($mm,$e) {
+    $fw = $bold ? '700' : '400';
+    $txt = $e($txt);
+    return "<div style=\"position:absolute;left:{$mm($x)};top:{$mm($y)};width:{$mm($w)};height:{$mm($h)};font-size:{$size}pt;font-weight:$fw;line-height:1.1;overflow:hidden;\">$txt</div>";
+  };
+
+  $posBox = function($x,$y,$on=false) use ($mm) {
+    $bg = $on ? '#111827' : 'transparent';
+    return "<div style=\"position:absolute;left:{$mm($x)};top:{$mm($y)};width:3.6mm;height:3.6mm;border:0.35mm solid #111827;background:$bg;\"></div>";
+  };
+
+  $posImg = function($x,$y,$w,$h,$src) use ($mm,$e) {
+    if (!$src) return '';
+    $src = $e($src);
+    return "<img src=\"$src\" style=\"position:absolute;left:{$mm($x)};top:{$mm($y)};width:{$mm($w)};height:{$mm($h)};object-fit:contain;\" />";
+  };
+
+  $isPng = fn($d) => is_string($d) && str_starts_with($d, 'data:image/png;base64,');
+
+  // Datos (usa tus reglas ya prellenadas)
+  $fecha   = $in['fecha'] ?? '';
+  $noCaso  = $in['no_caso'] ?? ('TI-'.$t['tiId']);
+  $contacto= $in['cliente_contacto'] ?? ($t['tiNombreContacto'] ?? '');
+  $razon   = $in['cliente_razon_social'] ?? ($t['clNombre'] ?? '');
+  $dir     = $in['cliente_direccion'] ?? ($t['csDireccion'] ?: ($t['clDireccion'] ?? ''));
+  $tel     = $in['cliente_telefono'] ?? ($t['tiNumeroContacto'] ?? '');
+  $email   = $in['cliente_email'] ?? ($t['tiCorreoContacto'] ?? '');
+
+  $so      = $in['equipo_so'] ?? ($t['peSO'] ?? '');
+  $soft    = $in['equipo_software_respaldo'] ?? '';
+  $sn      = $in['equipo_sn'] ?? ($t['peSN'] ?? '');
+  $modelo  = $in['equipo_modelo_unidad'] ?? trim(($t['eqModelo'] ?? '').' '.($t['eqVersion'] ?? ''));
+  $marca   = $in['equipo_marca_unidad'] ?? ($t['maNombre'] ?? '');
+
+  $vFecha  = $in['visita_fecha'] ?? ($t['tiVisitaFecha'] ?? '');
+  $vHora   = $in['visita_hora'] ?? ($t['tiVisitaHora'] ?? '');
+
+  $problema = $in['problema'] ?? '';
+  $act      = $in['actividades'] ?? '';
+  $coment   = $in['comentarios'] ?? '';
+
+  $status   = $in['status'] ?? 'cerrado';
+
+  $tipo = fn($k) => !empty($in['tipo_'.$k]);
+  $res  = fn($k) => !empty($in['res_'.$k]);
+
+  $sigIng = $isPng($in['sig_ing_base64'] ?? null) ? $in['sig_ing_base64'] : '';
+  $sigCli = $isPng($in['sig_cli_base64'] ?? null) ? $in['sig_cli_base64'] : '';
+
+  // IMPORTANTE:
+  // Estas coordenadas SON base. Se afinan con prueba/error 2–3 ajustes y queda 1:1.
+  // A4 en mm: ancho 210, alto 297.
+
+  $out = "<div style=\"position:relative;width:210mm;height:297mm;\">";
+
+  // TOP: Fecha / No Caso / HS ID
+  $out .= $posText(18, 20, 50, 6, $fecha, 10);
+  $out .= $posText(78, 20, 50, 6, $noCaso, 10);
+  $out .= $posText(140, 20, 60, 6, $hsFolio, 10, true);
+
+  // Cliente
+  $out .= $posText(18, 43, 55, 6, $contacto);
+  $out .= $posText(140, 43, 60, 6, $razon);
+  $out .= $posText(18, 56, 122, 10, $dir);
+  $out .= $posText(18, 72, 55, 6, $tel);
+  $out .= $posText(140, 72, 60, 6, $email);
+
+  // Tipo (checkboxes) -> ajusta X/Y según tu plantilla
+  $out .= $posBox(20, 90, $tipo('garantia'));
+  $out .= $posBox(55, 90, $tipo('evaluacion'));
+  $out .= $posBox(95, 90, $tipo('proyecto'));
+  $out .= $posBox(130, 90, $tipo('mantenimiento'));
+  $out .= $posBox(165, 90, $tipo('reparacion'));
+  $out .= $posBox(190, 90, $tipo('software_demo'));
+
+  // Equipo
+  $out .= $posText(18, 110, 60, 6, $so);
+  $out .= $posText(78, 110, 60, 6, $soft);
+  $out .= $posText(140, 110, 60, 6, $sn);
+  $out .= $posText(18, 123, 122, 6, $modelo);
+  $out .= $posText(140, 123, 60, 6, $marca);
+
+  // Primera visita
+  $out .= $posText(18, 142, 60, 6, $vFecha);
+  $out .= $posText(110, 142, 40, 6, $vHora);
+
+  // Problema / Actividades / Comentarios (bloques grandes)
+  $out .= $posText(18, 160, 182, 22, $problema, 9);
+  $out .= $posText(18, 186, 182, 22, $act, 9);
+
+  // Estatus (checkbox style)
+  $out .= $posBox(20, 212, $status==='cerrado');
+  $out .= $posBox(70, 212, $status==='pendiente');
+  $out .= $posBox(125, 212, $status==='cancelado');
+  $out .= $posBox(170, 212, $status==='reasignado');
+
+  // Resultado
+  $out .= $posBox(20, 230, $res('reemplazo_refaccion'));
+  $out .= $posBox(20, 237, $res('config_hw'));
+  $out .= $posBox(20, 244, $res('config_sw'));
+  $out .= $posBox(20, 251, $res('reinstalacion'));
+  $out .= $posBox(110, 230, $res('reparacion_sitio'));
+  $out .= $posBox(110, 237, $res('pendiente_partes'));
+  $out .= $posBox(110, 244, $res('software_respaldo'));
+  $out .= $posBox(110, 251, $res('otros'));
+
+  $out .= $posText(18, 258, 182, 18, $coment, 9);
+
+  // Firmas (imágenes)
+  $out .= $posImg(25, 279, 70, 14, $sigIng);
+  $out .= $posImg(120, 279, 70, 14, $sigCli);
+
+  $out .= "</div>";
+  return $out;
+}
 function build_hs_html(array $in, array $t, string $hsFolio): string {
 
   $tipo = fn(string $k): bool => !empty($in['tipo_'.$k]);

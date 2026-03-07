@@ -74,6 +74,26 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
                     <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
                 </ul>
 
+                <div class="section-title pt-2">Creación</div>
+                <div class="section-subtitle ">Tickets</div>
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item"><a class="nav-link" href="index.php"><i class="bi bi-plus-circle"></i> Nuevo Ticket</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nuevo_health.php"><i class="bi bi-plus-circle"></i> Nuevo Health Check</a></li>
+                </ul>
+
+                <div class="section-subtitle ">Cliente</div>
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nueva Zona</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nueva Sede</a></li>
+
+                </ul>
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Ingeniero</a></li>
+                </ul>
+
+
                 <div class="section-title px-2 mt-3">Gestión</div>
                 <ul class="nav nav-pills flex-column gap-1">
                     <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Pólizas</a></li>
@@ -787,7 +807,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
                 <div class="fw-bold">Datos para acceso al sitio</div>
                 <a class="btn btn-outline-primary btn-sm" id="viBtnEditarPaquete" href="#" target="_blank">
                     <i class="bi bi-pencil-square"></i> Editar Paquete
-                </a>                
+                </a>
             </div>
             <div class="mb-3">
                 <div class="p-3 border rounded-4 bg-white" id="viAccesoWrap">

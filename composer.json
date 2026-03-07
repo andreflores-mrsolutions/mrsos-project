@@ -2,6 +2,7 @@
     "require": {
         "minishlink/web-push": "^9.0",
         "mpdf/mpdf": "8.2",
-        "setasign/fpdi": "2.6.4"
+        "setasign/fpdi": "2.6.4",
+        "phpoffice/phpspreadsheet": "^5.5"
     }
 }

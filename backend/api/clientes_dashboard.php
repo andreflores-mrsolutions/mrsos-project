@@ -97,17 +97,17 @@ $restrictByCuentas = ($US_ROL === 'MRV');
 // 1) Clientes
 if ($restrictByCuentas) {
   $stmt = $pdo->prepare("
-    SELECT c.clId, c.clNombre, c.clEstatus
+    SELECT c.clId, c.clNombre, c.clEstatus, c.clImagen
     FROM clientes c
     INNER JOIN cuentas cu ON cu.clId = c.clId
     WHERE c.clEstatus = 'Activo' AND cu.usId = ?
-    GROUP BY c.clId, c.clNombre, c.clEstatus
+    GROUP BY c.clId, c.clNombre, c.clEstatus, c.clImagen
     ORDER BY c.clNombre ASC
   ");
   $stmt->execute([$usId]);
 } else {
   $stmt = $pdo->prepare("
-    SELECT clId, clNombre, clEstatus
+    SELECT clId, clNombre, clEstatus, clImagen
     FROM clientes
     WHERE clEstatus = 'Activo'
     ORDER BY clNombre ASC
@@ -202,6 +202,7 @@ $kpi = [
 $cards = [];
 foreach ($clientes as $c) {
   $cid  = (int)$c['clId'];
+  $clImagen = (string)($c['clImagen'] ?? '');
   $name = (string)$c['clNombre'];
   $pols = $polizasByClient[$cid] ?? [];
 
@@ -211,7 +212,7 @@ foreach ($clientes as $c) {
     'clId' => $cid,
     'name' => $name,
     'group' => groupByLetter($name),
-    'logo' => findClientLogoUrl($cid, $name),
+    'logo' => $clImagen !== '' ? $clImagen : findClientLogoUrl($cid, $name),
     'sedes' => (int)($sedesCount[$cid] ?? 0),
     'polizas' => (int)($polizasCount[$cid] ?? 0),
     'open' => (int)($ticketsOpen[$cid] ?? 0),

@@ -117,3 +117,150 @@
         }
 
         /* .row-crit-3{ border-left: 6px solid #22c55e; } */
+
+        /* admin/css/nuevo_ticket.css */
+
+.mrs-card{
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,.06);
+  overflow: hidden;
+}
+
+.mrs-selected-equipo{
+  border-radius: 14px;
+  border: 1px dashed rgba(0,0,0,.2);
+  padding: 12px;
+  background: rgba(0,0,0,.02);
+}
+
+.equipo-card{
+  border-radius: 18px;
+  transition: all .22s ease;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.equipo-card:hover{
+  transform: translateY(-5px);
+  box-shadow: 0 14px 30px rgba(0,0,0,.12);
+}
+
+.equipo-card.is-selected{
+  outline: 3px solid rgba(13,110,253,.35);
+  box-shadow: 0 16px 34px rgba(13,110,253,.15);
+}
+
+.equipo-img-wrap{
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(245,247,250,1), rgba(228,236,255,1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.equipo-img{
+  max-height: 130px;
+  object-fit: contain;
+  transition: transform .25s ease;
+}
+
+.equipo-card:hover .equipo-img{
+  transform: scale(1.06);
+}
+
+.mrs-pill{
+  border-radius: 999px;
+  padding: .35rem .6rem;
+  font-size: .75rem;
+}
+
+.mrs-skeleton-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 992px){
+  .mrs-skeleton-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 576px){
+  .mrs-skeleton-grid{ grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
+.mrs-skel{
+  height: 230px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.02), rgba(0,0,0,.06));
+  background-size: 200% 100%;
+  animation: sk 1.2s infinite linear;
+}
+@keyframes sk{
+  0%{ background-position: 200% 0; }
+  100%{ background-position: -200% 0; }
+}
+
+/* ===== CARD EQUIPO (estilo screenshot) ===== */
+.eq-card {
+  border: 2px solid #f3b400;          /* amarillo */
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, .06);
+}
+
+.eq-card__imgwrap{
+  background: #fff;
+  padding: 14px 14px 0 14px;
+}
+
+.eq-card__img{
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  display:block;
+}
+
+.eq-card__body{
+  padding: 14px;
+}
+
+.eq-card__title{
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.15;
+  margin: 0 0 10px 0;
+}
+
+.eq-card__meta{
+  font-size: 14px;
+  color: #374151;
+  margin: 0 0 6px 0;
+}
+.eq-card__meta strong{
+  font-weight: 700;
+  color: #111827;
+}
+
+.eq-badge-yellow{
+  display:inline-block;
+  background:#f3b400;
+  color:#111827;
+  font-weight:700;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin: 8px 0 6px 0;
+}
+
+.eq-card__tickets{
+  font-size: 14px;
+  color:#374151;
+}
+.eq-card__tickets strong{
+  color:#111827;
+}
+
+.eq-card__actions{
+  display:flex;
+  gap:8px;
+  margin-top: 12px;
+}

@@ -551,12 +551,29 @@ if ($tiId <= 0) {
                     Enviar por correo al contacto del ticket (stub)
                   </label>
                 </div>
-                <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-outline-secondary" id="btnDraft" disabled>Guardar borrador</button>
-                  <button type="submit" class="btn btn-primary" id="btnGen">
+                <div class="d-flex gap-2 align-items-center mt-3">
+                  <button id="btnGenerarPDF" class="btn btn-primary">
                     <i class="bi bi-file-earmark-pdf"></i> Generar PDF
                   </button>
+
+                  <button id="btnContinuar" class="btn btn-success" disabled>
+                    <i class="bi bi-arrow-right-circle"></i> Continuar
+                  </button>
+
+                  <div class="ms-auto d-flex align-items-center gap-2">
+                    <label class="small text-muted m-0">Siguiente paso</label>
+                    <select id="nextProceso" class="form-select form-select-sm" style="min-width:240px;">
+                      <option value="encuesta satisfaccion" selected>Encuesta de satisfacción</option>
+                      <option value="finalizado">Finalizado</option>
+                      <option value="espera documentacion">Espera documentación</option>
+                      <!-- agrega los que te interesen -->
+                    </select>
+                  </div>
                 </div>
+
+                <!-- hidden state -->
+                <input type="hidden" id="hsId" value="">
+                <div id="hsResult" class="mt-2 small"></div>
               </div>
 
               <div class="mt-3 muted small" id="uiResult"></div>

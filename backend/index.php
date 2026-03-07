@@ -203,7 +203,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
         <ul class="nav nav-pills flex-column gap-1">
           <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
+          <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
           <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
         </ul>
 
@@ -243,7 +243,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
         <ul class="nav nav-pills flex-column gap-1">
           <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_cliente.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
+          <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
           <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
         </ul>
 
@@ -558,14 +558,16 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="tickets.php?clId=${clId}">
                       <i class="bi bi-ticket-perforated me-2"></i> Ver Tickets</a></li>
-                    <li><a class="dropdown-item" href="polizas.php?clId=${clId}">
+                    <li><a class="dropdown-item" href="polizas_index.php?clId=${clId}">
                       <i class="bi bi-file-earmark-text me-2"></i> Ver Pólizas</a></li>
+                      <li><a class="dropdown-item" href="nuevo_ticket.php?clId=${clId}">
+                      <i class="bi bi-file-earmark-text me-2"></i> Crear Ticket</a></li>
                   </ul>
                 </div>
               </div>
 
               <div class="mb-2">
-                <img class="client-logo" src="${logo}" alt="Logo ${name}"
+                <img class="client-logo" src="../img/${logo}" alt="Logo ${name}"
                   onerror="this.onerror=null;this.src='../img/Clientes/cliente_default.png';">
               </div>
 
@@ -585,6 +587,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
               <div class="mt-3 d-flex gap-2">
                 <a class="btn btn-sm btn-outline-secondary flex-grow-1" href="polizas.php?clId=${clId}">Ver Pólizas</a>
                 <a class="btn btn-sm btn-primary flex-grow-1" href="tickets.php?clId=${clId}">Ver Tickets</a>
+                <a class="btn btn-sm btn-primary flex-grow-1" href="nuevo_ticket.php?clId=${clId}">Crear Ticket</a>
               </div>
             </div>
           </div>

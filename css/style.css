@@ -146,7 +146,7 @@ a:hover {
   border-bottom-color: rgba(255, 255, 255, 0.25);
 }
 
-.nav-masthead .nav-link+.nav-link {
+.nav-masthead .nav-link + .nav-link {
   margin-left: 1rem;
 }
 
@@ -279,11 +279,13 @@ a:hover {
   background: #9790fc;
 
   /* Chrome 10-25, Safari 5.1-6 */
-  background: -webkit-linear-gradient(to right,
-      #245aee,
-      #3641d8,
-      #3936dd,
-      #201f63);
+  background: -webkit-linear-gradient(
+    to right,
+    #245aee,
+    #3641d8,
+    #3936dd,
+    #201f63
+  );
 
   /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
   background: linear-gradient(to right, #3824ee, #3641d8, #3641dd, #4c45b4);
@@ -449,7 +451,9 @@ a:hover {
 
 .severidad-card {
   border-width: 2px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .severidad-card[data-severidad="1"] {
@@ -651,10 +655,16 @@ a:hover {
 }
 
 .mr-side .section-title {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  opacity: 0.95;
+  margin-top: 1.5rem;
+}
+.mr-side .section-subtitle {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   opacity: 0.85;
-  margin-top: 1.5rem;
+  /* margin-top: 1.5rem; */
 }
 
 .mr-side .nav .nav-link {
@@ -710,6 +720,10 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.text-justify {
+  text-align: justify !important;
 }
 
 /* 1) Asegura que el body realmente cambie de color y cubra toda la vista */
@@ -944,7 +958,9 @@ body.dark-mode .bg-surface {
 body {
   background: rgb(231, 231, 246);
   color: var(--text-primary, #1e293b);
-  transition: background 0.25s ease, color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
 }
 
 /* Sidebar */
@@ -979,7 +995,7 @@ body {
   background: #fff;
   border-radius: 0.5rem;
   padding: 0.7rem;
-  margin: .7rem 0;
+  margin: 0.7rem 0;
 }
 
 /* Top bar icons */
@@ -1056,17 +1072,15 @@ body {
 }
 
 @media (max-width: 425px) {
-
   /* Card */
   .mrs-card {
     background: var(--bg-secondary, #fff);
     color: var(--text-primary, #1f2937);
     border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
-    border-radius: .5rem;
+    border-radius: 0.5rem;
     transition: box-shadow 0.2s ease;
     padding: 0px !important;
   }
-  
 
   .mrs-card:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -1154,9 +1168,6 @@ body {
   border: 1px solid var(--bs-border-color);
 }
 
-
-
-
 #modalAnalisis .modal-content {
   padding: 1.25rem;
 }
@@ -1167,8 +1178,6 @@ body {
   }
 }
 
-
-
 /* ====== Landing MR SoS (usa paleta existente) ====== */
 /* Colores base ya definidos:
    --base-color: #200f4c;  (también mapea a --bs-primary)  */
@@ -1177,48 +1186,54 @@ body {
 .mrs-hero {
   /* Claro: hero suave con tu color principal y fondo claro */
   background:
-    radial-gradient(1200px 400px at 50% -10%, rgba(32, 15, 76, .15), transparent),
+    radial-gradient(
+      1200px 400px at 50% -10%,
+      rgba(32, 15, 76, 0.15),
+      transparent
+    ),
     linear-gradient(135deg, #ffffff, #f8f9fb 60%, #eef2ff);
   color: #1f2937;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .mrs-hero-badge {
-  background: rgba(32, 15, 76, .08);
+  background: rgba(32, 15, 76, 0.08);
   color: var(--base-color);
-  border: 1px solid rgba(32, 15, 76, .15);
+  border: 1px solid rgba(32, 15, 76, 0.15);
 }
 
 /* KPIs */
 .mrs-kpi {
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 1rem;
   padding: 1.25rem;
 }
 
 .mrs-kpi-title {
-  font-size: .9rem;
-  color: #6c757d
+  font-size: 0.9rem;
+  color: #6c757d;
 }
 
 .mrs-kpi-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937
+  color: #1f2937;
 }
 
 /* Cards de beneficios */
 .mrs-card {
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 1rem;
   padding: 1.1rem;
-  transition: box-shadow .2s ease, transform .2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .mrs-card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
 
@@ -1237,38 +1252,42 @@ body {
   background: var(--base-color);
   color: #fff;
   font-weight: 700;
-  margin-right: .75rem;
+  margin-right: 0.75rem;
 }
 
 .mrs-progress {
   background: #f7f9fc;
-  border: 1px dashed rgba(0, 0, 0, .08);
+  border: 1px dashed rgba(0, 0, 0, 0.08);
 }
 
 /* CTA y Novedades */
 .mrs-cta {
-  background: linear-gradient(180deg, rgba(32, 15, 76, .06), #fff);
-  border: 1px solid rgba(0, 0, 0, .06);
+  background: linear-gradient(180deg, rgba(32, 15, 76, 0.06), #fff);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .mrs-news {
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ====== Dark mode (hereda de tus variables) ====== */
 body.dark-mode .mrs-hero {
   background:
-    radial-gradient(1100px 380px at 50% -10%, rgba(96, 165, 250, .15), transparent),
+    radial-gradient(
+      1100px 380px at 50% -10%,
+      rgba(96, 165, 250, 0.15),
+      transparent
+    ),
     linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
   color: var(--text-primary) !important;
   border-color: var(--bs-border-color, var(--border-light));
 }
 
 body.dark-mode .mrs-hero-badge {
-  background: rgba(96, 165, 250, .12);
+  background: rgba(96, 165, 250, 0.12);
   color: var(--accent);
-  border-color: rgba(96, 165, 250, .25);
+  border-color: rgba(96, 165, 250, 0.25);
 }
 
 body.dark-mode .mrs-kpi,
@@ -1299,8 +1318,6 @@ body.dark-mode .text-muted {
 
 /* Enlace primario ya usa tu --bs-primary (mapeado a --base-color) */
 
-
-
 /* ====== Sección "Soluciones TI Integrales" ====== */
 .mrs-hero-corp {
   padding-top: 3rem;
@@ -1308,7 +1325,7 @@ body.dark-mode .text-muted {
 }
 
 .mrs-hero-corp h2 {
-  letter-spacing: -.02em;
+  letter-spacing: -0.02em;
 }
 
 .mrs-hero-corp .lead {
@@ -1319,8 +1336,8 @@ body.dark-mode .text-muted {
 .mrs-pill {
   background: #ffffff;
   border-radius: 999px;
-  padding: .45rem .9rem;
-  border: 1px solid rgba(0, 0, 0, .06);
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .mrs-pill-icon {
@@ -1348,7 +1365,7 @@ body.dark-mode .text-muted {
   background: #ffffff;
   border-radius: 1rem;
   padding: 1rem 1.25rem;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ====== Sección "Quiénes Somos" ====== */
@@ -1359,14 +1376,14 @@ body.dark-mode .text-muted {
 
 .mrs-quote {
   background: #f5f7fb;
-  border: 1px solid rgba(0, 0, 0, .04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* Tarjetas Misión/Visión/Valores/Equipo */
 .mrs-info-card {
   background: #ffffff;
   border-radius: 1rem;
-  border: 1px solid rgba(0, 0, 0, .06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   padding: 1.15rem 1.1rem;
 }
 
@@ -1391,11 +1408,9 @@ body.dark-mode .mrs-info-card {
 }
 
 body.dark-mode .mrs-quote {
-  background: rgba(148, 163, 184, .12);
+  background: rgba(148, 163, 184, 0.12);
   border-color: var(--border-light);
 }
-
-
 
 @media (max-width: 991.98px) {
   .mrs-stat-floating {
@@ -1403,7 +1418,6 @@ body.dark-mode .mrs-quote {
     bottom: 1rem;
   }
 }
-
 
 /* Banda desde "¿Por qué usar MR SoS?" hasta el footer */
 :root {
@@ -1424,7 +1438,6 @@ body.dark-mode .mrs-band-why {
 body.dark-mode .mrs-band-why .text-muted {
   color: var(--text-secondary) !important;
 }
-
 
 /* ===== DARK MODE SWITCH ===== */
 .theme-switch-wrapper {
@@ -1449,8 +1462,8 @@ body.dark-mode .mrs-band-why .text-muted {
   inset: 0;
   background-color: #cfd5df;
   border-radius: 999px;
-  transition: background-color .25s ease;
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .05);
+  transition: background-color 0.25s ease;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
 }
 
 /* “Botón” con icono dentro */
@@ -1467,17 +1480,20 @@ body.dark-mode .mrs-band-why .text-muted {
   background-color: #ffffff;
   border-radius: 50%;
   font-size: 12px;
-  transition: transform .25s ease, background-color .25s ease, color .25s ease;
+  transition:
+    transform 0.25s ease,
+    background-color 0.25s ease,
+    color 0.25s ease;
   color: #fbbf24;
   /* amarillo suave */
 }
 
 /* Estado ON (dark-mode) */
-.theme-switch input:checked+.slider {
+.theme-switch input:checked + .slider {
   background-color: var(--base-color);
 }
 
-.theme-switch input:checked+.slider::before {
+.theme-switch input:checked + .slider::before {
   transform: translateX(20px);
   content: "☀️";
   color: #facc15;
@@ -1487,47 +1503,47 @@ body.dark-mode .mrs-band-why .text-muted {
 
 .mrs-sede-block {
   border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, .06);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   background: #ffffff;
-  padding: .7rem ;
+  padding: 0.7rem;
   margin-bottom: 1rem;
 }
 
 body.dark-mode .mrs-sede-block {
   background: var(--bg-secondary, #0f172a);
-  border-color: rgba(148, 163, 184, .4);
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .mrs-sede-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .5rem .75rem;
-  margin-bottom: .75rem;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .mrs-sede-title {
   font-weight: 600;
-  font-size: .95rem;
+  font-size: 0.95rem;
 }
 
 .mrs-sede-chip {
-  font-size: .7rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: .06em;
-  padding: .15rem .5rem;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  background: rgba(79, 70, 229, .06);
+  background: rgba(79, 70, 229, 0.06);
   color: #4f46e5;
 }
 
 body.dark-mode .mrs-sede-chip {
-  background: rgba(129, 140, 248, .12);
+  background: rgba(129, 140, 248, 0.12);
   color: #a5b4fc;
 }
 
 .mrs-sede-count {
-  font-size: .8rem;
+  font-size: 0.8rem;
   color: #6b7280;
 }
 
@@ -1538,35 +1554,35 @@ body.dark-mode .mrs-sede-count {
 /* Tabla compacta pero aireada */
 .mrs-table-tickets {
   margin: 0;
-  font-size: .85rem;
+  font-size: 0.85rem;
 }
 
 .mrs-table-tickets tbody tr {
-  border-bottom: 1px solid rgba(15, 23, 42, .04);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
 }
 
 body.dark-mode .mrs-table-tickets tbody tr {
-  border-bottom-color: rgba(148, 163, 184, .2);
+  border-bottom-color: rgba(148, 163, 184, 0.2);
 }
 
 .mrs-table-tickets tbody tr:hover {
-  background: rgba(15, 23, 42, .02);
+  background: rgba(15, 23, 42, 0.02);
 }
 
 body.dark-mode .mrs-table-tickets tbody tr:hover {
-  background: rgba(148, 163, 184, .12);
+  background: rgba(148, 163, 184, 0.12);
 }
 
 /* Primera columna (estado + proceso) */
 .mrs-ticket-main {
   display: flex;
   flex-direction: column;
-  gap: .25rem;
+  gap: 0.25rem;
 }
 
 .mrs-ticket-id {
   font-weight: 600;
-  font-size: .8rem;
+  font-size: 0.8rem;
   color: #4b5563;
 }
 
@@ -1578,7 +1594,7 @@ body.dark-mode .mrs-ticket-id {
 .mrs-ticket-body {
   display: flex;
   flex-direction: column;
-  gap: .25rem;
+  gap: 0.25rem;
 }
 
 .mrs-ticket-title {
@@ -1586,7 +1602,7 @@ body.dark-mode .mrs-ticket-id {
 }
 
 .mrs-ticket-sub {
-  font-size: .78rem;
+  font-size: 0.78rem;
   color: #6b7280;
 }
 
@@ -1597,35 +1613,32 @@ body.dark-mode .mrs-ticket-sub {
 .mrs-ticket-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: .25rem .5rem;
-  font-size: .75rem;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 /* Tercera columna (acción) */
 .mrs-ticket-action a {
-  font-size: .8rem;
+  font-size: 0.8rem;
 }
 
 .mrs-ticket-action i {
-  font-size: .75rem;
+  font-size: 0.75rem;
 }
 
 /* Badges pill un poquito más suaves */
 .badge-pill-soft {
   border-radius: 999px;
-  padding: .15rem .5rem;
+  padding: 0.15rem 0.5rem;
   font-weight: 500;
-  font-size: .72rem;
+  font-size: 0.72rem;
 }
-
-
-
 
 /* === Vista CARDS de tickets === */
 
 .mrs-ticket-card {
   border-radius: 0.9rem;
-  border: 1px solid rgba(15, 23, 42, .06);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   padding: 0.75rem 0.9rem;
   position: relative;
   overflow: hidden;
@@ -1633,12 +1646,12 @@ body.dark-mode .mrs-ticket-sub {
 
 body.dark-mode .mrs-ticket-card {
   background: var(--bg-secondary, #020617);
-  border-color: rgba(148, 163, 184, .25);
+  border-color: rgba(148, 163, 184, 0.25);
 }
 
 .mrs-ticket-id-small {
   font-size: 0.78rem;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #6b7280;
 }
@@ -1677,7 +1690,6 @@ body.dark-mode .mrs-ticket-card-sub {
   border-left: 3px solid #16a34a;
 }
 
-
 /* === Tarjetas de estadísticas === */
 .stat-card {
   border-radius: 1rem;
@@ -1711,9 +1723,6 @@ body.dark-mode .stat-card .stat-value {
   color: #d1d5db;
 }
 
-
-
-
 .float-wa {
   position: fixed;
   width: 40px;
@@ -1721,7 +1730,7 @@ body.dark-mode .stat-card .stat-value {
   bottom: 40px;
   right: 40px;
   background-color: #200f4c;
-  color: #FFF;
+  color: #fff;
   border-radius: 50px;
   text-align: center;
   font-size: 30px;
