@@ -2,7 +2,17 @@
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
+require_once __DIR__ . '/../../php/conexion.php';
+require_once __DIR__ . '/../../php/auth_guard.php';
+require_once __DIR__ . '/../../php/json.php';
+require_once __DIR__ . '/../../php/cliente_guard.php';
 
+no_store();
+require_login();
+require_usRol(['MRSA','MRA','MRV']);
+
+
+$pdo = db();
 try {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -20,20 +30,7 @@ try {
     exit;
   }
 
-  // require_once __DIR__.'/db.php';
-  // $DB_HOST = 'localhost';
-  // $DB_NAME = 'u140302554_mrsos';
-  // $DB_USER = 'u140302554_mrsos';
-  // $DB_PASS = 'MRsolutions552312#$';
-  $DB_HOST = 'localhost';
-  $DB_NAME = 'mrsos';
-  $DB_USER = 'root';
-  $DB_PASS = '';
-  $DB_CHARSET = 'utf8mb4';
-  $pdo = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME;charset=$DB_CHARSET", $DB_USER, $DB_PASS, [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-  ]);
+  
 
   // Verifica que el ingeniero exista/activo
   $check = $pdo->prepare("SELECT u.usId FROM ingenieros i INNER JOIN usuarios u ON u.usId=i.usId WHERE i.ingEstatus='Activo' AND u.usEstatus='Activo' AND u.usId = :u");
