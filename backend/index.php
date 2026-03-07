@@ -191,101 +191,25 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
   <div class="container-fluid">
     <div class="row gx-0">
 
-      <!-- SIDEBAR (simple, puedes alinearlo a tu sidebar real) -->
-      <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
-        <div class="brand mb-3 px-2">
-          <a class="navbar-brand" href="#">
-            <img src="../img/image.png" alt="Logo" class="rounded-pill" style="max-width: 120px;">
-          </a>
-        </div>
-
-        <div class="section-title px-2">Operación</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-          <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">Gestión</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Pólizas</a></li>
-          <li class="nav-item"><a class="nav-link" href="hojas_de_servicio.php"><i class="bi bi-download"></i> Hojas de Servicio</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">Administración</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">General</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Equipos</a></li>
-          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
-        </ul>
-      </nav>
-      <!-- OFFCANVAS (xs/sm) y como sidebar en lg mediante .offcanvas-lg -->
-      <div class="offcanvas offcanvas-start offcanvas-xl mr-side" tabindex="-1" id="offcanvasSidebar">
-        <div class="p-3 d-flex align-items-center justify-content-between">
-          <div class="brand">
-            <a class="navbar-brand" href="#">
-              <img src="../img/image.png" alt="Logo" class="rounded-pill">
-            </a>
-          </div>
-          <button type="button" class="btn btn-outline-light close-btn" data-bs-dismiss="offcanvas" aria-label="Close">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-        </div>
-
-
-
-        <div class="section-title px-2">Operación</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link active" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-          <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-plus-circle"></i> Nuevo Cliente</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_usuario.php"><i class="bi bi-plus-circle"></i> Nuevo Usuario</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">Gestión</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-gear"></i> Pólizas</a></li>
-          <li class="nav-item"><a class="nav-link" href="hojas_de_servicio.php"><i class="bi bi-download"></i> Hojas de Servicio</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">Administración</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="admin_usuarios.php"><i class="bi bi-shield-lock"></i> Panel Administrador</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">General</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Equipos</a></li>
-          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
-        </ul>
-
-      </div>
+      <?php $activeMenu = 'dashboard'; ?>
+      <?php require_once __DIR__ . '/partials/sidebar.php'; ?>
 
 
       <main class="col-12 col-lg-10">
         <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary d-lg-none me-2"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasSidebar"
-              aria-controls="offcanvasSidebar">
+            <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
               <i class="bi bi-list"></i>
             </button>
-            <span class="badge text-bg-success rounded-pill px-3">Activo</span>
-            <span class="fw-bold" id="topUser">Admin</span>
-            <span class="muted">| Admin</span>
+            <span class="badge text-bg-success rounded-pill px-3">Admin</span>
+            <span class="fw-bold"><?= htmlspecialchars($_SESSION['usUsername'] ?? 'Admin') ?></span>
           </div>
 
           <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary" id="btnTheme" type="button" title="Tema">
+            <button class="btn btn-sm btn-outline-secondary" id="btnTheme" type="button">
               <i class="bi bi-moon"></i>
             </button>
-            <a class="btn btn-sm btn-outline-danger" href="../../php/logout.php" title="Salir">
+            <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php">
               <i class="bi bi-box-arrow-right"></i>
             </a>
           </div>
@@ -585,9 +509,10 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
               </div>
 
               <div class="mt-3 d-flex gap-2">
-                <a class="btn btn-sm btn-outline-secondary flex-grow-1" href="polizas.php?clId=${clId}">Ver Pólizas</a>
+                <a class="btn btn-sm btn-outline-secondary flex-grow-1" href="polizas_index.php?clId=${clId}">Ver Pólizas</a>
                 <a class="btn btn-sm btn-primary flex-grow-1" href="tickets.php?clId=${clId}">Ver Tickets</a>
                 <a class="btn btn-sm btn-primary flex-grow-1" href="nuevo_ticket.php?clId=${clId}">Crear Ticket</a>
+                <a class="btn btn-sm btn-primary flex-grow-1" href="nuevo_health.php?clId=${clId}">Crear Health Check</a>
               </div>
             </div>
           </div>

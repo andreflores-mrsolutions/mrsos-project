@@ -131,26 +131,8 @@ if ($pcId <= 0) {
   <div class="container-fluid">
     <div class="row gx-0">
 
-      <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
-        <div class="brand mb-3 px-2">
-          <a class="navbar-brand" href="#">
-            <img src="../img/image.png" alt="Logo" class="rounded-pill" style="max-width: 120px;">
-          </a>
-        </div>
-
-        <div class="section-title px-2">Operación</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-          <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-building"></i> Clientes</a></li>
-          <li class="nav-item"><a class="nav-link active" href="#"><i class="bi bi-shield-lock"></i> Póliza</a></li>
-        </ul>
-
-        <div class="section-title px-2 mt-3">General</div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
-        </ul>
-      </nav>
+      <?php $activeMenu = 'poliza'; ?>
+      <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
       <main class="col-12 col-lg-10">
         <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">

@@ -35,13 +35,13 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
 
 <head>
   <script>
-  window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
-  window.MRS_CTX = <?= json_encode([
-    'clId' => $clId,
-    'baseApi' => 'api',
-    'NOTIFY_URL' => '../php/notify.php'
-  ], JSON_UNESCAPED_UNICODE) ?>;
-</script>
+    window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
+    window.MRS_CTX = <?= json_encode([
+                        'clId' => $clId,
+                        'baseApi' => 'api',
+                        'NOTIFY_URL' => '../php/notify.php'
+                      ], JSON_UNESCAPED_UNICODE) ?>;
+  </script>
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -62,14 +62,18 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
     <div class="row gx-0">
 
       <!-- SIDEBAR (TU BASE) -->
-      <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
+
+      <?php $activeMenu = 'health'; ?>
+      <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
+
+      <!-- <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
         <div class="brand mb-3 px-2">
           <a class="navbar-brand" href="#">
             <img src="../img/image.png" alt="Logo" class="rounded-pill" style="max-width: 120px;">
           </a>
-        </div>
+        </div> -->
 
-        <div class="section-title px-2">Operación</div>
+        <!-- <div class="section-title px-2">Operación</div>
         <ul class="nav nav-pills flex-column gap-1">
           <li class="nav-item"><a class="nav-link" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php?clId=<?= (int)$clId ?>"><i class="bi bi-shield-check"></i> Health Checks</a></li>
@@ -111,7 +115,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
           <li class="nav-item"><a class="nav-link" href="misequipos.php"><i class="bi bi-cpu"></i> Equipos</a></li>
           <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
         </ul>
-      </nav>
+      </nav> -->
 
       <main class="col-12 col-lg-10">
 
@@ -287,22 +291,22 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
       </main>
     </div>
   </div>
-<!-- TOASTS -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
-  <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="d-flex">
-      <div class="toast-body">OK</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+  <!-- TOASTS -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">OK</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+      </div>
     </div>
-  </div>
 
-  <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="d-flex">
-      <div class="toast-body">Error</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Error</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+      </div>
     </div>
   </div>
-</div>
   <script src="js/nuevo_health.js"></script>
 </body>
 

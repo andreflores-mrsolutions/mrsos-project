@@ -53,7 +53,7 @@ if ($_SESSION['usEstatus'] === 'NewPass' || empty($_SESSION['usEstatus'])) {
                     </button>
                     <div class="collapse navbar-collapse" id="collapsibleNavbar" style="flex-grow:unset;">
                         <ul class="navbar-nav me-auto">
-                            <!-- 🔘 SWITCH DE MODO OSCURO -->
+                            <!-- SWITCH DE MODO OSCURO -->
                             <li class="nav-item d-flex align-items-center mx-3">
                                 <div class="theme-switch-wrapper">
                                     <label class="theme-switch" for="darkModeToggle">

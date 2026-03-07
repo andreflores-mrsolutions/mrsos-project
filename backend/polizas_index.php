@@ -40,27 +40,8 @@ if ($clId <= 0) { http_response_code(400); exit('Falta clId'); }
 <div class="container-fluid">
   <div class="row gx-0">
 
-    <!-- Sidebar (igual estilo clientes_index.php) -->
-    <nav id="sidebar" class="col-12 col-md-3 col-lg-2 d-none d-lg-block p-3 mr-side">
-      <div class="brand mb-3 px-2">
-        <a class="navbar-brand" href="#">
-          <img src="../img/image.png" alt="Logo" class="rounded-pill" style="max-width: 120px;">
-        </a>
-      </div>
-
-      <div class="section-title px-2">Operación</div>
-      <ul class="nav nav-pills flex-column gap-1">
-        <li class="nav-item"><a class="nav-link" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="nuevo_ticket.php"><i class="bi bi-shield-check"></i> Health Checks</a></li>
-        <li class="nav-item"><a class="nav-link" href="clientes_index.php"><i class="bi bi-building"></i> Clientes</a></li>
-        <li class="nav-item"><a class="nav-link active" href="polizas_index.php?clId=<?= (int)$clId ?>"><i class="bi bi-shield-lock"></i> Pólizas</a></li>
-      </ul>
-
-      <div class="section-title px-2 mt-3">General</div>
-      <ul class="nav nav-pills flex-column gap-1">
-        <li class="nav-item"><a class="nav-link" href="configuracion.php"><i class="bi bi-person"></i> Mis datos</a></li>
-      </ul>
-    </nav>
+    <?php $activeMenu = 'poliza'; ?>
+      <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
     <main class="col-12 col-lg-10">
       <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">
@@ -251,7 +232,7 @@ if ($clId <= 0) { http_response_code(400); exit('Falta clId'); }
             <td class="small">${vig}</td>
             <td><span class="badge text-bg-${p.pcEstatus==='Activo'?'success':(p.pcEstatus==='Inactivo'?'secondary':'warning')}">${esc(p.pcEstatus)}</span></td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" href="poliza_detalle.php?pcId=${p.pcId}">
+              <a class="btn btn-sm btn-outline-primary" href="poliza_detalle.php?pcId=${p.pcId}&clId=${CL_ID}">
                 <i class="bi bi-eye"></i> Detalle
               </a>
             </td>
@@ -282,9 +263,10 @@ if ($clId <= 0) { http_response_code(400); exit('Falta clId'); }
       const r = await apiPost('api/polizas/poliza_save.php', payload);
       if (!r || !r.success) throw new Error(r?.error || 'Error');
       const pcId = r.data?.pcId || 0;
+      const clId = r.data?.clId || CL_ID;
       bootstrap.Modal.getInstance(document.getElementById('mdlPoliza')).hide();
       await loadPolizas();
-      if (pcId > 0) window.location.href = 'poliza_detalle.php?pcId=' + pcId;
+      if (pcId > 0) window.location.href = 'poliza_detalle.php?pcId=' + pcId + '&clId=' + clId;
     } catch (e){
       $('#errPoliza').removeClass('d-none').text(e.message || 'Error al crear póliza');
     }
