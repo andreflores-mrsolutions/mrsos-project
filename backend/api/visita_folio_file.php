@@ -13,13 +13,14 @@ $mode = ($_GET['mode'] ?? 'view') === 'download' ? 'download' : 'view';
 if ($tiId <= 0) { http_response_code(400); exit('Bad request'); }
 
 $pdo = db();
-$st = $pdo->prepare("SELECT archivoRuta FROM ticket_folio_entrada WHERE tiId=? ORDER BY creadoEn DESC LIMIT 1");
+$st = $pdo->prepare("SELECT tiFolioArchivo FROM ticket_soporte WHERE tiId=?");
 $st->execute([$tiId]);
 $row = $st->fetch();
 if (!$row || empty($row['archivoRuta'])) { http_response_code(404); exit('Not found'); }
 
 $fname = basename((string)$row['archivoRuta']);
-$path = __DIR__ . "/../uploads/visitas/{$tiId}/{$fname}";
+$path = __DIR__ . "/../../{$fname}";
+echo "Debug: Looking for file at path: {$path}\n"; // Debug line
 if (!is_file($path)) { http_response_code(404); exit('Not found'); }
 
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));

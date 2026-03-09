@@ -81,12 +81,13 @@ try {
     // 3) Insertar 3 propuestas como un “batch” usando el mismo mpCreadoEn
     $createdAt = date('Y-m-d H:i:s'); // mismo timestamp para agrupar
     $pdo->beginTransaction();
+    $batchId = 'BATCH-' . $tiId . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(3));
 
     $ins = $pdo->prepare("
     INSERT INTO ticket_meet_propuestas
-      (tiId, mpAutorTipo, mpModo, mpPlataforma, mpLink, mpInicio, mpFin, mpEstado, mpCreadoEn)
+      (tiId, mpBatchId, mpAutorTipo, mpModo, mpPlataforma, mpLink, mpInicio, mpFin, mpEstado, mpCreadoEn)
     VALUES
-      (?, ?, 'propuesta', ?, ?, ?, ?, 'pendiente', ?)
+      (?, ?, ?, 'propuesta', ?, ?, ?, ?, 'pendiente', ?)
   ");
 
     foreach ($starts as $s) {
@@ -96,6 +97,7 @@ try {
 
         $ins->execute([
             $tiId,
+            $batchId,
             $autorTipo,
             $plataforma,
             $link,

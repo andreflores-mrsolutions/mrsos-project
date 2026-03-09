@@ -8,6 +8,711 @@ require_once __DIR__ . '/../../../php/json.php';
 
 no_store();
 require_login();
+require_usRol(['MRSA', 'MRA', 'MRV']);
+csrf_verify_or_fail();
+
+function require_composer_autoload(): void
+{
+    $candidates = [
+        __DIR__ . '/../../../../vendor/autoload.php',
+        __DIR__ . '/../../../vendor/autoload.php',
+    ];
+
+    foreach ($candidates as $p) {
+        if (file_exists($p)) {
+            require_once $p;
+            return;
+        }
+    }
+
+    throw new RuntimeException('No se encontró vendor/autoload.php');
+}
+
+require_composer_autoload();
+
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
+
+$pdo = db();
+$in = read_json_body();
+
+$tiId = isset($in['tiId']) ? (int)$in['tiId'] : 0;
+if ($tiId <= 0) {
+    json_fail('tiId inválido', 400);
+}
+
+/**
+ * 1) Cargar ticket base
+ */
+$st = $pdo->prepare("
+    SELECT
+        t.tiId,
+        t.clId,
+        t.csId,
+        t.peId,
+        t.eqId,
+        t.usIdIng,
+        t.tiNombreContacto,
+        t.tiNumeroContacto,
+        t.tiCorreoContacto,
+        t.tiDescripcion,
+        t.tiDiagnostico,
+        t.tiProceso,
+        t.tiVisitaFecha,
+        t.tiVisitaHora,
+        c.clNombre,
+        c.clDireccion,
+        c.clTelefono,
+        c.clCorreo,
+        cs.csNombre,
+        cs.csDireccion,
+        e.eqModelo,
+        e.eqVersion,
+        m.maNombre,
+        pe.peSN,
+        pe.peSO
+    FROM ticket_soporte t
+    LEFT JOIN clientes c ON c.clId = t.clId
+    LEFT JOIN cliente_sede cs ON cs.csId = t.csId
+    LEFT JOIN equipos e ON e.eqId = t.eqId
+    LEFT JOIN marca m ON m.maId = e.maId
+    LEFT JOIN polizasequipo pe ON pe.peId = t.peId
+    WHERE t.tiId = ?
+    LIMIT 1
+");
+$st->execute([$tiId]);
+$t = $st->fetch();
+
+if (!$t) {
+    json_fail('Ticket no existe', 404);
+}
+
+/**
+ * 2) Folio HS
+ */
+$ts = (new DateTime('now'))->format('YmdHis');
+$hsFolio = 'HS-' . $tiId . '-' . $ts;
+$hsPrefix = 'HS';
+$hsTipo = 'T';
+
+/**
+ * 3) Transacción
+ */
+$pdo->beginTransaction();
+
+try {
+    // Consecutivo
+    $stN = $pdo->prepare("
+        SELECT COALESCE(MAX(hsNumero), 0)
+        FROM hojas_servicio
+        WHERE hsPrefix = ? AND hsTipo = ?
+    ");
+    $stN->execute([$hsPrefix, $hsTipo]);
+    $hsNumero = (int)$stN->fetchColumn() + 1;
+
+    // Paths
+    $relDir = 'uploads/hojas_servicio/' . $tiId;
+
+    $baseBackend = realpath(__DIR__ . '/../../..') ?: (__DIR__ . '/../../..');
+    $absDir = rtrim($baseBackend, '/\\') . DIRECTORY_SEPARATOR . $relDir;
+
+    if (!is_dir($absDir) && !mkdir($absDir, 0775, true)) {
+        throw new RuntimeException('No se pudo crear directorio de uploads');
+    }
+
+    $fileName = 'hoja_servicio_' . $hsFolio . '.pdf';
+    $relPath = $relDir . '/' . $fileName;
+    $absPath = $absDir . DIRECTORY_SEPARATOR . $fileName;
+
+    // tempDir seguro
+    $tmp = rtrim($baseBackend, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . 'mpdf';
+
+    if (!is_dir($tmp) && !mkdir($tmp, 0775, true)) {
+        throw new RuntimeException('No se pudo crear tempDir: ' . $tmp);
+    }
+
+    if (!is_writable($tmp)) {
+        throw new RuntimeException('tempDir no escribible: ' . $tmp);
+    }
+
+    // 5) Render HTML
+    $html = build_hs_html($in, $t, $hsFolio);
+
+    // 6) PDF
+    $mpdf = new Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+        'margin_left' => 10,
+        'margin_right' => 10,
+        'margin_top' => 10,
+        'margin_bottom' => 12,
+        'tempDir' => $tmp,
+    ]);
+
+    $mpdf->SetTitle('Hoja de Servicio ' . $hsFolio);
+    $mpdf->WriteHTML($html);
+    $mpdf->Output($absPath, Destination::FILE);
+
+    // 7) Insert BD
+    $hsNombreEquipo = trim(($t['eqModelo'] ?? '') . ' ' . ($t['eqVersion'] ?? ''));
+
+    $stI = $pdo->prepare("
+        INSERT INTO hojas_servicio
+        (
+            clId,
+            csId,
+            tiId,
+            peId,
+            hsTipo,
+            hsNumero,
+            hsPrefix,
+            hsFolio,
+            hsNombreEquipo,
+            hsPath,
+            hsMime,
+            hsActivo
+        )
+        VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    $stI->execute([
+        (int)$t['clId'],
+        !empty($t['csId']) ? (int)$t['csId'] : null,
+        (int)$t['tiId'],
+        !empty($t['peId']) ? (int)$t['peId'] : null,
+        $hsTipo,
+        $hsNumero,
+        $hsPrefix,
+        $hsFolio,
+        $hsNombreEquipo,
+        $relPath,
+        'application/pdf',
+        1
+    ]);
+
+    $hsId = (int)$pdo->lastInsertId();
+    if ($hsId <= 0) {
+        throw new RuntimeException('No se pudo obtener hsId');
+    }
+
+    $pdo->commit();
+
+    json_ok([
+        'hsId' => $hsId,
+        'hsFolio' => $hsFolio,
+        'downloadUrl' => 'api/hoja_servicio_download.php?hsId=' . $hsId,
+    ]);
+} catch (Throwable $e) {
+    $pdo->rollBack();
+    json_fail('No se pudo generar hoja: ' . $e->getMessage(), 500);
+}
+
+/* =========================
+   Helpers
+========================= */
+
+function esc($s): string
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+
+function is_data_png(?string $data): bool
+{
+    return is_string($data) && str_starts_with($data, 'data:image/png;base64,');
+}
+
+function build_hs_html(array $in, array $t, string $hsFolio): string
+{
+    $e  = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    $nl = fn($v) => nl2br($e($v));
+
+    $tipo = fn(string $k): bool => !empty($in['tipo_' . $k]);
+    $res  = fn(string $k): bool => !empty($in['res_' . $k]);
+    $status = (string)($in['status'] ?? 'cerrado');
+
+    $fecha   = (string)($in['fecha'] ?? '');
+    $noCaso  = (string)($in['no_caso'] ?? ('TI-' . (int)$t['tiId']));
+
+    $clienteContacto = (string)($in['cliente_contacto'] ?? ($t['tiNombreContacto'] ?? ''));
+    $clientePuesto   = (string)($in['cliente_puesto_area'] ?? '');
+    $clienteRazon    = (string)($in['cliente_razon_social'] ?? ($t['clNombre'] ?? ''));
+    $clienteDir      = (string)($in['cliente_direccion'] ?? (($t['csDireccion'] ?: ($t['clDireccion'] ?? ''))));
+    $clienteCiudad   = (string)($in['cliente_ciudad_estado'] ?? '');
+    $clienteTel      = (string)($in['cliente_telefono'] ?? ($t['tiNumeroContacto'] ?? ''));
+    $clienteFax      = (string)($in['cliente_fax'] ?? '');
+    $clienteEmail    = (string)($in['cliente_email'] ?? ($t['tiCorreoContacto'] ?? ''));
+
+    $visFecha = (string)($in['visita_fecha'] ?? ($t['tiVisitaFecha'] ?? ''));
+    $visHora  = (string)($in['visita_hora'] ?? ($t['tiVisitaHora'] ?? ''));
+
+    $eqSO     = (string)($in['equipo_so'] ?? ($t['peSO'] ?? ''));
+    $eqSoft   = (string)($in['equipo_software_respaldo'] ?? '');
+    $eqSN     = (string)($in['equipo_sn'] ?? ($t['peSN'] ?? ''));
+    $eqModelo = trim((string)($in['equipo_modelo_unidad'] ?? (trim(($t['eqModelo'] ?? '') . ' ' . ($t['eqVersion'] ?? '')))));
+    $eqMarca  = (string)($in['equipo_marca_unidad'] ?? ($t['maNombre'] ?? ''));
+
+    $problema    = trim((string)($in['problema'] ?? ''));
+    $actividades = trim((string)($in['actividades'] ?? ''));
+    $comentarios = trim((string)($in['comentarios'] ?? ''));
+
+    if ($problema === '') $problema = ' ';
+    if ($actividades === '') $actividades = ' ';
+    if ($comentarios === '') $comentarios = ' ';
+
+    $ings = $in['ingenieros'] ?? [];
+    if (!is_array($ings)) $ings = [];
+    $ingsTxt = !empty($ings) ? implode(', ', array_map('intval', $ings)) : '—';
+
+    $sigIng = is_data_png($in['sig_ing_base64'] ?? null) ? (string)$in['sig_ing_base64'] : '';
+    $sigCli = is_data_png($in['sig_cli_base64'] ?? null) ? (string)$in['sig_cli_base64'] : '';
+
+    $sigIngImg = $sigIng
+        ? '<img src="' . $e($sigIng) . '" class="sig-img" />'
+        : '<div class="sig-placeholder"></div>';
+
+    $sigCliImg = $sigCli
+        ? '<img src="' . $e($sigCli) . '" class="sig-img" />'
+        : '<div class="sig-placeholder"></div>';
+
+    $chk = function (bool $on): string {
+        return $on
+            ? '<span class="check on">✓</span>'
+            : '<span class="check"></span>';
+    };
+
+    return '
+    <style>
+        @page {
+            margin: 10mm 12mm 12mm 12mm;
+        }
+
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10pt;
+            color: #111827;
+        }
+
+        .sheet {
+            width: 100%;
+        }
+
+        .topbar {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6mm;
+        }
+
+        .topbar td {
+            border: 1px solid #111827;
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+
+        .brand {
+            width: 18%;
+            text-align: center;
+            font-weight: 800;
+            font-size: 18pt;
+            background: #111827;
+            color: #ffffff;
+            letter-spacing: .5px;
+        }
+
+        .titlebox {
+            width: 52%;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 15pt;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+
+        .subtitle {
+            font-size: 8.8pt;
+            color: #4b5563;
+        }
+
+        .meta {
+            width: 30%;
+            border-collapse: collapse;
+        }
+
+        .meta td {
+            border: 1px solid #111827;
+            padding: 4px 6px;
+            font-size: 9pt;
+        }
+
+        .meta-label {
+            font-weight: 700;
+            background: #f3f4f6;
+            width: 42%;
+        }
+
+        .section {
+            margin-top: 4mm;
+        }
+
+        .section-title {
+            background: #111827;
+            color: #ffffff;
+            padding: 6px 8px;
+            font-size: 10pt;
+            font-weight: 800;
+            border: 1px solid #111827;
+        }
+
+        .grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .grid td {
+            border: 1px solid #111827;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .label {
+            font-size: 8.5pt;
+            color: #374151;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .value {
+            font-size: 9.8pt;
+            font-weight: 700;
+            min-height: 14px;
+        }
+
+        .value-light {
+            font-size: 9.6pt;
+            font-weight: 400;
+            min-height: 14px;
+        }
+
+        .block {
+            border: 1px solid #111827;
+            padding: 8px 10px;
+            min-height: 34mm;
+            white-space: pre-wrap;
+            line-height: 1.35;
+        }
+
+        .block-sm {
+            border: 1px solid #111827;
+            padding: 8px 10px;
+            min-height: 22mm;
+            white-space: pre-wrap;
+            line-height: 1.35;
+        }
+
+        .checks-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .checks-table td {
+            border: 1px solid #111827;
+            padding: 6px 8px;
+            font-size: 9.5pt;
+        }
+
+        .check {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            line-height: 11px;
+            text-align: center;
+            border: 1px solid #111827;
+            margin-right: 6px;
+            font-size: 9pt;
+            font-weight: 800;
+            vertical-align: middle;
+        }
+
+        .check.on {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        .status-row {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .status-row td {
+            border: 1px solid #111827;
+            padding: 8px;
+            font-size: 9.5pt;
+        }
+
+        .sign-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sign-table td {
+            border: 1px solid #111827;
+            padding: 8px;
+            vertical-align: top;
+            height: 38mm;
+        }
+
+        .sig-box {
+            height: 18mm;
+            text-align: center;
+        }
+
+        .sig-img {
+            max-width: 100%;
+            max-height: 18mm;
+            object-fit: contain;
+        }
+
+        .sig-placeholder {
+            height: 18mm;
+        }
+
+        .sig-line {
+            border-top: 1px solid #111827;
+            margin-top: 4mm;
+            padding-top: 2mm;
+            font-size: 8.8pt;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 6mm;
+            border-top: 1px solid #111827;
+            padding-top: 3mm;
+            text-align: center;
+            font-size: 8.5pt;
+            color: #374151;
+        }
+
+        .tiny {
+            font-size: 8.2pt;
+            color: #4b5563;
+        }
+    </style>
+
+    <div class="sheet">
+
+        <table class="topbar">
+            <tr>
+                <td class="brand">MR</td>
+                <td class="titlebox">
+                    <div class="title">ORDEN DE SERVICIO</div>
+                    <div class="subtitle">Formato MR SOS basado en el nuevo diseño operativo</div>
+                </td>
+                <td style="padding:0;">
+                    <table class="meta">
+                        <tr>
+                            <td class="meta-label">Fecha</td>
+                            <td>' . $e($fecha) . '</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label">No. de Reporte Lab</td>
+                            <td>' . $e($noCaso) . '</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label">HS ID</td>
+                            <td>' . $e($hsFolio) . '</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section">
+            <div class="section-title">Información del Cliente</div>
+            <table class="grid">
+                <tr>
+                    <td width="28%">
+                        <div class="label">Cliente / At´n</div>
+                        <div class="value">' . $e($clienteContacto) . '</div>
+                    </td>
+                    <td width="22%">
+                        <div class="label">Puesto / Area</div>
+                        <div class="value">' . $e($clientePuesto) . '</div>
+                    </td>
+                    <td width="50%">
+                        <div class="label">Razón Social</div>
+                        <div class="value">' . $e($clienteRazon) . '</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="label">Dirección</div>
+                        <div class="value-light">' . $e($clienteDir) . '</div>
+                    </td>
+                    <td>
+                        <div class="label">Ciudad o Estado</div>
+                        <div class="value">' . $e($clienteCiudad) . '</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="label">Teléfono</div>
+                        <div class="value">' . $e($clienteTel) . '</div>
+                    </td>
+                    <td>
+                        <div class="label">Fax</div>
+                        <div class="value">' . $e($clienteFax) . '</div>
+                    </td>
+                    <td>
+                        <div class="label">E-mail</div>
+                        <div class="value">' . $e($clienteEmail) . '</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Datos del Servicio y del Equipo</div>
+            <table class="grid">
+                <tr>
+                    <td width="22%">
+                        <div class="label">Primera Visita</div>
+                        <div class="value">' . $e($visFecha) . '</div>
+                    </td>
+                    <td width="15%">
+                        <div class="label">Hora</div>
+                        <div class="value">' . $e($visHora) . '</div>
+                    </td>
+                    <td width="25%">
+                        <div class="label">Ingeniero(s)</div>
+                        <div class="value-light">' . $e($ingsTxt) . '</div>
+                    </td>
+                    <td width="18%">
+                        <div class="label">Sistema Operativo</div>
+                        <div class="value">' . $e($eqSO) . '</div>
+                    </td>
+                    <td width="20%">
+                        <div class="label">Software Respaldo</div>
+                        <div class="value">' . $e($eqSoft) . '</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="label">Número de Serie</div>
+                        <div class="value">' . $e($eqSN) . '</div>
+                    </td>
+                    <td colspan="2">
+                        <div class="label">Modelo</div>
+                        <div class="value">' . $e($eqModelo) . '</div>
+                    </td>
+                    <td>
+                        <div class="label">Marca</div>
+                        <div class="value">' . $e($eqMarca) . '</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Tipo de Servicio</div>
+            <table class="checks-table">
+                <tr>
+                    <td>' . $chk($tipo('mantenimiento')) . 'Mantenimiento</td>
+                    <td>' . $chk($tipo('reparacion')) . 'Reparación</td>
+                    <td>' . $chk($tipo('garantia')) . 'Garantía</td>
+                </tr>
+                <tr>
+                    <td>' . $chk($tipo('evaluacion')) . 'Evaluación de equipo</td>
+                    <td>' . $chk($tipo('proyecto')) . 'Proyecto</td>
+                    <td>' . $chk($tipo('software_demo')) . 'Software demo</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Descripción del Problema</div>
+            <div class="block">' . $nl($problema) . '</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Actividades Realizadas</div>
+            <div class="block">' . $nl($actividades) . '</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Estatus</div>
+            <table class="status-row">
+                <tr>
+                    <td>' . $chk($status === 'cerrado') . 'Reporte Cerrado</td>
+                    <td>' . $chk($status === 'pendiente') . 'Reporte Pendiente</td>
+                    <td>' . $chk($status === 'cancelado') . 'Reporte Cancelado</td>
+                    <td>' . $chk($status === 'reasignado') . 'Reasignado</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Resultado / Acciones</div>
+            <table class="checks-table">
+                <tr>
+                    <td>' . $chk($res('reemplazo_refaccion')) . 'Reemplazo de Refacción</td>
+                    <td>' . $chk($res('config_hw')) . 'Configuración de HW</td>
+                    <td>' . $chk($res('config_sw')) . 'Configuración de SW</td>
+                    <td>' . $chk($res('reinstalacion')) . 'Reinstalación</td>
+                </tr>
+                <tr>
+                    <td>' . $chk($res('reparacion_sitio')) . 'Reparación en sitio</td>
+                    <td>' . $chk($res('pendiente_partes')) . 'Pendiente por partes</td>
+                    <td>' . $chk($res('software_respaldo')) . 'Software de respaldo</td>
+                    <td>' . $chk($res('otros')) . 'Otros</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Nombre y Firma</div>
+            <table class="sign-table">
+                <tr>
+                    <td width="50%">
+                        <div class="sig-box">' . $sigIngImg . '</div>
+                        <div class="sig-line">Nombre y Firma del Ingeniero</div>
+                    </td>
+                    <td width="50%">
+                        <div class="sig-box">' . $sigCliImg . '</div>
+                        <div class="sig-line">Nombre y Firma del Cliente</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Comentarios Adicionales</div>
+            <div class="block-sm">' . $nl($comentarios) . '</div>
+        </div>
+
+        <div class="footer">
+            <div><b>MR Solutions</b> · Orden de Servicio</div>
+            <div class="tiny">Alhambra 813 Bis Col. Portales · Tels. 33.30.55.55 - 55.23.20.03 · Fax Ext. 205</div>
+        </div>
+
+    </div>
+    ';
+}
+/* 
+
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../../php/conexion.php';
+require_once __DIR__ . '/../../../php/auth_guard.php';
+require_once __DIR__ . '/../../../php/csrf.php';
+require_once __DIR__ . '/../../../php/json.php';
+
+no_store();
+require_login();
 require_usRol(['MRSA','MRA','MRV']);
 csrf_verify_or_fail();
 
@@ -476,4 +1181,4 @@ function build_hs_html(array $in, array $t, string $hsFolio): string {
     </tr>
   </table>
   ';
-}
+} */

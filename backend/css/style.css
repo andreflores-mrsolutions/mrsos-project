@@ -314,9 +314,7 @@ a:hover {
   max-height: 250px;
 }
 
-.ticket-card {
-  width: 100px;
-}
+
 
 /* Cards */
 
@@ -468,9 +466,7 @@ a:hover {
   cursor: pointer;
 }
 
-.offcanvas-header {
-  background: linear-gradient(90deg, #232547, #16172e);
-}
+
 #formOffcanvasPassword input {
   border-radius: 8px;
 }
