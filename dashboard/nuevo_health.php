@@ -46,7 +46,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MR SOS | Nuevo Ticket</title>
+    <title>MR SOS | Nuevo Health Check</title>
 
     <script>
         window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
@@ -82,18 +82,17 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
         .eq-card { border: 1px solid rgba(15,23,42,.08); border-radius: 1rem; background:#fff; transition:.18s ease; cursor:pointer; }
         .eq-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,.08); }
         .eq-card.selected { border-color:#0d6efd; box-shadow:0 0 0 3px rgba(13,110,253,.12); }
-        .eq-badge { font-size:.74rem; }
         .mrs-skeleton-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
         .mrs-skel{ height:180px; border-radius:1rem; background:linear-gradient(90deg,#eef2f7,#f8fafc,#eef2f7); background-size:200% 100%; animation:sk 1.2s infinite; }
         @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .selected-box{ border:1px dashed rgba(15,23,42,.18); border-radius:1rem; padding:1rem; background:#f8fafc; }
+        .selected-box{ border:1px dashed rgba(15,23,42,.18); border-radius:1rem; padding:1rem; background:#f8fafc; min-height:120px; }
         .topbar { background:#fff; border-bottom:1px solid rgba(15,23,42,.08); position:sticky; top:0; z-index:1020; }
     </style>
 </head>
 <body class="<?= $theme === 'dark' ? 'dark-mode' : '' ?>">
 <div class="container-fluid">
     <div class="row gx-0">
-        <?php $activeMenu = 'ticket'; ?>
+        <?php $activeMenu = 'health'; ?>
         <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
         <main class="col-12 col-lg-10">
@@ -109,10 +108,8 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
             <div class="px-3 py-3">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                     <div>
-                        <h4 class="mb-0">Nuevo Ticket</h4>
-                        <div class="text-muted small">
-                            El ticket se registrará a tu nombre y con tus datos como contacto inicial.
-                        </div>
+                        <h4 class="mb-0">Nuevo Health Check</h4>
+                        <div class="text-muted small">Se registrará a tu nombre y para tus equipos visibles.</div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-secondary btn-sm" id="btnReload">
@@ -126,21 +123,20 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
                         <div class="card mrs-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-ui-checks-grid"></i> Datos del ticket</div>
+                                    <div class="fw-semibold"><i class="bi bi-clipboard2-pulse"></i> Datos del Health Check</div>
                                     <span class="badge text-bg-primary-subtle border">Paso 1</span>
                                 </div>
 
                                 <div id="alertBox" class="alert d-none" role="alert"></div>
 
-                                <form id="frmTicket" autocomplete="off">
+                                <form id="frmHealth" autocomplete="off">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                                    <input type="hidden" name="eqId" id="eqId" value="">
-                                    <input type="hidden" name="peId" id="peId" value="">
+                                    <input type="hidden" name="items_json" id="items_json" value="[]">
 
                                     <div class="mb-3">
                                         <label class="form-label">Autor</label>
                                         <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
-                                        <div class="form-text">Se guardará en <code>ticket_soporte.usId</code> desde la sesión actual.</div>
+                                        <div class="form-text">Se guardará en <code>health_check.usId</code> desde tu sesión.</div>
                                     </div>
 
                                     <div class="mb-3">
@@ -150,65 +146,52 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
                                         </select>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Tipo de ticket</label>
-                                        <select class="form-select" name="tiTipoTicket" id="tiTipoTicket">
-                                            <option value="Servicio">Servicio</option>
-                                            <option value="Preventivo">Preventivo</option>
-                                            <option value="Extra">Extra</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Nivel de criticidad <span class="text-danger">*</span></label>
-                                        <div class="row g-2">
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit1" value="1">
-                                                <label class="form-check-label ms-2" for="crit1">1 (Crítico)</label>
-                                            </div>
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit2" value="2" checked>
-                                                <label class="form-check-label ms-2" for="crit2">2 (Alta)</label>
-                                            </div>
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit3" value="3">
-                                                <label class="form-check-label ms-2" for="crit3">3 (Media/Baja)</label>
-                                            </div>
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-7">
+                                            <label class="form-label">Fecha y hora <span class="text-danger">*</span></label>
+                                            <input type="datetime-local" class="form-control" id="hcFechaHora" name="hcFechaHora" required>
+                                        </div>
+                                        <div class="col-12 col-md-5">
+                                            <label class="form-label">Duración</label>
+                                            <select class="form-select" id="hcDuracionMins" name="hcDuracionMins">
+                                                <option value="60">60 min</option>
+                                                <option value="120">120 min</option>
+                                                <option value="240" selected>240 min</option>
+                                                <option value="480">480 min</option>
+                                            </select>
                                         </div>
                                     </div>
 
+                                    <hr class="my-3">
+
                                     <div class="mb-3">
                                         <label class="form-label">Contacto (nombre) <span class="text-danger">*</span></label>
-                                        <input class="form-control" type="text" name="tiNombreContacto" id="tiNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
+                                        <input class="form-control" type="text" name="hcNombreContacto" id="hcNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
                                     </div>
 
                                     <div class="row g-2">
                                         <div class="col-12 col-md-6">
                                             <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="text" name="tiNumeroContacto" id="tiNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
+                                            <input class="form-control" type="text" name="hcNumeroContacto" id="hcNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label class="form-label">Correo <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="email" name="tiCorreoContacto" id="tiCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
+                                            <input class="form-control" type="email" name="hcCorreoContacto" id="hcCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
                                         </div>
-                                    </div>
-
-                                    <div class="mt-3 mb-2">
-                                        <label class="form-label">Descripción del problema <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" name="tiDescripcion" id="tiDescripcion" rows="5" required></textarea>
                                     </div>
 
                                     <div class="selected-box mt-3">
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <div class="fw-semibold"><i class="bi bi-cpu"></i> Equipo seleccionado</div>
-                                            <button class="btn btn-sm btn-outline-secondary" id="btnClearEquipo" type="button">Limpiar</button>
+                                            <div class="fw-semibold"><i class="bi bi-list-check"></i> Equipos seleccionados</div>
+                                            <button class="btn btn-sm btn-outline-secondary" id="btnClearSel" type="button">Limpiar</button>
                                         </div>
-                                        <div class="small text-muted mt-1" id="selEquipoText">Aún no seleccionas un equipo.</div>
+                                        <div class="small text-muted mt-1" id="selCountText">0 equipos</div>
+                                        <div class="mt-2" id="selList"></div>
                                     </div>
 
                                     <div class="d-grid mt-3">
                                         <button class="btn btn-primary" id="btnCrear" type="submit">
-                                            <i class="bi bi-check2-circle"></i> Crear ticket
+                                            <i class="bi bi-check2-circle"></i> Programar Health Check
                                         </button>
                                     </div>
                                 </form>
@@ -220,7 +203,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
                         <div class="card mrs-card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona el equipo</div>
+                                    <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona equipos</div>
                                     <span class="badge text-bg-primary-subtle border">Paso 2</span>
                                 </div>
 
@@ -232,11 +215,9 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
                                         </div>
                                     </div>
                                     <div class="col-12 col-md-4">
-                                        <select class="form-select" id="fltTicketActivo">
-                                            <option value="all">Todos</option>
-                                            <option value="with">Con ticket activo</option>
-                                            <option value="without">Sin ticket activo</option>
-                                        </select>
+                                        <button class="btn btn-outline-dark w-100" id="btnSelectAll" type="button">
+                                            <i class="bi bi-check2-square"></i> Seleccionar visibles
+                                        </button>
                                     </div>
                                 </div>
 
@@ -270,6 +251,6 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     </div>
 </div>
 
-<script src="js/nuevo_ticket.js"></script>
+<script src="js/nuevo_health.js"></script>
 </body>
 </html>
