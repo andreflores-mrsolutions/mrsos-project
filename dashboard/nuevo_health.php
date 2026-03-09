@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -33,8 +34,8 @@ $prefEqId = isset($_GET['eqId']) ? (int)$_GET['eqId'] : 0;
 
 $nombreUsuario = trim(
     (string)($_SESSION['usNombre'] ?? '') . ' ' .
-    (string)($_SESSION['usAPaterno'] ?? '') . ' ' .
-    (string)($_SESSION['usAMaterno'] ?? '')
+        (string)($_SESSION['usAPaterno'] ?? '') . ' ' .
+        (string)($_SESSION['usAMaterno'] ?? '')
 );
 $nombreUsuario = trim($nombreUsuario) !== '' ? trim($nombreUsuario) : (string)($_SESSION['usUsername'] ?? 'Cliente');
 
@@ -43,6 +44,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -51,23 +53,23 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     <script>
         window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
         window.MRS_CTX = <?= json_encode([
-            'clId' => $clId,
-            'csIdSession' => $csIdSession,
-            'czIdSession' => $czIdSession,
-            'ucrRol' => $ucrRol,
-            'pref' => [
-                'csId' => $prefCsId,
-                'peId' => $prefPeId,
-                'eqId' => $prefEqId,
-            ],
-            'user' => [
-                'usId' => (int)($_SESSION['usId'] ?? 0),
-                'nombre' => $nombreUsuario,
-                'correo' => $correoUsuario,
-                'telefono' => $telefonoUsuario,
-            ],
-            'baseApi' => 'api'
-        ], JSON_UNESCAPED_UNICODE) ?>;
+                                'clId' => $clId,
+                                'csIdSession' => $csIdSession,
+                                'czIdSession' => $czIdSession,
+                                'ucrRol' => $ucrRol,
+                                'pref' => [
+                                    'csId' => $prefCsId,
+                                    'peId' => $prefPeId,
+                                    'eqId' => $prefEqId,
+                                ],
+                                'user' => [
+                                    'usId' => (int)($_SESSION['usId'] ?? 0),
+                                    'nombre' => $nombreUsuario,
+                                    'correo' => $correoUsuario,
+                                    'telefono' => $telefonoUsuario,
+                                ],
+                                'baseApi' => 'api'
+                            ], JSON_UNESCAPED_UNICODE) ?>;
     </script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -78,179 +80,242 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     <link href="css/style.css" rel="stylesheet">
 
     <style>
-        .mrs-card { border-radius: 1rem; border: 1px solid rgba(15,23,42,.08); box-shadow: 0 8px 22px rgba(15,23,42,.05); }
-        .eq-card { border: 1px solid rgba(15,23,42,.08); border-radius: 1rem; background:#fff; transition:.18s ease; cursor:pointer; }
-        .eq-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,.08); }
-        .eq-card.selected { border-color:#0d6efd; box-shadow:0 0 0 3px rgba(13,110,253,.12); }
-        .mrs-skeleton-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
-        .mrs-skel{ height:180px; border-radius:1rem; background:linear-gradient(90deg,#eef2f7,#f8fafc,#eef2f7); background-size:200% 100%; animation:sk 1.2s infinite; }
-        @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .selected-box{ border:1px dashed rgba(15,23,42,.18); border-radius:1rem; padding:1rem; background:#f8fafc; min-height:120px; }
-        .topbar { background:#fff; border-bottom:1px solid rgba(15,23,42,.08); position:sticky; top:0; z-index:1020; }
+        .mrs-card {
+            border-radius: 1rem;
+            border: 1px solid rgba(15, 23, 42, .08);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+        }
+
+        .eq-card {
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 1rem;
+            background: #fff;
+            transition: .18s ease;
+            cursor: pointer;
+        }
+
+        .eq-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+        }
+
+        .eq-card.selected {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
+        }
+
+        .mrs-skeleton-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+        }
+
+        .mrs-skel {
+            height: 180px;
+            border-radius: 1rem;
+            background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
+            background-size: 200% 100%;
+            animation: sk 1.2s infinite;
+        }
+
+        @keyframes sk {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        .selected-box {
+            border: 1px dashed rgba(15, 23, 42, .18);
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+            min-height: 120px;
+        }
+
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid rgba(15, 23, 42, .08);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
     </style>
 </head>
+
 <body class="<?= $theme === 'dark' ? 'dark-mode' : '' ?>">
-<div class="container-fluid">
-    <div class="row gx-0">
-        <?php $activeMenu = 'health'; ?>
-        <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
+    <div class="container-fluid">
+        <div class="row gx-0">
+            <?php $activeMenu = 'health'; ?>
+            <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
-        <main class="col-12 col-lg-10">
-            <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
-                    <span class="badge text-bg-success rounded-pill px-3">Cliente</span>
-                    <span class="fw-bold"><?= htmlspecialchars((string)$nombreUsuario) ?></span>
-                </div>
-                <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php"><i class="bi bi-box-arrow-right"></i></a>
-            </div>
-
-            <div class="px-3 py-3">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                    <div>
-                        <h4 class="mb-0">Nuevo Health Check</h4>
-                        <div class="text-muted small">Se registrará a tu nombre y para tus equipos visibles.</div>
+            <main class="col-12 col-lg-10">
+                <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
+                    <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
+                        <span class="badge text-bg-success rounded-pill px-3">Cliente</span>
+                        <span class="fw-bold"><?= htmlspecialchars((string)$nombreUsuario) ?></span>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" id="btnReload">
-                            <i class="bi bi-arrow-clockwise"></i> Recargar
-                        </button>
-                    </div>
+                    <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php"><i class="bi bi-box-arrow-right"></i></a>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-12 col-xl-5">
-                        <div class="card mrs-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-clipboard2-pulse"></i> Datos del Health Check</div>
-                                    <span class="badge text-bg-primary-subtle border">Paso 1</span>
-                                </div>
+                <div class="px-3 py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <h4 class="mb-0">Nuevo Health Check</h4>
+                            <div class="text-muted small">Se registrará a tu nombre y para tus equipos visibles.</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" id="btnReload">
+                                <i class="bi bi-arrow-clockwise"></i> Recargar
+                            </button>
+                        </div>
+                    </div>
 
-                                <div id="alertBox" class="alert d-none" role="alert"></div>
-
-                                <form id="frmHealth" autocomplete="off">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                                    <input type="hidden" name="items_json" id="items_json" value="[]">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Autor</label>
-                                        <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
-                                        <div class="form-text">Se guardará en <code>health_check.usId</code> desde tu sesión.</div>
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-5">
+                            <div class="card mrs-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-semibold"><i class="bi bi-clipboard2-pulse"></i> Datos del Health Check</div>
+                                        <span class="badge text-bg-primary-subtle border">Paso 1</span>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Sede <span class="text-danger">*</span></label>
-                                        <select class="form-select" name="csId" id="csId" required>
-                                            <option value="">Cargando...</option>
-                                        </select>
-                                    </div>
+                                    <div id="alertBox" class="alert d-none" role="alert"></div>
 
-                                    <div class="row g-2">
-                                        <div class="col-12 col-md-7">
-                                            <label class="form-label">Fecha y hora <span class="text-danger">*</span></label>
-                                            <input type="datetime-local" class="form-control" id="hcFechaHora" name="hcFechaHora" required>
+                                    <form id="frmHealth" autocomplete="off">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                                        <input type="hidden" name="items_json" id="items_json" value="[]">
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Autor</label>
+                                            <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
+                                            <div class="form-text">Se guardará en <code>health_check.usId</code> desde tu sesión.</div>
                                         </div>
-                                        <div class="col-12 col-md-5">
-                                            <label class="form-label">Duración</label>
-                                            <select class="form-select" id="hcDuracionMins" name="hcDuracionMins">
-                                                <option value="60">60 min</option>
-                                                <option value="120">120 min</option>
-                                                <option value="240" selected>240 min</option>
-                                                <option value="480">480 min</option>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Sede <span class="text-danger">*</span></label>
+                                            <select class="form-select" name="csId" id="csId" required>
+                                                <option value="">Cargando...</option>
                                             </select>
                                         </div>
-                                    </div>
 
-                                    <hr class="my-3">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Contacto (nombre) <span class="text-danger">*</span></label>
-                                        <input class="form-control" type="text" name="hcNombreContacto" id="hcNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
-                                    </div>
-
-                                    <div class="row g-2">
-                                        <div class="col-12 col-md-6">
-                                            <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="text" name="hcNumeroContacto" id="hcNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-7">
+                                                <label class="form-label">Fecha y hora <span class="text-danger">*</span></label>
+                                                <input type="datetime-local" class="form-control" id="hcFechaHora" name="hcFechaHora" required>
+                                            </div>
+                                            <div class="col-12 col-md-5">
+                                                <label class="form-label">Duración</label>
+                                                <select class="form-select" id="hcDuracionMins" name="hcDuracionMins">
+                                                    <option value="60">60 min</option>
+                                                    <option value="120">120 min</option>
+                                                    <option value="240" selected>240 min</option>
+                                                    <option value="480">480 min</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="col-12 col-md-6">
-                                            <label class="form-label">Correo <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="email" name="hcCorreoContacto" id="hcCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
+
+                                        <hr class="my-3">
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Contacto (nombre) <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="text" name="hcNombreContacto" id="hcNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
+                                        </div>
+
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                                                <input class="form-control" type="text" name="hcNumeroContacto" id="hcNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Correo <span class="text-danger">*</span></label>
+                                                <input class="form-control" type="email" name="hcCorreoContacto" id="hcCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
+                                            </div>
+                                        </div>
+
+                                        <div class="selected-box mt-3">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="fw-semibold"><i class="bi bi-list-check"></i> Equipos seleccionados</div>
+                                                <button class="btn btn-sm btn-outline-secondary" id="btnClearSel" type="button">Limpiar</button>
+                                            </div>
+                                            <div class="small text-muted mt-1" id="selCountText">0 equipos</div>
+                                            <div class="mt-2" id="selList"></div>
+                                        </div>
+
+                                        <div class="d-grid mt-3">
+                                            <button class="btn btn-primary" id="btnCrear" type="submit">
+                                                <i class="bi bi-check2-circle"></i> Programar Health Check
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-7">
+                            <div class="card mrs-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                        <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona equipos</div>
+                                        <span class="badge text-bg-primary-subtle border">Paso 2</span>
+                                    </div>
+
+                                    <div class="row g-2 align-items-center mb-3">
+                                        <div class="col-12 col-md-8">
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                                <input type="text" class="form-control" id="txtBuscarEquipo" placeholder="Buscar por modelo, tipo, SN, póliza...">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <button class="btn btn-outline-dark w-100" id="btnSelectAll" type="button">
+                                                <i class="bi bi-check2-square"></i> Seleccionar visibles
+                                            </button>
                                         </div>
                                     </div>
 
-                                    <div class="selected-box mt-3">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div class="fw-semibold"><i class="bi bi-list-check"></i> Equipos seleccionados</div>
-                                            <button class="btn btn-sm btn-outline-secondary" id="btnClearSel" type="button">Limpiar</button>
-                                        </div>
-                                        <div class="small text-muted mt-1" id="selCountText">0 equipos</div>
-                                        <div class="mt-2" id="selList"></div>
+                                    <div id="equiposSkeleton" class="mrs-skeleton-grid">
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
                                     </div>
 
-                                    <div class="d-grid mt-3">
-                                        <button class="btn btn-primary" id="btnCrear" type="submit">
-                                            <i class="bi bi-check2-circle"></i> Programar Health Check
-                                        </button>
-                                    </div>
-                                </form>
+                                    <div class="row" id="equiposGrid" style="display:none;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="col-12 col-xl-7">
-                        <div class="card mrs-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona equipos</div>
-                                    <span class="badge text-bg-primary-subtle border">Paso 2</span>
-                                </div>
-
-                                <div class="row g-2 align-items-center mb-3">
-                                    <div class="col-12 col-md-8">
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                            <input type="text" class="form-control" id="txtBuscarEquipo" placeholder="Buscar por modelo, tipo, SN, póliza...">
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4">
-                                        <button class="btn btn-outline-dark w-100" id="btnSelectAll" type="button">
-                                            <i class="bi bi-check2-square"></i> Seleccionar visibles
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div id="equiposSkeleton" class="mrs-skeleton-grid">
-                                    <div class="mrs-skel"></div><div class="mrs-skel"></div><div class="mrs-skel"></div>
-                                    <div class="mrs-skel"></div><div class="mrs-skel"></div><div class="mrs-skel"></div>
-                                </div>
-
-                                <div class="row" id="equiposGrid" style="display:none;"></div>
-                            </div>
+                <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
+                    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">OK</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                    <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">Error</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
-                <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert">
-                    <div class="d-flex">
-                        <div class="toast-body">OK</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                    </div>
-                </div>
-                <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert">
-                    <div class="d-flex">
-                        <div class="toast-body">Error</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                    </div>
-                </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
-</div>
 
-<script src="js/nuevo_health.js"></script>
+    <script src="js/nuevo_health.js"></script>
 </body>
+
 </html>

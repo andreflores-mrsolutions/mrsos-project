@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -33,8 +34,8 @@ $prefEqId = isset($_GET['eqId']) ? (int)$_GET['eqId'] : 0;
 
 $nombreUsuario = trim(
     (string)($_SESSION['usNombre'] ?? '') . ' ' .
-    (string)($_SESSION['usAPaterno'] ?? '') . ' ' .
-    (string)($_SESSION['usAMaterno'] ?? '')
+        (string)($_SESSION['usAPaterno'] ?? '') . ' ' .
+        (string)($_SESSION['usAMaterno'] ?? '')
 );
 $nombreUsuario = trim($nombreUsuario) !== '' ? trim($nombreUsuario) : (string)($_SESSION['usUsername'] ?? 'Cliente');
 
@@ -43,6 +44,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -51,23 +53,23 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     <script>
         window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
         window.MRS_CTX = <?= json_encode([
-            'clId' => $clId,
-            'csIdSession' => $csIdSession,
-            'czIdSession' => $czIdSession,
-            'ucrRol' => $ucrRol,
-            'pref' => [
-                'csId' => $prefCsId,
-                'peId' => $prefPeId,
-                'eqId' => $prefEqId,
-            ],
-            'user' => [
-                'usId' => (int)($_SESSION['usId'] ?? 0),
-                'nombre' => $nombreUsuario,
-                'correo' => $correoUsuario,
-                'telefono' => $telefonoUsuario,
-            ],
-            'baseApi' => 'api'
-        ], JSON_UNESCAPED_UNICODE) ?>;
+                                'clId' => $clId,
+                                'csIdSession' => $csIdSession,
+                                'czIdSession' => $czIdSession,
+                                'ucrRol' => $ucrRol,
+                                'pref' => [
+                                    'csId' => $prefCsId,
+                                    'peId' => $prefPeId,
+                                    'eqId' => $prefEqId,
+                                ],
+                                'user' => [
+                                    'usId' => (int)($_SESSION['usId'] ?? 0),
+                                    'nombre' => $nombreUsuario,
+                                    'correo' => $correoUsuario,
+                                    'telefono' => $telefonoUsuario,
+                                ],
+                                'baseApi' => 'api'
+                            ], JSON_UNESCAPED_UNICODE) ?>;
     </script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -78,198 +80,263 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     <link href="css/style.css" rel="stylesheet">
 
     <style>
-        .mrs-card { border-radius: 1rem; border: 1px solid rgba(15,23,42,.08); box-shadow: 0 8px 22px rgba(15,23,42,.05); }
-        .eq-card { border: 1px solid rgba(15,23,42,.08); border-radius: 1rem; background:#fff; transition:.18s ease; cursor:pointer; }
-        .eq-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,.08); }
-        .eq-card.selected { border-color:#0d6efd; box-shadow:0 0 0 3px rgba(13,110,253,.12); }
-        .eq-badge { font-size:.74rem; }
-        .mrs-skeleton-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
-        .mrs-skel{ height:180px; border-radius:1rem; background:linear-gradient(90deg,#eef2f7,#f8fafc,#eef2f7); background-size:200% 100%; animation:sk 1.2s infinite; }
-        @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .selected-box{ border:1px dashed rgba(15,23,42,.18); border-radius:1rem; padding:1rem; background:#f8fafc; }
-        .topbar { background:#fff; border-bottom:1px solid rgba(15,23,42,.08); position:sticky; top:0; z-index:1020; }
+        .mrs-card {
+            border-radius: 1rem;
+            border: 1px solid rgba(15, 23, 42, .08);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+        }
+
+        .eq-card {
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 1rem;
+            background: #fff;
+            transition: .18s ease;
+            cursor: pointer;
+        }
+
+        .eq-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+        }
+
+        .eq-card.selected {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
+        }
+
+        .eq-badge {
+            font-size: .74rem;
+        }
+
+        .mrs-skeleton-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+        }
+
+        .mrs-skel {
+            height: 180px;
+            border-radius: 1rem;
+            background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
+            background-size: 200% 100%;
+            animation: sk 1.2s infinite;
+        }
+
+        @keyframes sk {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        .selected-box {
+            border: 1px dashed rgba(15, 23, 42, .18);
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid rgba(15, 23, 42, .08);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
     </style>
 </head>
+
 <body class="<?= $theme === 'dark' ? 'dark-mode' : '' ?>">
-<div class="container-fluid">
-    <div class="row gx-0">
-        <?php $activeMenu = 'ticket'; ?>
-        <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
+    <div class="container-fluid">
+        <div class="row gx-0">
+            <?php $activeMenu = 'ticket'; ?>
+            <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
-        <main class="col-12 col-lg-10">
-            <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
-                    <span class="badge text-bg-success rounded-pill px-3">Cliente</span>
-                    <span class="fw-bold"><?= htmlspecialchars((string)$nombreUsuario) ?></span>
-                </div>
-                <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php"><i class="bi bi-box-arrow-right"></i></a>
-            </div>
-
-            <div class="px-3 py-3">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                    <div>
-                        <h4 class="mb-0">Nuevo Ticket</h4>
-                        <div class="text-muted small">
-                            El ticket se registrará a tu nombre y con tus datos como contacto inicial.
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" id="btnReload">
-                            <i class="bi bi-arrow-clockwise"></i> Recargar
+            <main class="col-12 col-lg-10">
+                <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+                            <i class="bi bi-list"></i>
                         </button>
+                        <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
+                        <span class="badge text-bg-success rounded-pill px-3">Cliente</span>
+                        <span class="fw-bold"><?= htmlspecialchars((string)$nombreUsuario) ?></span>
                     </div>
+                    <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php"><i class="bi bi-box-arrow-right"></i></a>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-12 col-xl-5">
-                        <div class="card mrs-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-ui-checks-grid"></i> Datos del ticket</div>
-                                    <span class="badge text-bg-primary-subtle border">Paso 1</span>
-                                </div>
+                <div class="px-3 py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <h4 class="mb-0">Nuevo Ticket</h4>
+                            <div class="text-muted small">
+                                El ticket se registrará a tu nombre y con tus datos como contacto inicial.
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" id="btnReload">
+                                <i class="bi bi-arrow-clockwise"></i> Recargar
+                            </button>
+                        </div>
+                    </div>
 
-                                <div id="alertBox" class="alert d-none" role="alert"></div>
-
-                                <form id="frmTicket" autocomplete="off">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                                    <input type="hidden" name="eqId" id="eqId" value="">
-                                    <input type="hidden" name="peId" id="peId" value="">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Autor</label>
-                                        <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
-                                        <div class="form-text">Se guardará en <code>ticket_soporte.usId</code> desde la sesión actual.</div>
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-5">
+                            <div class="card mrs-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-semibold"><i class="bi bi-ui-checks-grid"></i> Datos del ticket</div>
+                                        <span class="badge text-bg-primary-subtle border">Paso 1</span>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Sede <span class="text-danger">*</span></label>
-                                        <select class="form-select" name="csId" id="csId" required>
-                                            <option value="">Cargando...</option>
-                                        </select>
-                                    </div>
+                                    <div id="alertBox" class="alert d-none" role="alert"></div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Tipo de ticket</label>
-                                        <select class="form-select" name="tiTipoTicket" id="tiTipoTicket">
-                                            <option value="Servicio">Servicio</option>
-                                            <option value="Preventivo">Preventivo</option>
-                                            <option value="Extra">Extra</option>
-                                        </select>
-                                    </div>
+                                    <form id="frmTicket" autocomplete="off">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                                        <input type="hidden" name="eqId" id="eqId" value="">
+                                        <input type="hidden" name="peId" id="peId" value="">
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Nivel de criticidad <span class="text-danger">*</span></label>
+                                        <div class="mb-3">
+                                            <label class="form-label">Autor</label>
+                                            <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
+                                            <div class="form-text">Se guardará en <code>ticket_soporte.usId</code> desde la sesión actual.</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Sede <span class="text-danger">*</span></label>
+                                            <select class="form-select" name="csId" id="csId" required>
+                                                <option value="">Cargando...</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de ticket</label>
+                                            <select class="form-select" name="tiTipoTicket" id="tiTipoTicket">
+                                                <option value="Servicio">Servicio</option>
+                                                <option value="Preventivo">Preventivo</option>
+                                                <option value="Extra">Extra</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Nivel de criticidad <span class="text-danger">*</span></label>
+                                            <div class="row g-2">
+                                                <div class="col-12">
+                                                    <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit1" value="1">
+                                                    <label class="form-check-label ms-2" for="crit1">1 (Crítico)</label>
+                                                </div>
+                                                <div class="col-12">
+                                                    <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit2" value="2" checked>
+                                                    <label class="form-check-label ms-2" for="crit2">2 (Alta)</label>
+                                                </div>
+                                                <div class="col-12">
+                                                    <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit3" value="3">
+                                                    <label class="form-check-label ms-2" for="crit3">3 (Media/Baja)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Contacto (nombre) <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="text" name="tiNombreContacto" id="tiNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
+                                        </div>
+
                                         <div class="row g-2">
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit1" value="1">
-                                                <label class="form-check-label ms-2" for="crit1">1 (Crítico)</label>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                                                <input class="form-control" type="text" name="tiNumeroContacto" id="tiNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
                                             </div>
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit2" value="2" checked>
-                                                <label class="form-check-label ms-2" for="crit2">2 (Alta)</label>
-                                            </div>
-                                            <div class="col-12">
-                                                <input class="form-check-input" type="radio" name="tiNivelCriticidad" id="crit3" value="3">
-                                                <label class="form-check-label ms-2" for="crit3">3 (Media/Baja)</label>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Correo <span class="text-danger">*</span></label>
+                                                <input class="form-control" type="email" name="tiCorreoContacto" id="tiCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Contacto (nombre) <span class="text-danger">*</span></label>
-                                        <input class="form-control" type="text" name="tiNombreContacto" id="tiNombreContacto" required maxlength="120" value="<?= htmlspecialchars($nombreUsuario) ?>">
-                                    </div>
-
-                                    <div class="row g-2">
-                                        <div class="col-12 col-md-6">
-                                            <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="text" name="tiNumeroContacto" id="tiNumeroContacto" required maxlength="25" value="<?= htmlspecialchars($telefonoUsuario) ?>">
+                                        <div class="mt-3 mb-2">
+                                            <label class="form-label">Descripción del problema <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" name="tiDescripcion" id="tiDescripcion" rows="5" required></textarea>
                                         </div>
-                                        <div class="col-12 col-md-6">
-                                            <label class="form-label">Correo <span class="text-danger">*</span></label>
-                                            <input class="form-control" type="email" name="tiCorreoContacto" id="tiCorreoContacto" required maxlength="120" value="<?= htmlspecialchars($correoUsuario) ?>">
+
+                                        <div class="selected-box mt-3">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="fw-semibold"><i class="bi bi-cpu"></i> Equipo seleccionado</div>
+                                                <button class="btn btn-sm btn-outline-secondary" id="btnClearEquipo" type="button">Limpiar</button>
+                                            </div>
+                                            <div class="small text-muted mt-1" id="selEquipoText">Aún no seleccionas un equipo.</div>
                                         </div>
-                                    </div>
 
-                                    <div class="mt-3 mb-2">
-                                        <label class="form-label">Descripción del problema <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" name="tiDescripcion" id="tiDescripcion" rows="5" required></textarea>
-                                    </div>
-
-                                    <div class="selected-box mt-3">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div class="fw-semibold"><i class="bi bi-cpu"></i> Equipo seleccionado</div>
-                                            <button class="btn btn-sm btn-outline-secondary" id="btnClearEquipo" type="button">Limpiar</button>
+                                        <div class="d-grid mt-3">
+                                            <button class="btn btn-primary" id="btnCrear" type="submit">
+                                                <i class="bi bi-check2-circle"></i> Crear ticket
+                                            </button>
                                         </div>
-                                        <div class="small text-muted mt-1" id="selEquipoText">Aún no seleccionas un equipo.</div>
-                                    </div>
-
-                                    <div class="d-grid mt-3">
-                                        <button class="btn btn-primary" id="btnCrear" type="submit">
-                                            <i class="bi bi-check2-circle"></i> Crear ticket
-                                        </button>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="col-12 col-xl-7">
-                        <div class="card mrs-card">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                                    <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona el equipo</div>
-                                    <span class="badge text-bg-primary-subtle border">Paso 2</span>
-                                </div>
+                        <div class="col-12 col-xl-7">
+                            <div class="card mrs-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                        <div class="fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Selecciona el equipo</div>
+                                        <span class="badge text-bg-primary-subtle border">Paso 2</span>
+                                    </div>
 
-                                <div class="row g-2 align-items-center mb-3">
-                                    <div class="col-12 col-md-8">
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                            <input type="text" class="form-control" id="txtBuscarEquipo" placeholder="Buscar por modelo, tipo, SN, póliza...">
+                                    <div class="row g-2 align-items-center mb-3">
+                                        <div class="col-12 col-md-8">
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                                <input type="text" class="form-control" id="txtBuscarEquipo" placeholder="Buscar por modelo, tipo, SN, póliza...">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <select class="form-select" id="fltTicketActivo">
+                                                <option value="all">Todos</option>
+                                                <option value="with">Con ticket activo</option>
+                                                <option value="without">Sin ticket activo</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-4">
-                                        <select class="form-select" id="fltTicketActivo">
-                                            <option value="all">Todos</option>
-                                            <option value="with">Con ticket activo</option>
-                                            <option value="without">Sin ticket activo</option>
-                                        </select>
+
+                                    <div id="equiposSkeleton" class="mrs-skeleton-grid">
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
+                                        <div class="mrs-skel"></div>
                                     </div>
-                                </div>
 
-                                <div id="equiposSkeleton" class="mrs-skeleton-grid">
-                                    <div class="mrs-skel"></div><div class="mrs-skel"></div><div class="mrs-skel"></div>
-                                    <div class="mrs-skel"></div><div class="mrs-skel"></div><div class="mrs-skel"></div>
+                                    <div class="row" id="equiposGrid" style="display:none;"></div>
                                 </div>
-
-                                <div class="row" id="equiposGrid" style="display:none;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
-                <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert">
-                    <div class="d-flex">
-                        <div class="toast-body">OK</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
+                    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">OK</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                    <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">Error</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
                     </div>
                 </div>
-                <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert">
-                    <div class="d-flex">
-                        <div class="toast-body">Error</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                    </div>
-                </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
-</div>
 
-<script src="js/nuevo_ticket.js"></script>
+    <script src="js/nuevo_ticket.js"></script>
 </body>
+
 </html>
