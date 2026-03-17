@@ -43,6 +43,7 @@ $st = $pdo->prepare("
     pe.peSN AS sn,
     e.eqModelo AS modelo,
     e.eqTipoEquipo AS tipoEquipo,
+    e.eqImgPath AS imgPath,
     m.maNombre AS marca,
     pc.pcTipoPoliza AS polizaTipo
   FROM polizasequipo pe
@@ -97,11 +98,16 @@ while ($r = $st3->fetch()) {
 
 $equipos = [];
 foreach ($rows as $r) {
-  $marcaFolder = slug_folder((string)$r['marca']);
+  $marcaFolder = (string)$r['marca'];
   $modelo = (string)$r['modelo'];
+  $imgPath = (string)$r['imgPath'];
 
   // Imagen por convención (si no existe, el <img onerror> pone default.png)
-  $img = "../img/Equipos/{$marcaFolder}/{$modelo}.png";
+  if($imgPath || $imgPath !== '') {
+    $img = $imgPath;
+  } else {
+    $img = "../img/Equipos/{$marcaFolder}/{$modelo}.png";
+  }
 
   $peId = (int)$r['peId'];
   $equipos[] = [

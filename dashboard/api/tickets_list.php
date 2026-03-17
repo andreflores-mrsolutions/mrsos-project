@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../php/conexion.php';
@@ -131,6 +132,16 @@ try {
 
         $prefijo = cliente_folio_prefijo((string)($r['clNombre'] ?? ''));
 
+        $marcaFolder = (string)$r['maNombre'];
+        $modelo = (string)$r['eqModelo'];
+        $imgPath = (string)$r['eqImgPath'];
+
+        if ($imgPath || $imgPath !== '') {
+            $img = $imgPath;
+        } else {
+            $img = "../img/Equipos/{$marcaFolder}/{$modelo}.png";
+        }
+
         return [
             'tiId' => (int)$r['tiId'],
             'folio' => $prefijo . '-' . (int)$r['tiId'],
@@ -149,7 +160,7 @@ try {
             'eqModelo' => (string)($r['eqModelo'] ?? ''),
             'eqVersion' => (string)($r['eqVersion'] ?? ''),
             'eqTipoEquipo' => (string)($r['eqTipoEquipo'] ?? ''),
-            'eqImgPath' => (string)($r['eqImgPath'] ?? ''),
+            'eqImgPath' => (string)($img ?? ''),
 
             'maNombre' => (string)($r['maNombre'] ?? ''),
             'peSN' => (string)($r['peSN'] ?? ''),
@@ -179,7 +190,9 @@ try {
             'total'    => count($tickets),
             'abiertos' => count(array_filter($tickets, fn($t) => $t['tiEstatus'] === 'Abierto')),
             'accion'   => count(array_filter($tickets, fn($t) => !empty($t['requiereAccionCliente']))),
-            'curso'    => count(array_filter($tickets, fn($t) =>
+            'curso'    => count(array_filter(
+                $tickets,
+                fn($t) =>
                 in_array($t['tiProceso'], [
                     'meet',
                     'visita',

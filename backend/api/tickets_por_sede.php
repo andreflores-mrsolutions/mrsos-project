@@ -80,7 +80,7 @@ $sql = "
     t.tiNivelCriticidad, t.tiFechaCreacion, t.tiVisita,
     t.tiNombreContacto, t.tiNumeroContacto, t.tiCorreoContacto,
     t.usIdIng,
-    e.eqModelo, e.eqVersion,
+    e.eqModelo, e.eqVersion, e.eqImgPath,
     m.maNombre,
     pe.peSN
   FROM ticket_soporte t
@@ -128,6 +128,7 @@ foreach ($rows as $r) {
     'tiVisita' => $tiVisita,
     'eqModelo' => $r['eqModelo'],
     'eqVersion' => $r['eqVersion'],
+    'eqImgPath' => $r['eqImgPath'],
     'maNombre' => $r['maNombre'],
     'peSN' => $r['peSN'],
     'persona' => $r['tiNombreContacto'],
