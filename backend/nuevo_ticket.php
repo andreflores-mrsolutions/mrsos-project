@@ -67,7 +67,10 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
             <main class="col-12 col-lg-10">
                 <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="tickets.php?clId=<?= (int)$clId ?>"><i class="bi bi-arrow-left"></i></a>
+                        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+              <i class="bi bi-list"></i>
+            </button>
+            <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
                         <span class="badge text-bg-success rounded-pill px-3">Activo</span>
                         <span class="fw-bold"><?php echo htmlspecialchars($_SESSION['usUsername'] ?? 'Admin'); ?></span>
                     </div>
@@ -93,7 +96,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
                             <button class="btn btn-outline-secondary btn-sm" id="btnReload">
                                 <i class="bi bi-arrow-clockwise"></i> Recargar catálogos
                             </button>
-                            <a class="btn btn-outline-dark btn-sm" href="tickets.php?clId=<?= (int)$clId ?>">
+                            <a class="btn btn-outline-dark btn-sm" href="home.php">
                                 <i class="bi bi-ticket-perforated"></i> Ver Tickets
                             </a>
                         </div>

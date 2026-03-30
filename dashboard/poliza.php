@@ -118,72 +118,73 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
   <!-- Primero el objeto Meet -->
-  
+
   <script src="../js/poliza.js"></script>
   <!-- css -->
   <link href="../css/style.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
 
 
 </head>
 
-  <style>
-    body.dark-mode {
-      background-color: #020617;
-      color: #e5e7eb;
-    }
+<style>
+  body.dark-mode {
+    background-color: #020617;
+    color: #e5e7eb;
+  }
 
-    body.dark-mode .card {
-      background-color: #020617;
-      border-color: #1f2937;
-    }
+  body.dark-mode .card {
+    background-color: #020617;
+    border-color: #1f2937;
+  }
 
-    body.dark-mode .card-header {
-      background-color: #020617;
-      border-bottom-color: #1f2937;
-    }
+  body.dark-mode .card-header {
+    background-color: #020617;
+    border-bottom-color: #1f2937;
+  }
 
-    body.dark-mode .form-control,
-    body.dark-mode .form-select {
-      background-color: #020617;
-      border-color: #4b5563;
-      color: #e5e7eb;
-    }
+  body.dark-mode .form-control,
+  body.dark-mode .form-select {
+    background-color: #020617;
+    border-color: #4b5563;
+    color: #e5e7eb;
+  }
 
-    .poliza-header-title {
-      font-size: .8rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: #6b7280;
-    }
+  .poliza-header-title {
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #6b7280;
+  }
 
-    .poliza-chip {
-      font-size: .7rem;
-    }
+  .poliza-chip {
+    font-size: .7rem;
+  }
 
-    .equipo-card {
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
+  .equipo-card {
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
 
-    .equipo-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(15, 23, 42, .18);
-    }
+  .equipo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, .18);
+  }
 
-    .badge-poliza-vigente {
-      background-color: #dcfce7;
-      color: #166534;
-    }
+  .badge-poliza-vigente {
+    background-color: #dcfce7;
+    color: #166534;
+  }
 
-    .badge-poliza-proxima {
-      background-color: #fef9c3;
-      color: #854d0e;
-    }
+  .badge-poliza-proxima {
+    background-color: #fef9c3;
+    color: #854d0e;
+  }
 
-    .badge-poliza-vencida {
-      background-color: #fee2e2;
-      color: #b91c1c;
-    }
-  </style>
+  .badge-poliza-vencida {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+</style>
 
 
 <body class="<?php echo ($theme === 'dark') ? 'dark-mode' : ''; ?>">
@@ -197,127 +198,26 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
       <!-- CONTENIDO PRINCIPAL -->
       <main class="col-md-12 ms-sm-auto col-lg-10 px-lg-4">
-        <div class="d-flex align-items-center justify-content-between py-3 px-2 px-md-4 ">
-          <!-- Lado izquierdo -->
-          <div class="d-flex align-items-center">
-            <!-- Botón hamburguesa solo en sm y xs -->
-            <button class="btn btn-outline-secondary d-lg-none me-2"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasSidebar"
-              aria-controls="offcanvasSidebar">
+        <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
               <i class="bi bi-list"></i>
             </button>
-
-            <!-- Logo cliente siempre visible -->
-            <span class="badge bg-light me-3 p-2">
-              <img src="../img/Clientes/enel.svg" style="height:30px;" alt="cliente">
-            </span>
-
-            <!-- Estado: en mobiles pequeño badge -->
-            <span class="badge bg-success me-3 d-none d-sm-inline-block">Activo</span>
-
-            <!-- Responsable: solo avatar en xs & sm -->
-            <!-- Responsable: avatar + nombre del vendedor desde BD -->
-            <img src="<?= htmlspecialchars($vendAvatar) ?>"
-              class="rounded-circle me-2 d-inline-block"
-              alt="<?= htmlspecialchars($vendNombre) ?>"
-              style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-            <span class="d-none d-sm-inline">
-              <?= htmlspecialchars($vendNombre) ?>
-            </span>
-
+            <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
+            <span class="badge text-bg-success rounded-pill px-3">Activo</span>
+            <span class="fw-bold"><?php echo htmlspecialchars($_SESSION['usUsername'] ?? 'Admin'); ?></span>
           </div>
 
-          <!-- Lado derecho -->
-          <div class="d-flex align-items-center">
-            <!-- Íconos grandes: solo md+ -->
-            <div class="d-none d-md-flex align-items-center top-icons me-3">
-              <i class="bi bi-search mx-2"></i>
-              <a id="btnRecargar"><i class="bi bi-arrow-clockwise mx-2"></i></a>
-              <i class="bi bi-bell mx-2"></i>
-              <i class="bi bi-question-circle mx-2"></i>
-
-              <!-- NUEVO: Botón tema (luna) -->
-              <button id="btnThemeDesktop" class="btn btn-outline-secondary btn-icon mx-2" title="Modo oscuro">
-                <i class="bi bi-moon"></i>
-              </button>
-            </div>
-
-
-
-            <!-- Dropdown general en sm- -->
-            <div class="dropdown d-md-none me-2">
-              <button class="btn btn-outline-secondary" type="button" id="moreActions" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreActions">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-search me-2"></i>Buscar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-clockwise me-2"></i>Refrescar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-bell me-2"></i>Notificaciones</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Ayuda</a></li>
-
-                <!-- NUEVO: Tema -->
-                <li>
-                  <a id="btnThemeMobile" class="dropdown-item" href="#" role="button">
-                    <i class="bi bi-moon me-2"></i><span>Cambiar a modo oscuro</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-
-            <!-- Perfil -->
-            <div class="nav-item dropdown">
-              <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
-                id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                <?php
-
-                // Ajusta si tu archivo está en otra carpeta
-                $usuario  = $_SESSION['usUsername'] ?? 'default';
-                $usuario  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usuario); // sanitiza por seguridad
-
-                $dirFS  = __DIR__ . '/../img/Usuario/'; // ruta en el sistema de archivos
-                $dirURL = '../img/Usuario/';            // ruta pública (para el src)
-
-                $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $src = $dirURL . 'user.webp'; // fallback por si no hay avatar
-
-                foreach ($extsPermitidas as $ext) {
-                  $fs = $dirFS . $usuario . '.' . $ext;
-                  if (is_file($fs)) {
-                    // Evita caché del navegador cuando cambie la imagen
-                    $src = $dirURL . $usuario . '.' . $ext . '?v=' . filemtime($fs);
-                    break;
-                  }
-                }
-                ?>
-                <img
-                  src="<?= htmlspecialchars($src, ENT_QUOTES) ?>"
-                  class="rounded-circle me-2"
-                  alt="Usuario"
-                  style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"
-                  onerror="this.onerror=null;this.src='../img/Usuario/user.webp';" />
-
-                <span class="d-none d-md-inline"><strong><?php echo $_SESSION['usUsername']; ?></strong></span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                <li><a class="dropdown-item" href="configuracion.php"><i class="bi bi-person me-2"></i>Mis datos</a></li>
-                <li>
-                  <hr class="dropdown-divider">
-                </li>
-                <li><a id="btnLogout"
-                    class="dropdown-item"
-                    href="../php/logout.php"
-                    data-href="../php/logout.php?ajax=1"
-                    data-redirect="../login/login.php">
-                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
-                  </a></li>
-
-              </ul>
-            </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnThemeDesktop" type="button" title="Tema">
+              <i class="bi bi-moon"></i>
+            </button>
+            <a class="btn btn-sm btn-outline-danger" href="logout.php" title="Salir">
+              <i class="bi bi-box-arrow-right"></i>
+            </a>
           </div>
         </div>
-        <div class="row g-3 mb-3">
+        <div class="row g-3 my-3">
           <div class="col-12 col-lg-4">
             <div class="card border-0 shadow-sm">
               <div class="card-body">
@@ -464,9 +364,10 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
 
     };
   </script>
-<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js" integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha" crossorigin="anonymous"></script> -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <script src="js/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js" integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha" crossorigin="anonymous"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
   <!-- JS específico de pólizas -->
 
   <!-- Botón oculto para abrir el offcanvas de equipo -->

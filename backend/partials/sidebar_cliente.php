@@ -34,7 +34,7 @@ if ($clId <= 0) { http_response_code(400); exit('Falta clId'); }
         </li>
         <div class="section-subtitle ">Tickets</div>
         <ul class="nav nav-pills flex-column gap-1">
-            <li class="nav-item"><a class="nav-link <?= isActive('tickets', $activeMenu) ?>" href="tickets.php?clId=<?= (int)$clId ?>"><i class="bi bi-plus-circle"></i> Todos los Tickets</a></li>
+            <li class="nav-item"><a class="nav-link <?= isActive('tickets', $activeMenu) ?>" href="home.php"><i class="bi bi-plus-circle"></i> Todos los Tickets</a></li>
             <li class="nav-item"><a class="nav-link <?= isActive('ticket', $activeMenu) ?>" href="nuevo_ticket.php?clId=<?= (int)$clId ?>"><i class="bi bi-plus-circle"></i> Nuevo Ticket</a></li>
             <li class="nav-item"><a class="nav-link <?= isActive('health', $activeMenu) ?>" href="nuevo_health.php?clId=<?= (int)$clId ?>"><i class="bi bi-plus-circle"></i> Nuevo Health Check</a></li>
         </ul>

@@ -41,6 +41,232 @@ async function apiFetch(url, { method = 'GET', body = null, headers = {} } = {})
     return json;
 }
 
+let helpAdminCurrentTiId = 0;
+let helpAdminItems = [];
+
+function fmtHelpType(tipo) {
+    const t = String(tipo || '').toLowerCase();
+    if (t === 'logs') return 'Apoyo con logs';
+    if (t === 'meet') return 'Apoyo con Meet';
+    if (t === 'visita') return 'Apoyo con visita';
+    if (t === 'documentacion') return 'Apoyo con documentación';
+    if (t === 'otro') return 'Otro';
+    return 'Ayuda general';
+}
+
+function fmtHelpStatusBadge(estado) {
+    const e = String(estado || '').toLowerCase();
+    if (e === 'pendiente') return '<span class="badge text-bg-warning">Pendiente</span>';
+    if (e === 'atendida') return '<span class="badge text-bg-success">Atendida</span>';
+    if (e === 'cerrada') return '<span class="badge text-bg-secondary">Cerrada</span>';
+    return `<span class="badge text-bg-light">${escapeHtml(estado || '—')}</span>`;
+}
+
+function helpAdminFillSelect(items) {
+    const $sel = $('#helpAdminTaId');
+    $sel.empty();
+    $sel.append('<option value="">Selecciona una solicitud</option>');
+
+    (items || []).forEach(item => {
+        const txt = `#${item.taId} · ${fmtHelpType(item.taTipo)} · ${item.taEstado}`;
+        $sel.append(`<option value="${Number(item.taId)}">${escapeHtml(txt)}</option>`);
+    });
+
+    const firstPending = (items || []).find(x => String(x.taEstado || '').toLowerCase() === 'pendiente');
+    if (firstPending) $sel.val(String(firstPending.taId));
+    else if (items && items.length) $sel.val(String(items[0].taId));
+}
+
+function helpAdminRenderResume(resume) {
+    $('#helpAdminResume').html(`
+        <div><span class="badge text-bg-primary">Total: ${Number(resume?.total || 0)}</span></div>
+        <div class="mt-1"><span class="badge text-bg-warning">Pendientes: ${Number(resume?.pendientes || 0)}</span></div>
+        <div class="mt-1"><span class="badge text-bg-success">Atendidas: ${Number(resume?.atendidas || 0)}</span></div>
+        <div class="mt-1"><span class="badge text-bg-secondary">Cerradas: ${Number(resume?.cerradas || 0)}</span></div>
+        <div class="mt-1"><span class="badge text-bg-danger">Sin leer: ${Number(resume?.noLeidos || 0)}</span></div>
+    `);
+}
+
+function helpAdminRenderItems(items) {
+    const $box = $('#helpAdminList');
+
+    if (!items || !items.length) {
+        $box.html('<div class="text-muted">No hay solicitudes de ayuda para este ticket.</div>');
+        return;
+    }
+
+    $box.html(items.map(item => {
+        const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
+
+        return `
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <div class="fw-bold">
+                                #${Number(item.taId)} · ${escapeHtml(fmtHelpType(item.taTipo))}
+                                ${Number(item.taNoLeidoAdmin || 0) === 1
+                ? '<span class="badge text-bg-danger ms-2">Nuevo mensaje</span>'
+                : ''}
+                                </div>
+                            <div class="text-muted" style="font-size:.85rem;">
+                                ${escapeHtml(item.usuarioNombre || ('Usuario ' + item.usId))} · ${escapeHtml(item.taCreadoEn || '')}
+                            </div>
+                        </div>
+                        <div>${fmtHelpStatusBadge(item.taEstado)}</div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="small text-muted mb-1">Mensaje del cliente</div>
+                        <div>${escapeHtml(item.taMensaje || '')}</div>
+                    </div>
+
+                    ${Number(item.taRequiereMeet || 0) === 1
+                ? `<div class="mt-2 small text-muted">
+                              <i class="bi bi-camera-video"></i>
+                              Solicitó apoyo por Meet${item.taPlataformaPreferida ? ' · Preferencia: ' + escapeHtml(item.taPlataformaPreferida) : ''}
+                           </div>`
+                : ''
+            }
+
+                    <div class="mt-3">
+                        <div class="small text-muted mb-2">Respuestas</div>
+                        ${respuestas.length
+                ? respuestas.map(r => `
+                                <div class="rounded border p-2 mb-2">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div class="fw-semibold">
+                                            ${escapeHtml(r.usuarioNombre || ('Usuario ' + r.usId))}
+                                            ${Number(r.tarEsInterno || 0) === 1 ? '<span class="badge text-bg-dark ms-2">Interno</span>' : ''}
+                                        </div>
+                                        <div class="text-muted" style="font-size:.8rem;">${escapeHtml(r.tarCreadoEn || '')}</div>
+                                    </div>
+                                    <div class="mt-1">${escapeHtml(r.tarMensaje || '')}</div>
+                                </div>
+                            `).join('')
+                : '<div class="text-muted">Sin respuestas aún.</div>'
+            }
+                    </div>
+
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-primary btn-help-admin-select" data-ta="${Number(item.taId)}">
+                            Responder aquí
+                        </button>
+                        <button class="btn btn-sm btn-outline-success btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="atendida">
+                            Marcar atendida
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="cerrada">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join(''));
+}
+
+async function openHelpAdmin(tiId) {
+    try {
+        helpAdminCurrentTiId = Number(tiId || 0);
+        helpAdminItems = [];
+        $('#helpAdminHint').text('');
+        $('#helpAdminReply').val('');
+        $('#helpAdminList').html('<div class="text-muted">Cargando...</div>');
+
+        await helpAdminMarkRead(helpAdminCurrentTiId);
+        const data = await apiFetch(`api/help_list.php?tiId=${encodeURIComponent(helpAdminCurrentTiId)}`);
+        const ticket = data.ticket || {};
+        const items = Array.isArray(data.items) ? data.items : [];
+        const resume = data.resume || {};
+
+        helpAdminItems = items;
+
+        const codigo = ticket.folio || `Ticket ${helpAdminCurrentTiId}`;
+        const equipo = [ticket.maNombre, ticket.eqModelo, ticket.eqVersion].filter(Boolean).join(' ');
+        const sede = ticket.csNombre || 'Sin sede';
+        const sn = ticket.peSN || '—';
+
+        $('#helpAdminTicketCode').text(codigo);
+        $('#helpAdminTicketMeta').text(`${equipo || 'Equipo'} · SN: ${sn}`);
+        $('#helpAdminSub').text(`${ticket.clNombre || 'Cliente'} · ${sede} · Proceso: ${ticket.tiProceso || '—'}`);
+
+        helpAdminRenderResume(resume);
+        helpAdminRenderItems(items);
+        helpAdminFillSelect(items);
+        async function helpAdminMarkRead(tiId) {
+            await apiFetch('api/help_mark_read.php', {
+                method: 'POST',
+                body: { tiId: Number(tiId) }
+            });
+        }
+
+        bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('offHelpAdmin')).show();
+    } catch (e) {
+        mostrarToast('error', e.message || 'No se pudo abrir el centro de ayuda.');
+    }
+}
+
+async function helpAdminSendReply() {
+    const taId = Number($('#helpAdminTaId').val() || 0);
+    const tarMensaje = String($('#helpAdminReply').val() || '').trim();
+
+    if (!taId) {
+        mostrarToast('error', 'Selecciona una solicitud.');
+        return;
+    }
+    if (!tarMensaje) {
+        mostrarToast('error', 'Escribe una respuesta.');
+        return;
+    }
+
+    try {
+        $('#btnHelpAdminReply').prop('disabled', true);
+        $('#helpAdminHint').text('Enviando respuesta...');
+
+        await apiFetch('api/help_reply.php', {
+            method: 'POST',
+            body: { taId, tarMensaje, tarEsInterno: 0 }
+        });
+        const t = findTicketById(helpAdminCurrentTiId);
+        if (t) {
+            await sendTicketNotification('help_reply', t, {
+                proceso: 'ayuda',
+                titulo: 'Nueva respuesta en tu solicitud de ayuda',
+                texto: `Tienes una nueva respuesta en el ticket ${ticketCodigo(t)}. Entra al apartado de Ayuda para revisarla.`,
+                taId: taId
+            });
+        }
+
+        $('#helpAdminReply').val('');
+        $('#helpAdminHint').text('');
+        mostrarToast('success', 'Respuesta enviada.');
+        await openHelpAdmin(helpAdminCurrentTiId);
+    } catch (e) {
+        $('#helpAdminHint').text('');
+        mostrarToast('error', e.message || 'No se pudo enviar la respuesta.');
+    } finally {
+        $('#btnHelpAdminReply').prop('disabled', false);
+    }
+}
+
+async function helpAdminSetState(taId, taEstado) {
+    try {
+        $('#helpAdminHint').text('Actualizando estado...');
+
+        await apiFetch('api/help_resolve.php', {
+            method: 'POST',
+            body: { taId: Number(taId), taEstado }
+        });
+
+        $('#helpAdminHint').text('');
+        mostrarToast('success', 'Estado actualizado.');
+        await openHelpAdmin(helpAdminCurrentTiId);
+    } catch (e) {
+        $('#helpAdminHint').text('');
+        mostrarToast('error', e.message || 'No se pudo actualizar el estado.');
+    }
+}
+
 function csrf() {
     return (window.MRS_CSRF && window.MRS_CSRF.csrf) ? window.MRS_CSRF.csrf : '';
 }
@@ -440,6 +666,17 @@ function accionesDeTicket(t) {
             label: 'Notificar Logs',
             kind: 'primary',
             action: 'logs_revisar'
+        }, {
+            label: 'Cambiar Proceso',
+            kind: 'primary',
+            action: 'cambiar_proceso'
+        }];
+    }
+    if (a.key === 'meet') {
+        return [{
+            action: 'meet',
+            label: 'Definir / confirmar Meet',
+            kind: 'outline',
         }, {
             label: 'Cambiar Proceso',
             kind: 'primary',
@@ -862,13 +1099,16 @@ function renderOffcanvas(t) {
               Esta acción se completa desde este panel.
             </div>
 
-            <div class="mt-3 d-flex gap-2">
-              <button class="btn btn-primary btn-sm flex-grow-1" id="offPrimaryAction" data-action="${escapeHtml(action.key)}" data-ti="${t.tiId}">
-                ${escapeHtml(action.title)}
-              </button>
-              <button class="btn btn-outline-secondary btn-sm" id="offHelpAction" data-action="${escapeHtml(action.key)}_help">
-                Ayuda
-              </button>
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary btn-sm flex-grow-1" id="offPrimaryAction" data-action="${escapeHtml(action.key)}" data-ti="${t.tiId}">
+                    ${escapeHtml(action.title)}
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="offHelpAction" data-action="${escapeHtml(action.key)}_help">
+                    Ayuda
+                </button>
+                <button class="btn btn-outline-primary btn-sm" id="offChangeProcess" data-ti="${t.tiId}">
+                    Cambiar proceso
+                </button>
             </div>
 
             <div class="muted mt-2" style="font-size:.8rem;">Estado: <b>Pendiente</b></div>
@@ -880,11 +1120,19 @@ function renderOffcanvas(t) {
     } else {
         $('#offAccionBox').html(`
         <div class="action-card">
-          <div class="fw-bold">Sin acción del cliente</div>
-          <div class="muted mt-2" style="font-size:.9rem;">
-            Este paso corresponde al <b>Administrador</b>. El flujo está avanzando internamente.
-          </div>
-        </div>
+            <div class="fw-bold">Sin acción directa</div>
+            <div class="muted mt-2" style="font-size:.9rem;">
+                Este paso corresponde al <b>Administrador</b>. Aun así puedes forzar un cambio de proceso si el caso lo requiere.
+            </div>
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" id="offChangeProcess" data-ti="${t.tiId}">
+                Cambiar proceso
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="offHelpAction" data-action="general_help">
+                Ayuda
+                </button>
+            </div>
+            </div>
       `);
         $('#offBtnAccion').text('Cerrar').prop('disabled', false);
     }
@@ -906,7 +1154,7 @@ function renderOffcanvas(t) {
 
     // Footer buttons
     $('#offBtnAyuda').off('click').on('click', () => {
-        alert('Ayuda contextual del paso: ' + step);
+        openHelpAdmin(t.tiId);
     });
 
     $('#offBtnAccion').off('click').on('click', () => {
@@ -1376,6 +1624,15 @@ $(document).on('click', '.btnVerMasIng', function (e) {
     e.preventDefault();
     const usId = Number($(this).data('usid'));
     alert('Aquí abrimos "Ver más" del ingeniero usId=' + usId + ' (lo conectamos después).');
+});
+
+$(document).on('click', '#offChangeProcess', function () {
+    const tiId = Number($(this).data('ti') || 0);
+    if (!tiId) {
+        mostrarToast('error', 'No se encontró el ticket.');
+        return;
+    }
+    openLogsAccionOffcanvas('continuar', tiId);
 });
 
 // asignar ingeniero (POST a tu php ya existente)
@@ -2409,6 +2666,13 @@ async function sendTicketNotificationByProceso(action, ticket) {
             titulo: 'Solicitud de reunión'
         };
     }
+    if (action === 'meet') {
+        extra = {
+            proceso: 'meet_solicitado',
+            texto: 'En tu ticket ' + ticketCodigo(ticket) + ', se ha solicitado una reunión para el diagnóstico de tu caso. Por favor, confirma la reunión para continuar con el proceso.',
+            titulo: 'Solicitud de reunión'
+        };
+    }
     if (action === 'meet confirmado') {
         extra = {
             proceso: 'meet_confirmado',
@@ -2544,6 +2808,13 @@ async function sendTicketNotificationByProceso(action, ticket) {
             proceso: 'servicio_por_evento',
             texto: 'En tu ticket ' + ticketCodigo(ticket) + ', el ticket se encuentra marcado como servicio por evento. Por favor, contacta con el soporte técnico para más información.',
             titulo: 'Este ticket es para servicio por evento'
+        };
+    }
+    if (action === 'help_reply') {
+        extra = {
+            proceso: 'ayuda',
+            texto: 'Tienes una nueva respuesta en tu solicitud de ayuda. Ingresa al ticket para revisarla.',
+            titulo: 'Nueva respuesta en ayuda'
         };
     }
 
@@ -2822,9 +3093,9 @@ $(document).on('click', '.btnAccion', async function (e) {
     }
 
     if (action === 'documentacion') {
-  window.location = 'admin/documentacion.php?tiId=' + tiId;
-  return;
-}
+        window.location = 'admin/documentacion.php?tiId=' + tiId;
+        return;
+    }
 
 
 
@@ -2925,16 +3196,57 @@ $(document).on('click', '#offPrimaryAction', async function () {
         return;
     }
     if (action === 'documentacion') {
-  window.location = 'admin/documentacion.php?tiId=' + tiId;
-  return;
-}
+        window.location = 'admin/documentacion.php?tiId=' + tiId;
+        return;
+    }
 
 
 
 });
 
+$(document).on('click', '.btn-help-admin-select', function () {
+    const taId = Number($(this).data('ta') || 0);
+    if (!taId) return;
+    $('#helpAdminTaId').val(String(taId));
+    $('#helpAdminReply').trigger('focus');
+});
+
+$(document).on('click', '.btn-help-admin-state', function () {
+    const taId = Number($(this).data('ta') || 0);
+    const state = String($(this).data('state') || '');
+    if (!taId || !state) return;
+    helpAdminSetState(taId, state);
+});
+
+$(document).on('click', '#btnHelpAdminReply', function () {
+    helpAdminSendReply();
+});
+
+$(document).on('click', '#btnHelpAdminAtender', function () {
+    const taId = Number($('#helpAdminTaId').val() || 0);
+    if (!taId) {
+        toast('error', 'Selecciona una solicitud.');
+        return;
+    }
+    helpAdminSetState(taId, 'atendida');
+});
+
+$(document).on('click', '#btnHelpAdminCerrar', function () {
+    const taId = Number($('#helpAdminTaId').val() || 0);
+    if (!taId) {
+        toast('error', 'Selecciona una solicitud.');
+        return;
+    }
+    helpAdminSetState(taId, 'cerrada');
+});
+
 $(document).on('click', '#offHelpAction', function () {
-    alert('Abrir ayuda guiada del paso actual.');
+    const tiId = $('#offPrimaryAction').data('ti') || 0;
+    if (!tiId) {
+        toast('error', 'No se encontró el ticket.');
+        return;
+    }
+    openHelpAdmin(Number(tiId));
 });
 
 $(document).on('click', '#offMailHelp', function () {

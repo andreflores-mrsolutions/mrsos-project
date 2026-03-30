@@ -7,6 +7,12 @@ const state = {
   selected: null
 };
 
+
+    
+  
+
+  
+
 function toast(id, msg) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -236,3 +242,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     toastErr(e.message || 'No se pudo cargar la pantalla.');
   }
 });
+
+$(init);

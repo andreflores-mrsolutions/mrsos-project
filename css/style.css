@@ -869,6 +869,7 @@ body.dark-mode .table {
 body.dark-mode .table thead th {
   color: var(--text-secondary);
   border-bottom-color: var(--border-light);
+  background-color: transparent !important;
 }
 
 body.dark-mode .table tbody td {

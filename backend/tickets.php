@@ -60,7 +60,7 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
         <div class="row gx-0">
 
             <?php $activeMenu = 'tickets'; ?>
-      <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
+            <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
             <main class="col-12 col-lg-10">
                 <div class="admin-topbar px-3 py-2 d-flex align-items-center justify-content-between">
@@ -644,6 +644,73 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
                     ❌ Error al crear el ticket.
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OFFCANVAS: AYUDA ADMIN -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offHelpAdmin" aria-labelledby="offHelpAdminLabel" style="width: min(760px, 100vw);">
+        <div class="offcanvas-header">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="offHelpAdminLabel">Centro de ayuda del ticket</h5>
+                <div class="text-muted" style="font-size:.9rem;" id="helpAdminSub">—</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="fw-bold" id="helpAdminTicketCode">—</div>
+                    <div class="text-muted" style="font-size:.9rem;" id="helpAdminTicketMeta">—</div>
+                </div>
+                <div id="helpAdminResume" class="text-end"></div>
+            </div>
+
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Solicitudes de ayuda</div>
+                <div id="helpAdminList">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+            </div>
+
+            <hr class="my-3" style="opacity:.12;">
+
+            <div class="mb-3">
+                <div class="fw-bold mb-2">Responder</div>
+
+                <div class="mb-2">
+                    <label class="form-label">Solicitud seleccionada</label>
+                    <select class="form-select" id="helpAdminTaId">
+                        <option value="">Selecciona una solicitud</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Mensaje de respuesta</label>
+                    <textarea
+                        class="form-control"
+                        id="helpAdminReply"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="Ej: Ya revisamos tu solicitud. Te apoyaremos con una sesión remota y en breve te proponemos horario."></textarea>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary" id="btnHelpAdminReply">
+                        <i class="bi bi-reply"></i> Enviar respuesta
+                    </button>
+
+                    <button class="btn btn-outline-success" id="btnHelpAdminAtender">
+                        <i class="bi bi-check2-circle"></i> Marcar atendida
+                    </button>
+
+                    <button class="btn btn-outline-secondary" id="btnHelpAdminCerrar">
+                        <i class="bi bi-check2-all"></i> Cerrar solicitud
+                    </button>
+                </div>
+
+                <div class="text-muted mt-2" style="font-size:.85rem;" id="helpAdminHint"></div>
             </div>
         </div>
     </div>

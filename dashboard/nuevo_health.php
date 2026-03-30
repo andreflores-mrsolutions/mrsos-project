@@ -79,71 +79,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     <link href="../css/style.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 
-    <style>
-        .mrs-card {
-            border-radius: 1rem;
-            border: 1px solid rgba(15, 23, 42, .08);
-            box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
-        }
-
-        .eq-card {
-            border: 1px solid rgba(15, 23, 42, .08);
-            border-radius: 1rem;
-            background: #fff;
-            transition: .18s ease;
-            cursor: pointer;
-        }
-
-        .eq-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
-        }
-
-        .eq-card.selected {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
-        }
-
-        .mrs-skeleton-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 12px;
-        }
-
-        .mrs-skel {
-            height: 180px;
-            border-radius: 1rem;
-            background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
-            background-size: 200% 100%;
-            animation: sk 1.2s infinite;
-        }
-
-        @keyframes sk {
-            0% {
-                background-position: 200% 0
-            }
-
-            100% {
-                background-position: -200% 0
-            }
-        }
-
-        .selected-box {
-            border: 1px dashed rgba(15, 23, 42, .18);
-            border-radius: 1rem;
-            padding: 1rem;
-            background: #f8fafc;
-            min-height: 120px;
-        }
-
-        .topbar {
-            background: #fff;
-            border-bottom: 1px solid rgba(15, 23, 42, .08);
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-        }
-    </style>
+    
 </head>
 
 <body class="<?= $theme === 'dark' ? 'dark-mode' : '' ?>">
@@ -154,15 +90,23 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
 
             <main class="col-12 col-lg-10">
                 <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
-                    <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
-                        <i class="bi bi-list"></i>
-                    </button>
                     <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
-                        <span class="badge text-bg-success rounded-pill px-3">Cliente</span>
-                        <span class="fw-bold"><?= htmlspecialchars((string)$nombreUsuario) ?></span>
+                        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+              <i class="bi bi-list"></i>
+            </button>
+            <a class="btn btn-sm btn-outline-secondary" href="home.php"><i class="bi bi-arrow-left"></i></a>
+                        <span class="badge text-bg-success rounded-pill px-3">Activo</span>
+                        <span class="fw-bold"><?php echo htmlspecialchars($_SESSION['usUsername'] ?? 'Admin'); ?></span>
                     </div>
-                    <a class="btn btn-sm btn-outline-danger" href="../dashboard/logout.php"><i class="bi bi-box-arrow-right"></i></a>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="btnThemeDesktop" type="button" title="Tema">
+                            <i class="bi bi-moon"></i>
+                        </button>
+                        <a class="btn btn-sm btn-outline-danger" href="logout.php" title="Salir">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
 
                 <div class="px-3 py-3">
@@ -196,7 +140,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
                                         <div class="mb-3">
                                             <label class="form-label">Autor</label>
                                             <input class="form-control" type="text" value="<?= htmlspecialchars($nombreUsuario) ?>" disabled>
-                                            <div class="form-text">Se guardará en <code>health_check.usId</code> desde tu sesión.</div>
+                                            <div class="form-text">Se guardará <code>con este nombre de contacto</code> desde tu sesión.</div>
                                         </div>
 
                                         <div class="mb-3">
@@ -316,6 +260,7 @@ $telefonoUsuario = (string)($_SESSION['usTelefono'] ?? '');
     </div>
 
     <script src="js/nuevo_health.js"></script>
+    <script src="js/theme.js"></script>
 </body>
 
 </html>

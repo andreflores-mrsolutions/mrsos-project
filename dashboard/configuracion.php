@@ -1,28 +1,29 @@
 <?php
-// headers.php (parte superior)
-$theme = $_COOKIE['mrs_theme'] ?? 'light';
+declare(strict_types=1);
+
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . "/../php/conexion.php"; // ajusta la ruta si aplica
+
+require_once __DIR__ . "/../php/conexion.php";
+
+$theme = $_COOKIE['mrs_theme'] ?? ($_SESSION['usTheme'] ?? 'light');
 
 // Permite fijar la póliza activa desde ?pcId= y guardarla en sesión
 if (isset($_GET['pcId'])) {
   $_SESSION['pcId'] = (int)$_GET['pcId'];
 }
 
-$clId  = $_SESSION['clId'] ?? null;      // cliente del usuario logueado
-$pcId  = $_SESSION['pcId'] ?? null;      // póliza activa (opcional)
-$usNombre  = $_SESSION['usNombre']  ?? ($_SESSION['usUsuario'] ?? 'Usuario');
-$usCorreo  = $_SESSION['usCorreo']  ?? '';
-$usTelefono = $_SESSION['usTelefono'] ?? '';
-$usRol     = $_SESSION['usRol']     ?? '';
-$clNombre  = $_SESSION['clNombre']  ?? '';
+$clId        = $_SESSION['clId'] ?? null;
+$pcId        = $_SESSION['pcId'] ?? null;
+$usNombre    = $_SESSION['usNombre'] ?? ($_SESSION['usUsuario'] ?? 'Usuario');
+$usCorreo    = $_SESSION['usCorreo'] ?? '';
+$usTelefono  = $_SESSION['usTelefono'] ?? '';
+$usRol       = $_SESSION['usRol'] ?? '';
+$clNombre    = $_SESSION['clNombre'] ?? '';
 
-// Helper: localizar la foto de usuario con varias extensiones
 function findUserAvatarUrl(string $username): string
 {
-  // Ajusta las rutas base según tu estructura
-  $urlBase = "../img/Usuario/";                         // para el src en <img>
-  $fsBase  = realpath(__DIR__ . "/../img/Usuario");     // en disco
+  $urlBase = "../img/Usuario/";
+  $fsBase  = realpath(__DIR__ . "/../img/Usuario");
 
   if (!$fsBase) return $urlBase . "user.webp";
 
@@ -36,7 +37,7 @@ function findUserAvatarUrl(string $username): string
   return $urlBase . "user.webp";
 }
 
-// Buscar vendedor (usId) para el cliente (y póliza si está definida)
+// Buscar vendedor
 $vend = null;
 if ($clId) {
   if ($pcId) {
@@ -47,9 +48,10 @@ if ($clId) {
             WHERE c.clId = ? AND c.pcId = ?
             LIMIT 1";
     $stmt = $conectar->prepare($sql);
-    $stmt->bind_param("ii", $clId, $pcId);
+    if ($stmt) {
+      $stmt->bind_param("ii", $clId, $pcId);
+    }
   } else {
-    // Si no hay póliza activa, toma cualquiera del cliente (la más reciente)
     $sql = "SELECT u.usId, u.usNombre, u.usAPaterno, u.usUsername
             FROM cuentas c
             JOIN polizascliente pc ON pc.pcId = c.pcId
@@ -58,10 +60,12 @@ if ($clId) {
             ORDER BY c.cuId DESC
             LIMIT 1";
     $stmt = $conectar->prepare($sql);
-    $stmt->bind_param("i", $clId);
+    if ($stmt) {
+      $stmt->bind_param("i", $clId);
+    }
   }
 
-  if ($stmt && $stmt->execute()) {
+  if (isset($stmt) && $stmt && $stmt->execute()) {
     $res = $stmt->get_result();
     $vend = $res->fetch_assoc() ?: null;
   }
@@ -76,18 +80,17 @@ if (empty($_SESSION['clId'])) {
   exit;
 }
 
-// ... tu lógica de sesión previa
-$ROL   = $_SESSION['usRol']  ?? null;   // 'AC' | 'UC' | 'EC' | 'MRA'
+$ROL   = $_SESSION['usRol'] ?? null;
 $CL_ID = $_SESSION['clId'] ?? null;
 $US_ID = $_SESSION['usId'] ?? null;
 
-$prefTheme = 'light';
-$prefNotifInApp = 1;
-$prefNotifMail = 1;
+$prefTheme             = 'light';
+$prefNotifInApp        = 1;
+$prefNotifMail         = 1;
 $prefNotifTicketCambio = 1;
-$prefNotifMeet = 1;
-$prefNotifVisita = 1;
-$prefNotifFolio = 1;
+$prefNotifMeet         = 1;
+$prefNotifVisita       = 1;
+$prefNotifFolio        = 1;
 
 if ($US_ID) {
   $sqlPref = "SELECT usTheme, usNotifInApp, usNotifMail,
@@ -100,49 +103,61 @@ if ($US_ID) {
     if ($stmtP->execute()) {
       $resP = $stmtP->get_result();
       if ($rowP = $resP->fetch_assoc()) {
-        $prefTheme             = $rowP['usTheme']             ?? 'light';
-        $prefNotifInApp        = (int)($rowP['usNotifInApp']        ?? 1);
-        $prefNotifMail         = (int)($rowP['usNotifMail']         ?? 1);
+        $prefTheme             = $rowP['usTheme'] ?? 'light';
+        $prefNotifInApp        = (int)($rowP['usNotifInApp'] ?? 1);
+        $prefNotifMail         = (int)($rowP['usNotifMail'] ?? 1);
         $prefNotifTicketCambio = (int)($rowP['usNotifTicketCambio'] ?? 1);
-        $prefNotifMeet         = (int)($rowP['usNotifMeet']         ?? 1);
-        $prefNotifVisita       = (int)($rowP['usNotifVisita']       ?? 1);
-        $prefNotifFolio        = (int)($rowP['usNotifFolio']        ?? 1);
+        $prefNotifMeet         = (int)($rowP['usNotifMeet'] ?? 1);
+        $prefNotifVisita       = (int)($rowP['usNotifVisita'] ?? 1);
+        $prefNotifFolio        = (int)($rowP['usNotifFolio'] ?? 1);
       }
     }
     $stmtP->close();
   }
 }
 
+$CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA');
 
-$CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
+$usAPaterno = $_SESSION['usAPaterno'] ?? '';
+$usAMaterno = $_SESSION['usAMaterno'] ?? '';
+$usUsername = $_SESSION['usUsername'] ?? '';
+
+$usuarioSan  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usUsername !== '' ? $usUsername : 'default');
+$dirFS       = __DIR__ . '/../img/Usuario/';
+$dirURL      = '../img/Usuario/';
+$extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+$src = $dirURL . 'user.webp';
+foreach ($extsPermitidas as $ext) {
+  $fs = $dirFS . $usuarioSan . '.' . $ext;
+  if (is_file($fs)) {
+    $src = $dirURL . $usuarioSan . '.' . $ext . '?v=' . filemtime($fs);
+    break;
+  }
+}
+
+$avatarSrc = $dirURL . 'user.webp';
+foreach ($extsPermitidas as $ext) {
+  $fs = $dirFS . $usuarioSan . '.' . $ext;
+  if (is_file($fs)) {
+    $avatarSrc = $dirURL . $usuarioSan . '.' . $ext . '?v=' . filemtime($fs);
+    break;
+  }
+}
 ?>
-<script>
-  window.SESSION = {
-    rol: <?= json_encode($ROL) ?>,
-    clId: <?= json_encode((int)$CL_ID) ?>,
-    usId: <?= json_encode((int)$US_ID) ?>,
-    canCreateTicket: <?= $CAN_CREATE ? 'true' : 'false' ?>
-  };
-</script>
 <!doctype html>
 <html lang="es">
-
 <head>
   <meta charset="utf-8">
-  <title>Configuración · MRSoS</title>
+  <title>MR SOS | Configuración</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Tu CSS principal si aplica -->
-  <link rel="stylesheet" href="../css/style.css">
-  <style>
-    body.mrsos-dark {
-      background-color: #111827;
-      color: #e5e7eb;
-    }
 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="../css/style.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+
+  <style>
     body.mrsos-dark .card {
       background-color: #1f2937;
       border-color: #374151;
@@ -173,251 +188,77 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
       letter-spacing: .08em;
       color: #9ca3af;
     }
-
-    .config-badge-role {
-      font-size: .7rem;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
   </style>
-</head>
-<!DOCTYPE html>
-<html lang="es">
 
-<head>
-  <title>MRSolutions</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Ajax - JQuery -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- /Ajax - JQuery -->
+  <script>
+    window.SESSION = {
+      rol: <?= json_encode($ROL) ?>,
+      clId: <?= json_encode((int)$CL_ID) ?>,
+      usId: <?= json_encode((int)$US_ID) ?>,
+      canCreateTicket: <?= $CAN_CREATE ? 'true' : 'false' ?>
+    };
 
-  <!-- SweetAlert -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#0e1525">
-
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-  <script src="https://kit.fontawesome.com/04af9e068b.js" crossorigin="anonymous"></script>
-  <!-- /Bootstrap -->
-  <!-- Bootstrap Icons -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-  <!-- Primero el objeto Meet -->
-  <script src="../js/tickets/modal_meet.js"></script>
-  <script src="../js/tickets/modal_visita.js"></script>
-
-  <!-- Luego tus otros JS que lo usan -->
-  <script src="../js/tickets.js"></script>
-  <script src="../js/main.js"></script>
-  <script src="../js/logout.js"></script>
-
-  <!-- css -->
-  <link href="../css/style.css" rel="stylesheet">
-
-
+    window.USER_PREFS = {
+      theme: <?= json_encode($prefTheme) ?>,
+      notifInApp: <?= json_encode((bool)$prefNotifInApp) ?>,
+      notifMail: <?= json_encode((bool)$prefNotifMail) ?>,
+      notifTicketCambio: <?= json_encode((bool)$prefNotifTicketCambio) ?>,
+      notifMeet: <?= json_encode((bool)$prefNotifMeet) ?>,
+      notifVisita: <?= json_encode((bool)$prefNotifVisita) ?>,
+      notifFolio: <?= json_encode((bool)$prefNotifFolio) ?>
+    };
+  </script>
 </head>
 
-<body class="<?php echo ($theme === 'dark') ? 'dark-mode' : ''; ?>">
-
+<body class="<?= ($theme === 'dark') ? 'dark-mode' : '' ?>">
   <div class="container-fluid">
     <div class="row gx-0">
-      <!-- SIDEBAR -->
-      <!-- SIDEBAR FIJO (md+) -->
       <?php $activeMenu = 'clientes'; ?>
       <?php require_once __DIR__ . '/partials/sidebar_cliente.php'; ?>
 
-
-
-      <!-- MAIN -->
-      <main class="col-md-10  px-4">
-        <!-- Top bar -->
-        <!-- Contenedor general -->
-        <div class="d-flex align-items-center justify-content-between py-3 px-2 px-md-4 ">
-          <!-- Lado izquierdo -->
-          <div class="d-flex align-items-center">
-            <!-- Botón hamburguesa solo en sm y xs -->
-            <button class="btn btn-outline-secondary d-lg-none me-2"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasSidebar"
-              aria-controls="offcanvasSidebar">
-              <i class="bi bi-list"></i>
-            </button>
-
-            <!-- Logo cliente siempre visible -->
-            <span class="badge bg-light me-3 p-2">
-              <img src="../img/Clientes/enel.svg" style="height:30px;" alt="cliente">
-            </span>
-
-            <!-- Estado: en mobiles pequeño badge -->
-            <span class="badge bg-success me-3 d-none d-sm-inline-block">Activo</span>
-
-            <!-- Responsable: solo avatar en xs & sm -->
-            <!-- Responsable: avatar + nombre del vendedor desde BD -->
-            <img src="<?= htmlspecialchars($vendAvatar) ?>"
-              class="rounded-circle me-2 d-inline-block"
-              alt="<?= htmlspecialchars($vendNombre) ?>"
-              style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-            <span class="d-none d-sm-inline">
-              <?= htmlspecialchars($vendNombre) ?>
-            </span>
-
+      <main class="col-md-10">
+        <div class="topbar px-3 py-2 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="home.php">
+              <i class="bi bi-arrow-left"></i>
+            </a>
+            <span class="badge text-bg-success rounded-pill px-3">Activo</span>
+            <span class="fw-bold"><?= htmlspecialchars($_SESSION['usUsername'] ?? 'Admin') ?></span>
           </div>
 
-          <!-- Lado derecho -->
-          <div class="d-flex align-items-center">
-            <!-- Íconos grandes: solo md+ -->
-            <div class="d-none d-md-flex align-items-center top-icons me-3">
-              <i class="bi bi-search mx-2"></i>
-              <a id="btnRecargar"><i class="bi bi-arrow-clockwise mx-2"></i></a>
-              <i class="bi bi-bell mx-2"></i>
-              <i class="bi bi-question-circle mx-2"></i>
-
-              <!-- NUEVO: Botón tema (luna) -->
-              <button id="btnThemeDesktop" class="btn btn-outline-secondary btn-icon mx-2" title="Modo oscuro">
-                <i class="bi bi-moon"></i>
-              </button>
-            </div>
-
-
-            <!-- Dropdown general en sm- -->
-            <div class="dropdown d-md-none me-2">
-              <button class="btn btn-outline-secondary" type="button" id="moreActions" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreActions">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-search me-2"></i>Buscar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-clockwise me-2"></i>Refrescar</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-bell me-2"></i>Notificaciones</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Ayuda</a></li>
-
-                <!-- NUEVO: Tema -->
-                <li>
-                  <a id="btnThemeMobile" class="dropdown-item" href="#" role="button">
-                    <i class="bi bi-moon me-2"></i><span>Cambiar a modo oscuro</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-
-            <!-- Perfil -->
-            <div class="nav-item dropdown">
-              <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
-                id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                <?php
-
-                // Ajusta si tu archivo está en otra carpeta
-                $usuario  = $_SESSION['usUsername'] ?? 'default';
-                $usuario  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usuario); // sanitiza por seguridad
-
-                $dirFS  = __DIR__ . '/../img/Usuario/'; // ruta en el sistema de archivos
-                $dirURL = '../img/Usuario/';            // ruta pública (para el src)
-
-                $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $src = $dirURL . 'user.webp'; // fallback por si no hay avatar
-
-                foreach ($extsPermitidas as $ext) {
-                  $fs = $dirFS . $usuario . '.' . $ext;
-                  if (is_file($fs)) {
-                    // Evita caché del navegador cuando cambie la imagen
-                    $src = $dirURL . $usuario . '.' . $ext . '?v=' . filemtime($fs);
-                    break;
-                  }
-                }
-                ?>
-                <img
-                  src="<?= htmlspecialchars($src, ENT_QUOTES) ?>"
-                  class="rounded-circle me-2"
-                  alt="Usuario"
-                  style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"
-                  onerror="this.onerror=null;this.src='../img/Usuario/user.webp';" />
-
-                <span class="d-none d-md-inline"><strong><?php echo $_SESSION['usUsername']; ?></strong></span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mis datos</a></li>
-                <li>
-                  <hr class="dropdown-divider">
-                </li>
-                <li><a id="btnLogout"
-                    class="dropdown-item"
-                    href="../php/logout.php"
-                    data-href="../php/logout.php?ajax=1"
-                    data-redirect="../login/login.php">
-                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
-                  </a></li>
-
-              </ul>
-            </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnThemeDesktop" type="button" title="Tema">
+              <i class="bi bi-moon"></i>
+            </button>
+            <a class="btn btn-sm btn-outline-danger" href="logout.php" title="Salir">
+              <i class="bi bi-box-arrow-right"></i>
+            </a>
           </div>
         </div>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="container py-4">
           <div class="row g-4">
-            <!-- Columna lateral (secciones) -->
             <div class="col-12 col-lg-4">
               <div class="card shadow-sm border-0 mb-3">
                 <div class="card-body">
                   <div class="d-flex align-items-center mb-3">
                     <div class="flex-shrink-0 me-3">
-                      <?php
-
-                      // Ajusta si tu archivo está en otra carpeta
-                      $usuario  = $_SESSION['usUsername'] ?? 'default';
-                      $usuario  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usuario); // sanitiza por seguridad
-
-                      $dirFS  = __DIR__ . '/../img/Usuario/'; // ruta en el sistema de archivos
-                      $dirURL = '../img/Usuario/';            // ruta pública (para el src)
-
-                      $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                      $src = $dirURL . 'user.webp'; // fallback por si no hay avatar
-
-                      foreach ($extsPermitidas as $ext) {
-                        $fs = $dirFS . $usuario . '.' . $ext;
-                        if (is_file($fs)) {
-                          // Evita caché del navegador cuando cambie la imagen
-                          $src = $dirURL . $usuario . '.' . $ext . '?v=' . filemtime($fs);
-                          break;
-                        }
-                      }
-                      ?>
                       <img
                         src="<?= htmlspecialchars($src, ENT_QUOTES) ?>"
                         class="rounded-circle me-2"
                         alt="Usuario"
-                        style="width: 40px; height: 40px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"
-                        onerror="this.onerror=null;this.src='../img/Usuario/user.webp';" />
+                        style="width:40px;height:40px;object-fit:cover;box-shadow:0 1px 3px rgba(0,0,0,0.2);"
+                        onerror="this.onerror=null;this.src='../img/Usuario/user.webp';">
                     </div>
                     <div>
-                      <div class="fw-semibold">
-                        <?php echo htmlspecialchars($usNombre, ENT_QUOTES, 'UTF-8'); ?>
-                      </div>
-                      <div class="small text-muted">
-                        <?php echo htmlspecialchars($usCorreo, ENT_QUOTES, 'UTF-8'); ?>
-                      </div>
-                      <?php if ($usRol): ?>
-                        <div class="mt-1">
-                          <span class="badge bg-primary-subtle text-primary-emphasis config-badge-role">
-                            <?php echo htmlspecialchars($usRol, ENT_QUOTES, 'UTF-8'); ?>
-                          </span>
-                        </div>
-                      <?php endif; ?>
+                      <div class="fw-semibold"><?= htmlspecialchars($usNombre, ENT_QUOTES, 'UTF-8') ?></div>
+                      <div class="small text-muted"><?= htmlspecialchars($usCorreo, ENT_QUOTES, 'UTF-8') ?></div>
                     </div>
                   </div>
 
                   <?php if ($clNombre): ?>
                     <div class="small text-muted mb-2">
-                      Cliente: <span class="fw-semibold"><?php echo htmlspecialchars($clNombre, ENT_QUOTES, 'UTF-8'); ?></span>
+                      Cliente: <span class="fw-semibold"><?= htmlspecialchars($clNombre, ENT_QUOTES, 'UTF-8') ?></span>
                     </div>
                   <?php endif; ?>
 
@@ -448,7 +289,6 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
               </div>
             </div>
 
-            <!-- Columna principal -->
             <div class="col-12 col-lg-8">
               <div class="card shadow-sm border-0 mb-4" id="sec-perfil">
                 <div class="card-body">
@@ -458,40 +298,19 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                       <i class="bi bi-pencil me-1"></i>Editar
                     </button>
                   </div>
+
                   <p class="text-muted small mb-3">
                     Estos datos identifican tu cuenta dentro de MRSoS.
                   </p>
 
-                  <?php
-                  $usAPaterno = $_SESSION['usAPaterno'] ?? '';
-                  $usAMaterno = $_SESSION['usAMaterno'] ?? '';
-                  $usUsername = $_SESSION['usUsername'] ?? '';
-                  ?>
-
                   <form id="formPerfil" autocomplete="off" enctype="multipart/form-data">
                     <div class="row g-3">
                       <div class="col-md-4 text-center">
-                        <?php
-                        // Reutilizamos la lógica de avatar
-                        $usuario  = $usUsername !== '' ? $usUsername : ($_SESSION['usUsername'] ?? 'default');
-                        $usuario  = preg_replace('/[^A-Za-z0-9_\-]/', '', $usuario);
-                        $dirFS  = __DIR__ . '/../img/Usuario/';
-                        $dirURL = '../img/Usuario/';
-                        $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                        $avatarSrc = $dirURL . 'user.webp';
-                        foreach ($extsPermitidas as $ext) {
-                          $fs = $dirFS . $usuario . '.' . $ext;
-                          if (is_file($fs)) {
-                            $avatarSrc = $dirURL . $usuario . '.' . $ext . '?v=' . filemtime($fs);
-                            break;
-                          }
-                        }
-                        ?>
                         <img id="previewAvatar"
                           src="<?= htmlspecialchars($avatarSrc, ENT_QUOTES) ?>"
                           class="rounded-circle mb-2"
                           alt="Avatar"
-                          style="width:96px; height:96px; object-fit:cover; box-shadow:0 1px 4px rgba(0,0,0,0.2);">
+                          style="width:96px;height:96px;object-fit:cover;box-shadow:0 1px 4px rgba(0,0,0,0.2);">
                         <div class="small text-muted mb-1">Imagen de perfil</div>
                         <input type="file"
                           class="form-control form-control-sm"
@@ -509,44 +328,37 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                           <div class="col-md-6">
                             <label class="form-label small">Nombre</label>
                             <input type="text" class="form-control" name="usNombre"
-                              value="<?php echo htmlspecialchars($usNombre, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usNombre, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Apellido paterno</label>
                             <input type="text" class="form-control" name="usAPaterno"
-                              value="<?php echo htmlspecialchars($usAPaterno, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usAPaterno, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Apellido materno</label>
                             <input type="text" class="form-control" name="usAMaterno"
-                              value="<?php echo htmlspecialchars($usAMaterno, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usAMaterno, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Usuario</label>
                             <input type="text" class="form-control" name="usUsername"
-                              value="<?php echo htmlspecialchars($usUsername, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usUsername, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Correo</label>
                             <input type="email" class="form-control" name="usCorreo"
-                              value="<?php echo htmlspecialchars($usCorreo, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usCorreo, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Teléfono</label>
                             <input type="text" class="form-control" name="usTelefono"
-                              value="<?php echo htmlspecialchars($usTelefono, ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usTelefono, ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small">Rol</label>
                             <input type="text" class="form-control"
-                              value="<?php echo htmlspecialchars($usRol ?: '—', ENT_QUOTES, 'UTF-8'); ?>"
-                              disabled>
+                              value="<?= htmlspecialchars($usRol ?: '—', ENT_QUOTES, 'UTF-8') ?>" disabled>
                           </div>
                         </div>
                       </div>
@@ -563,13 +375,13 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                         <i class="bi bi-shield-lock me-1"></i>Cambiar contraseña
                       </button>
                     </div>
+
                     <div class="form-text mt-2">
                       Estos cambios afectan únicamente tu usuario. La contraseña se gestiona en la opción "Cambiar contraseña".
                     </div>
                   </form>
                 </div>
               </div>
-
 
               <div class="card shadow-sm border-0 mb-4" id="sec-tema">
                 <div class="card-body">
@@ -586,13 +398,12 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
                       </div>
                     </div>
                     <div class="form-check form-switch fs-5 mb-0">
-                      <input class="form-check-input" type="checkbox" role="switch" id="switchDarkMode1">
-                      <label class="form-check-label small ms-2" for="switchDarkMode1">
+                      <input class="form-check-input" type="checkbox" role="switch" id="switchDarkMode">
+                      <label class="form-check-label small ms-2" for="switchDarkMode">
                         <span id="labelDarkMode">Modo claro</span>
                       </label>
                     </div>
                   </div>
-
                 </div>
               </div>
 
@@ -680,385 +491,309 @@ $CAN_CREATE = ($ROL === 'AC' || $ROL === 'UC' || $ROL === 'MRA'); // EC no crea
             </div>
           </div>
         </main>
+      </main>
+    </div>
+  </div>
 
-        <!-- Bootstrap JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <script>
-          // ==== SESIÓN Y PREFERENCIAS INYECTADAS DESDE PHP ====
-          window.SESSION = {
-            rol: <?= json_encode($ROL) ?>,
-            clId: <?= json_encode((int)$CL_ID) ?>,
-            usId: <?= json_encode((int)$US_ID) ?>,
-            canCreateTicket: <?= $CAN_CREATE ? 'true' : 'false' ?>
+  <script>
+    const THEME_COOKIE = 'mrs_theme';
+    const DARK_KEY = 'mrsos_dark_mode';
+
+    function setCookie(name, value, days = 365) {
+      const d = new Date();
+      d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+      document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+    }
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    function applyTheme(mode, { saveCookie = true, saveStorage = true } = {}) {
+      const isDark = mode === 'dark';
+
+      document.body.classList.toggle('dark-mode', isDark);
+      document.body.classList.toggle('mrsos-dark', isDark);
+
+      if (saveCookie) {
+        setCookie(THEME_COOKIE, isDark ? 'dark' : 'light');
+      }
+      if (saveStorage) {
+        localStorage.setItem(DARK_KEY, isDark ? '1' : '0');
+      }
+
+      const btnThemeDesktop = document.getElementById('btnThemeDesktop');
+      const switchDark = document.getElementById('switchDarkMode');
+      const labelDark = document.getElementById('labelDarkMode');
+
+      if (btnThemeDesktop) {
+        const icon = btnThemeDesktop.querySelector('i');
+        if (icon) {
+          icon.classList.remove('bi-moon', 'bi-moon-fill');
+          icon.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
+        }
+        btnThemeDesktop.title = isDark ? 'Modo claro' : 'Modo oscuro';
+      }
+
+      if (switchDark) switchDark.checked = isDark;
+      if (labelDark) labelDark.textContent = isDark ? 'Modo oscuro' : 'Modo claro';
+    }
+
+    function initThemeFromPrefs() {
+      const prefs = window.USER_PREFS || {};
+      let initial = null;
+
+      if (prefs.theme === 'dark' || prefs.theme === 'light') {
+        initial = prefs.theme;
+      }
+
+      if (!initial) {
+        const cookieTheme = getCookie(THEME_COOKIE);
+        if (cookieTheme === 'dark' || cookieTheme === 'light') {
+          initial = cookieTheme;
+        }
+      }
+
+      if (!initial) {
+        const savedDark = localStorage.getItem(DARK_KEY);
+        if (savedDark === '1') initial = 'dark';
+        else if (savedDark === '0') initial = 'light';
+      }
+
+      if (!initial) {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        initial = prefersDark ? 'dark' : 'light';
+      }
+
+      applyTheme(initial, { saveCookie: false, saveStorage: false });
+    }
+
+    function initNotifCheckbox(el, value, def = true) {
+      if (!el) return;
+      if (typeof value === 'boolean') el.checked = value;
+      else el.checked = def;
+    }
+
+    function getProfileEditableInputs(formPerfil) {
+      return formPerfil.querySelectorAll(
+        'input[name="usNombre"], input[name="usAPaterno"], input[name="usAMaterno"], input[name="usCorreo"], input[name="usTelefono"], input[name="usUsername"]'
+      );
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
+
+      const switchDark = document.getElementById('switchDarkMode');
+      const btnThemeDesktop = document.getElementById('btnThemeDesktop');
+
+      initThemeFromPrefs();
+
+      if (switchDark) {
+        switchDark.addEventListener('change', () => {
+          applyTheme(switchDark.checked ? 'dark' : 'light');
+        });
+      }
+
+      if (btnThemeDesktop) {
+        btnThemeDesktop.addEventListener('click', () => {
+          const next = body.classList.contains('dark-mode') ? 'light' : 'dark';
+          applyTheme(next);
+        });
+      }
+
+      const formPerfil = document.getElementById('formPerfil');
+      const btnEditar = document.getElementById('btnEditarPerfil');
+      const btnGuardar = document.getElementById('btnGuardarPerfil');
+      const btnCancelar = document.getElementById('btnCancelarPerfil');
+      const btnCambiarPass = document.getElementById('btnCambiarPass');
+      const inputAvatar = document.getElementById('usAvatar');
+      const imgPreview = document.getElementById('previewAvatar');
+
+      let initialAvatarSrc = imgPreview ? imgPreview.src : '';
+      let initialValues = {};
+
+      if (formPerfil) {
+        const editableInputs = getProfileEditableInputs(formPerfil);
+        editableInputs.forEach(input => {
+          initialValues[input.name] = input.value;
+        });
+      }
+
+      if (btnEditar && formPerfil) {
+        btnEditar.addEventListener('click', () => {
+          const editableInputs = getProfileEditableInputs(formPerfil);
+          editableInputs.forEach(el => el.removeAttribute('disabled'));
+
+          if (inputAvatar) inputAvatar.removeAttribute('disabled');
+
+          if (btnGuardar) btnGuardar.disabled = false;
+          if (btnCancelar) btnCancelar.disabled = false;
+        });
+      }
+
+      if (btnCancelar && formPerfil) {
+        btnCancelar.addEventListener('click', () => {
+          const editableInputs = getProfileEditableInputs(formPerfil);
+
+          editableInputs.forEach(el => {
+            el.value = initialValues[el.name] ?? '';
+            el.setAttribute('disabled', 'disabled');
+          });
+
+          if (inputAvatar) {
+            inputAvatar.value = '';
+            inputAvatar.setAttribute('disabled', 'disabled');
+          }
+
+          if (imgPreview && initialAvatarSrc) {
+            imgPreview.src = initialAvatarSrc;
+          }
+
+          if (btnGuardar) btnGuardar.disabled = true;
+          if (btnCancelar) btnCancelar.disabled = true;
+        });
+      }
+
+      if (inputAvatar && imgPreview) {
+        inputAvatar.addEventListener('change', () => {
+          const file = inputAvatar.files && inputAvatar.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = e => {
+            imgPreview.src = e.target.result;
           };
+          reader.readAsDataURL(file);
+        });
+      }
 
-          window.USER_PREFS = {
-            theme: <?= json_encode($prefTheme) ?>, // 'light' | 'dark'
-            notifInApp: <?= json_encode((bool)$prefNotifInApp) ?>,
-            notifMail: <?= json_encode((bool)$prefNotifMail) ?>,
-            notifTicketCambio: <?= json_encode((bool)$prefNotifTicketCambio) ?>,
-            notifMeet: <?= json_encode((bool)$prefNotifMeet) ?>,
-            notifVisita: <?= json_encode((bool)$prefNotifVisita) ?>,
-            notifFolio: <?= json_encode((bool)$prefNotifFolio) ?>
-          };
+      if (btnGuardar && formPerfil) {
+        btnGuardar.addEventListener('click', async () => {
+          try {
+            const fd = new FormData(formPerfil);
 
-          // ==== HELPERS DE COOKIES PARA EL TEMA ====
-          const THEME_COOKIE = 'mrs_theme';
-          const DARK_KEY = 'mrsos_dark_mode'; // para compat con lo que ya usabas
+            const res = await fetch('../php/actualizar_perfil.php', {
+              method: 'POST',
+              body: fd
+            });
 
-          function setCookie(name, value, days = 365) {
-            const d = new Date();
-            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-            document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
-          }
+            const json = await res.json();
 
-          function getCookie(name) {
-            const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            return m ? decodeURIComponent(m[2]) : null;
-          }
-
-          // ==== TEMA UNIFICADO PARA TODA LA APP ====
-          function applyTheme(mode, {
-            saveCookie = true,
-            saveStorage = true
-          } = {}) {
-            const isDark = (mode === 'dark');
-
-            // Clases en body (compatibilidad con estilos viejos y nuevos)
-            document.body.classList.toggle('dark-mode', isDark);
-            document.body.classList.toggle('mrsos-dark', isDark);
-
-            // Cookie + localStorage
-            if (saveCookie) {
-              setCookie(THEME_COOKIE, isDark ? 'dark' : 'light');
-            }
-            if (saveStorage) {
-              localStorage.setItem(DARK_KEY, isDark ? '1' : '0');
+            if (!res.ok || !json.success) {
+              throw new Error(json.error || 'No fue posible guardar tu perfil.');
             }
 
-            // Sincronizar iconos de los botones de tema (header)
-            const deskBtn = document.getElementById('btnThemeDesktop');
-            const mobBtn = document.getElementById('btnThemeMobile');
+            const editableInputs = getProfileEditableInputs(formPerfil);
+            editableInputs.forEach(input => {
+              initialValues[input.name] = input.value;
+              input.setAttribute('disabled', 'disabled');
+            });
 
-            if (deskBtn) {
-              const i = deskBtn.querySelector('i');
-              if (i) {
-                i.classList.remove('bi-moon', 'bi-moon-fill');
-                i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
-              }
-              deskBtn.title = isDark ? 'Modo claro' : 'Modo oscuro';
+            if (inputAvatar) {
+              inputAvatar.value = '';
+              inputAvatar.setAttribute('disabled', 'disabled');
             }
 
-            if (mobBtn) {
-              const i = mobBtn.querySelector('i');
-              const label = mobBtn.querySelector('span');
-              if (i) {
-                i.classList.remove('bi-moon', 'bi-moon-fill');
-                i.classList.add(isDark ? 'bi-moon-fill' : 'bi-moon');
-              }
-              if (label) {
-                label.textContent = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
-              }
+            if (imgPreview) {
+              initialAvatarSrc = imgPreview.src;
             }
 
-            // Sincronizar switch de configuración
-            const switchDark = document.getElementById('switchDarkMode');
-            const labelDark = document.getElementById('labelDarkMode');
-            if (switchDark) switchDark.checked = isDark;
-            if (labelDark) labelDark.textContent = isDark ? 'Modo oscuro' : 'Modo claro';
-          }
+            btnGuardar.disabled = true;
+            btnCancelar.disabled = true;
 
-          function initThemeFromPrefs() {
-            const prefs = window.USER_PREFS || {};
-            let initial = (prefs.theme === 'dark' || prefs.theme === 'light') ? prefs.theme : null;
+            await Swal.fire({
+              title: 'Perfil actualizado',
+              text: 'Tus datos se han guardado correctamente.',
+              icon: 'success'
+            });
 
-            if (!initial) {
-              // 1) Cookie
-              const cookieTheme = getCookie(THEME_COOKIE);
-              if (cookieTheme === 'dark' || cookieTheme === 'light') {
-                initial = cookieTheme;
-              } else {
-                // 2) localStorage viejo
-                const savedDark = localStorage.getItem(DARK_KEY);
-                if (savedDark === '1') initial = 'dark';
-                else if (savedDark === '0') initial = 'light';
-                else {
-                  // 3) prefers-color-scheme
-                  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  initial = prefersDark ? 'dark' : 'light';
-                }
-              }
-            }
-
-            applyTheme(initial, {
-              saveCookie: false,
-              saveStorage: false
+          } catch (err) {
+            Swal.fire({
+              title: 'Error',
+              text: err.message || 'Error de red al intentar guardar tu perfil.',
+              icon: 'error'
             });
           }
+        });
+      }
 
-          // ==== PERFIL + NOTIFICACIONES + TEMA (TODO JUNTO) ====
-          document.addEventListener('DOMContentLoaded', () => {
-            const body = document.body;
+      if (btnCambiarPass) {
+        btnCambiarPass.addEventListener('click', () => {
+          window.location.href = 'cambiar_password.php';
+        });
+      }
 
-            // 1) Tema inicial desde BD / cookie / localStorage
-            initThemeFromPrefs();
+      const elInApp = document.getElementById('notifInApp');
+      const elCorreo = document.getElementById('notifCorreo');
+      const elCambio = document.getElementById('notifTicketCambio');
+      const elMeet = document.getElementById('notifMeet');
+      const elVisita = document.getElementById('notifVisita');
+      const elFolio = document.getElementById('notifFolio');
+      const btnSaveN = document.getElementById('btnGuardarNotifs');
 
-            // Referencias de controles de tema
-            const switchDark = document.getElementById('switchDarkMode');
-            const labelDark = document.getElementById('labelDarkMode');
-            const btnThemeDesktop = document.getElementById('btnThemeDesktop');
-            const btnThemeMobile = document.getElementById('btnThemeMobile');
+      initNotifCheckbox(elInApp, window.USER_PREFS?.notifInApp, true);
+      initNotifCheckbox(elCorreo, window.USER_PREFS?.notifMail, true);
+      initNotifCheckbox(elCambio, window.USER_PREFS?.notifTicketCambio, true);
+      initNotifCheckbox(elMeet, window.USER_PREFS?.notifMeet, true);
+      initNotifCheckbox(elVisita, window.USER_PREFS?.notifVisita, true);
+      initNotifCheckbox(elFolio, window.USER_PREFS?.notifFolio, true);
 
-            // Sync inicial del switch de configuración con el body
-            (function syncSwitchLabel() {
-              const isDark = body.classList.contains('dark-mode');
-              if (switchDark) switchDark.checked = isDark;
-              if (labelDark) labelDark.textContent = isDark ? 'Modo oscuro' : 'Modo claro';
-            })();
+      if (btnSaveN) {
+        btnSaveN.addEventListener('click', async () => {
+          const themeIsDark = document.body.classList.contains('dark-mode');
 
-            // --- Cambio de tema desde el switch de Configuración ---
-            if (switchDark) {
-              switchDark.addEventListener('change', () => {
-                const nextMode = switchDark.checked ? 'dark' : 'light';
-                applyTheme(nextMode);
-              });
+          const payload = {
+            theme: themeIsDark ? 'dark' : 'light',
+            notifInApp: !!elInApp?.checked,
+            notifMail: !!elCorreo?.checked,
+            notifTicketCambio: !!elCambio?.checked,
+            notifMeet: !!elMeet?.checked,
+            notifVisita: !!elVisita?.checked,
+            notifFolio: !!elFolio?.checked
+          };
+
+          try {
+            const res = await fetch('../php/guardar_preferencias.php', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+
+            const json = await res.json();
+
+            if (!res.ok || !json.success) {
+              throw new Error(json.error || 'No se pudieron guardar las preferencias.');
             }
 
-            // --- Botón de tema en Desktop ---
-            if (btnThemeDesktop) {
-              btnThemeDesktop.addEventListener('click', () => {
-                const current = body.classList.contains('dark-mode') ? 'dark' : 'light';
-                const next = current === 'dark' ? 'light' : 'dark';
-                applyTheme(next);
-              });
-            }
+            setCookie(THEME_COOKIE, payload.theme);
+            localStorage.setItem(DARK_KEY, payload.theme === 'dark' ? '1' : '0');
 
-            // --- Botón de tema en Mobile (dentro del dropdown) ---
-            if (btnThemeMobile) {
-              btnThemeMobile.addEventListener('click', (e) => {
-                e.preventDefault();
-                const current = body.classList.contains('dark-mode') ? 'dark' : 'light';
-                const next = current === 'dark' ? 'light' : 'dark';
-                applyTheme(next);
-
-                // Cerrar dropdown en móvil si está abierto (Bootstrap)
-                const dropdownEl = document.getElementById('moreActions');
-                if (dropdownEl && window.bootstrap) {
-                  const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
-                  if (bsDropdown) bsDropdown.hide();
-                }
-              });
-            }
-
-            // ===== PERFIL: habilitar/inhabilitar edición + guardar backend =====
-            const formPerfil = document.getElementById('formPerfil');
-            const btnEditar = document.getElementById('btnEditarPerfil');
-            const btnGuardar = document.getElementById('btnGuardarPerfil');
-            const btnCancelar = document.getElementById('btnCancelarPerfil');
-            const btnCambiarPass = document.getElementById('btnCambiarPass');
-            const inputAvatar = document.getElementById('usAvatar');
-            const imgPreview = document.getElementById('previewAvatar');
-
-            if (btnEditar && formPerfil) {
-              btnEditar.addEventListener('click', () => {
-                formPerfil.querySelectorAll('input[name="usNombre"], input[name="usAPaterno"], input[name="usAMaterno"], input[name="usCorreo"], input[name="usTelefono"], input[name="usUsername"]')
-                  .forEach(el => el.removeAttribute('disabled'));
-
-                if (inputAvatar) inputAvatar.removeAttribute('disabled');
-
-                btnGuardar.disabled = false;
-                btnCancelar.disabled = false;
-              });
-            }
-
-            if (btnCancelar && formPerfil) {
-              btnCancelar.addEventListener('click', () => {
-                formPerfil.reset();
-                formPerfil.querySelectorAll('input[name="usNombre"], input[name="usAPaterno"], input[name="usAMaterno"], input[name="usCorreo"], input[name="usTelefono"], input[name="usUsername"]')
-                  .forEach(el => el.setAttribute('disabled', 'disabled'));
-
-                if (inputAvatar) {
-                  inputAvatar.value = '';
-                  inputAvatar.setAttribute('disabled', 'disabled');
-                }
-
-                btnGuardar.disabled = true;
-                btnCancelar.disabled = true;
-              });
-            }
-
-            // Preview simple de avatar
-            if (inputAvatar && imgPreview) {
-              inputAvatar.addEventListener('change', () => {
-                const file = inputAvatar.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = e => {
-                  imgPreview.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-              });
-            }
-
-            if (btnGuardar && formPerfil) {
-              btnGuardar.addEventListener('click', () => {
-                const fd = new FormData(formPerfil);
-
-                fetch('../php/actualizar_perfil.php', {
-                    method: 'POST',
-                    body: fd
-                  })
-                  .then(r => r.json())
-                  .then(res => {
-                    if (res.success) {
-                      Swal.fire({
-                        title: "Perfil actualizado",
-                        text: "Tus datos se han guardado correctamente.",
-                        icon: "success"
-                      }).then(() => {
-                        // Volver a bloquear campos
-                        formPerfil.querySelectorAll('input[name="usNombre"], input[name="usAPaterno"], input[name="usAMaterno"], input[name="usCorreo"], input[name="usTelefono"], input[name="usUsername"]')
-                          .forEach(el => el.setAttribute('disabled', 'disabled'));
-
-                        if (inputAvatar) {
-                          inputAvatar.setAttribute('disabled', 'disabled');
-                        }
-
-                        btnGuardar.disabled = true;
-                        btnCancelar.disabled = true;
-
-                        // Opcional: recargar para que header y otros sitios vean el nuevo nombre/avatar
-                        // location.reload();
-                      });
-                    } else {
-                      Swal.fire({
-                        title: "Error",
-                        text: res.error || "No fue posible guardar tu perfil.",
-                        icon: "error"
-                      });
-                    }
-                  })
-                  .catch(() => {
-                    Swal.fire({
-                      title: "Error",
-                      text: "Error de red al intentar guardar tu perfil.",
-                      icon: "error"
-                    });
-                  });
-              });
-            }
-
-            if (btnCambiarPass) {
-              btnCambiarPass.addEventListener('click', () => {
-                window.location.href = 'cambiar_password.php';
-              });
-            }
-
-
-            // ===== NOTIFICACIONES (BD + localStorage) =====
-            const notifKeys = {
-              inApp: 'mrsos_notif_inapp',
-              correo: 'mrsos_notif_mail',
-              cambio: 'mrsos_notif_ticket',
-              meet: 'mrsos_notif_meet',
-              visita: 'mrsos_notif_visita',
-              folio: 'mrsos_notif_folio'
+            window.USER_PREFS = {
+              ...window.USER_PREFS,
+              ...payload
             };
 
-            const elInApp = document.getElementById('notifInApp');
-            const elCorreo = document.getElementById('notifCorreo');
-            const elCambio = document.getElementById('notifTicketCambio');
-            const elMeet = document.getElementById('notifMeet');
-            const elVisita = document.getElementById('notifVisita');
-            const elFolio = document.getElementById('notifFolio');
-            const btnSaveN = document.getElementById('btnGuardarNotifs');
-
-            const prefs = window.USER_PREFS || {};
-
-            function initNotifFromPrefs(el, key, bdValue, def = true) {
-              if (!el) return;
-              // Si hay valor en BD (ya guardado), manda eso
-              if (typeof bdValue === 'boolean') {
-                el.checked = bdValue;
-                return;
-              }
-              // Si no hay BD (teórico), usamos localStorage o default
-              const val = localStorage.getItem(key);
-              el.checked = val === null ? def : val === '1';
-            }
-
-            // Cargar estado inicial (BD > localStorage)
-            initNotifFromPrefs(elInApp, notifKeys.inApp, prefs.notifInApp);
-            initNotifFromPrefs(elCorreo, notifKeys.correo, prefs.notifMail);
-            initNotifFromPrefs(elCambio, notifKeys.cambio, prefs.notifTicketCambio);
-            initNotifFromPrefs(elMeet, notifKeys.meet, prefs.notifMeet);
-            initNotifFromPrefs(elVisita, notifKeys.visita, prefs.notifVisita);
-            initNotifFromPrefs(elFolio, notifKeys.folio, prefs.notifFolio);
-
-            function saveNotifLocal(el, key) {
-              if (!el) return;
-              localStorage.setItem(key, el.checked ? '1' : '0');
-            }
-
-            if (btnSaveN) {
-              btnSaveN.addEventListener('click', () => {
-                // 1) Guardar en localStorage (cache local)
-                saveNotifLocal(elInApp, notifKeys.inApp);
-                saveNotifLocal(elCorreo, notifKeys.correo);
-                saveNotifLocal(elCambio, notifKeys.cambio);
-                saveNotifLocal(elMeet, notifKeys.meet);
-                saveNotifLocal(elVisita, notifKeys.visita);
-                saveNotifLocal(elFolio, notifKeys.folio);
-
-                // 2) Preparar payload para BD
-                const themeIsDark = body.classList.contains('dark-mode');
-
-                const payload = {
-                  theme: themeIsDark ? 'dark' : 'light',
-                  notifInApp: !!(elInApp?.checked),
-                  notifMail: !!(elCorreo?.checked),
-                  notifTicketCambio: !!(elCambio?.checked),
-                  notifMeet: !!(elMeet?.checked),
-                  notifVisita: !!(elVisita?.checked),
-                  notifFolio: !!(elFolio?.checked)
-                };
-
-                fetch('../php/guardar_preferencias.php', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                  })
-                  .then(r => r.json())
-                  .then(res => {
-                    if (res.success) {
-                      Swal.fire({
-                        title: "Éxito",
-                        text: "Preferencias guardadas con éxito.",
-                        icon: "success"
-                      });
-                    } else {
-                      Swal.fire({
-                        title: "Error",
-                        text: res.error || 'No se pudieron guardar las preferencias en el servidor.',
-                        icon: "error"
-                      });
-                    }
-                  })
-                  .catch(() => {
-                    Swal.fire({
-                      title: "Error",
-                      text: "Error de red al guardar preferencias.",
-                      icon: "error"
-                    });
-                  });
-              });
-            }
-          });
-        </script>
-
+            Swal.fire({
+              icon: 'success',
+              title: 'Preferencias guardadas',
+              text: 'Tus cambios fueron guardados correctamente.'
+            });
+          } catch (err) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: err.message || 'No se pudieron guardar las preferencias.'
+            });
+          }
+        });
+      }
+    });
+  </script>
 </body>
-
 </html>

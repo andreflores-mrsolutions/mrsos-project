@@ -18,3 +18,11 @@ SMTP:
 SMTP:
 
 
+[2026-03-17 00:03:24] usId=1001 ex=SMTP Error: Could not authenticate.
+SMTP:
+
+
+[2026-03-17 00:03:40] usId=1001 ex=SMTP Error: Could not authenticate.
+SMTP:
+
+

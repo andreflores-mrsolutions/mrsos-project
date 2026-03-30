@@ -151,9 +151,9 @@ function bytesFmt(n) {
 
 function criticidadBadge(v) {
   const n = Number(v || 0);
-  if (n === 1) return `<span class="badge rounded-pill" style="background:#7a8591;color:#fff;">Nivel 1</span>`;
+  if (n === 3) return `<span class="badge rounded-pill" style="background:#7a8591;color:#fff;">Nivel 3</span>`;
   if (n === 2) return `<span class="badge rounded-pill" style="background:#f2c318;color:#111;">Nivel 2</span>`;
-  if (n >= 3) return `<span class="badge rounded-pill" style="background:#dc3545;color:#fff;">Nivel 3</span>`;
+  if (n <= 1) return `<span class="badge rounded-pill" style="background:#dc3545;color:#fff;">Nivel 1</span>`;
   return `<span class="badge rounded-pill text-bg-secondary">—</span>`;
 }
 
@@ -259,13 +259,13 @@ function humanAction(ticket) {
 function actionButtonHtml(ticket) {
   const action = humanAction(ticket);
 
-  if (action.key === 'none') {
-    return `
-      <button type="button" class="btn btn-sm ${action.btnClass}" data-open-ticket="${ticket.tiId}">
-        <i class="bi ${action.icon}"></i> ${esc(action.cta)}
-      </button>
-    `;
-  }
+  // if (action.key === 'none') {
+  //   return `
+  //     <button type="button" class="btn btn-sm ${action.btnClass}" data-open-ticket="${ticket.tiId}">
+  //       <i class="bi ${action.icon}"></i> ${esc(action.cta)}
+  //     </button>
+  //   `;
+  // }
 
   if (action.key === 'logs') {
     return `
@@ -298,11 +298,7 @@ function actionButtonHtml(ticket) {
   `;
   }
 
-  return `
-    <a href="${href}" class="btn btn-sm ${action.btnClass}">
-      <i class="bi ${action.icon}"></i> ${esc(action.cta)}
-    </a>
-  `;
+  return ``;
 }
 
 function guidanceMessage(ticket) {
@@ -640,6 +636,14 @@ function renderSedePagination(sede, meta) {
 
 function bindRenderEvents(container) {
   if (!container) return;
+
+  container.querySelectorAll('[data-open-help]').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openHelp(Number(el.dataset.openHelp));
+    });
+  });
 
   container.querySelectorAll('[data-open-logs]').forEach(el => {
     el.addEventListener('click', (ev) => {
@@ -1120,6 +1124,259 @@ function buildFooterActions(ticket) {
   `;
 }
 
+function helpTypeFromTicket(ticket) {
+  const step = normalizeStep(ticket?.tiProceso);
+
+  if (step === 'logs') return 'logs';
+  if (step === 'meet') return 'meet';
+  if (step === 'visita' || step === 'espera visita' || step === 'espera ventana') return 'visita';
+  if (step === 'espera documentacion') return 'documentacion';
+  return 'general';
+}
+
+function helpTypeLabel(tipo) {
+  switch (String(tipo || '').toLowerCase()) {
+    case 'logs': return 'Apoyo con logs';
+    case 'meet': return 'Apoyo con Meet';
+    case 'visita': return 'Apoyo con visita';
+    case 'documentacion': return 'Apoyo con documentación';
+    default: return 'Ayuda general';
+  }
+}
+
+async function openHelp(tiId) {
+  try {
+    const ticket = state.tickets.find(t => Number(t.tiId) === Number(tiId)) || state.selected || { tiId };
+    const tipoDefault = helpTypeFromTicket(ticket);
+
+    const title = document.getElementById('offHelpTitle');
+    const sub = document.getElementById('offHelpSub');
+    const body = document.getElementById('offHelpBody');
+
+    if (title) title.textContent = `Ayuda · ${ticket.folio || ('Ticket ' + tiId)}`;
+    if (sub) sub.textContent = `${ticket.eqModelo || 'Equipo'} · ${ticket.maNombre || 'Marca'} · SN: ${ticket.peSN || '—'}`;
+    if (body) body.innerHTML = `<div class="muted">Cargando...</div>`;
+
+    const data = await apiFetch(`api/help_list.php?tiId=${encodeURIComponent(tiId)}`);
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    if (body) {
+      body.innerHTML = `
+        <div class="off-section">
+          <div class="fw-bold mb-2">Solicitar apoyo</div>
+          <div class="small muted mb-3">
+            Este mensaje le llegará al equipo de MR Solutions para ayudarte a continuar con el ticket.
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tipo de ayuda</label>
+            <select class="form-select" id="helpTipo">
+              <option value="general" ${tipoDefault === 'general' ? 'selected' : ''}>Ayuda general</option>
+              <option value="logs" ${tipoDefault === 'logs' ? 'selected' : ''}>Apoyo con logs</option>
+              <option value="meet" ${tipoDefault === 'meet' ? 'selected' : ''}>Apoyo con Meet</option>
+              <option value="visita" ${tipoDefault === 'visita' ? 'selected' : ''}>Apoyo con visita</option>
+              <option value="documentacion" ${tipoDefault === 'documentacion' ? 'selected' : ''}>Apoyo con documentación</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Mensaje</label>
+            <textarea
+              class="form-control"
+              id="helpMensaje"
+              rows="5"
+              maxlength="2000"
+              placeholder="Ej: No logro subir los logs correctos, necesito apoyo para validar qué archivo corresponde al equipo."></textarea>
+            <div class="small muted mt-1">Sé lo más claro posible. Esto acelera la atención.</div>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="helpRequiereMeet">
+            <label class="form-check-label" for="helpRequiereMeet">También necesito apoyo por Meet</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Plataforma preferida para Meet (opcional)</label>
+            <select class="form-select" id="helpPlataforma">
+              <option value="">Sin preferencia</option>
+              <option value="Google Meet">Google Meet</option>
+              <option value="Microsoft Teams">Microsoft Teams</option>
+              <option value="Zoom">Zoom</option>
+              <option value="Llamada telefónica">Llamada telefónica</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary w-100" id="btnSendHelp">
+            <i class="bi bi-send"></i> Enviar solicitud de ayuda
+          </button>
+          <div class="small muted mt-2" id="helpHint"></div>
+        </div>
+
+        <div class="off-section">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold">Solicitudes recientes</div>
+            <div class="small muted">${items.length}</div>
+          </div>
+
+          ${items.length
+          ? `<div class="timeline-mini">
+                  ${items.map(item => {
+            const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
+            const estado = String(item.taEstado || '').toLowerCase();
+            const badgeClass =
+              estado === 'pendiente' ? 'text-bg-warning'
+                : estado === 'atendida' ? 'text-bg-success'
+                  : 'text-bg-secondary';
+
+            return `
+    <li>
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div class="flex-grow-1">
+          <div class="small fw-semibold">${esc(helpTypeLabel(item.taTipo))}</div>
+          <div class="small">${esc(item.taMensaje || '')}</div>
+
+          ${Number(item.taRequiereMeet || 0) === 1
+                ? `<div class="small muted mt-1"><i class="bi bi-camera-video"></i> Solicitó apoyo por Meet</div>`
+                : ''}
+
+          <div class="small muted mt-1">
+            Enviado el ${esc(formatDateTime(item.taCreadoEn || item.fecha || ''))}
+          </div>
+
+          ${respuestas.length
+                ? `
+                <div class="mt-2 ps-2 border-start">
+                  <div class="small fw-semibold mb-1">Respuesta de MR Solutions</div>
+                  ${respuestas.map(r => `
+                    <div class="rounded p-2 mb-2" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);">
+                      <div class="small">${esc(r.tarMensaje || '')}</div>
+                      <div class="small muted mt-1">
+                        ${esc(r.usuarioNombre || 'MR Solutions')} · ${esc(formatDateTime(r.tarCreadoEn || ''))}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `
+                : `
+                <div class="small muted mt-2">
+                  Aún no hay respuesta de MR Solutions.
+                </div>
+              `
+
+              }
+          ${estado !== 'cerrada'
+                ? `
+      <div class="mt-2">
+        <textarea
+          class="form-control form-control-sm help-reply-text"
+          rows="2"
+          data-ta-id="${Number(item.taId)}"
+          placeholder="Escribe una respuesta o comentario adicional..."></textarea>
+        <button
+          class="btn btn-sm btn-outline-primary mt-2 help-reply-send"
+          data-ta-id="${Number(item.taId)}">
+          <i class="bi bi-reply"></i> Responder
+        </button>
+      </div>
+    `
+                : `
+      <div class="small muted mt-2">Esta solicitud ya fue cerrada.</div>
+    `
+              }
+        </div>
+
+        <span class="badge rounded-pill ${badgeClass}">
+          ${esc(item.taEstado || 'pendiente')}
+        </span>
+      </div>
+    </li>
+  `;
+          }).join('')}
+                </div>`
+          : `<div class="muted">Todavía no has enviado solicitudes de ayuda para este ticket.</div>`
+        }
+        </div>
+      `;
+    }
+    document.querySelectorAll('.help-reply-send').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const taId = Number(btn.dataset.taId || 0);
+      const box = document.querySelector(`.help-reply-text[data-ta-id="${taId}"]`);
+      const tarMensaje = (box?.value || '').trim();
+
+      if (!taId || !tarMensaje) {
+        toastErr('Escribe un mensaje antes de responder.');
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+
+        await apiFetch('api/help_reply.php', {
+          method: 'POST',
+          body: { taId, tarMensaje }
+        });
+
+        toastOk('Mensaje enviado.');
+        await openHelp(tiId);
+      } catch (e) {
+        toastErr(e.message || 'No se pudo enviar el mensaje.');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+    const btnSend = document.getElementById('btnSendHelp');
+    if (btnSend) {
+      btnSend.addEventListener('click', async () => {
+        const tipo = document.getElementById('helpTipo')?.value || 'general';
+        const mensaje = (document.getElementById('helpMensaje')?.value || '').trim();
+        const requiereMeet = document.getElementById('helpRequiereMeet')?.checked ? 1 : 0;
+        const plataforma = document.getElementById('helpPlataforma')?.value || '';
+        const hint = document.getElementById('helpHint');
+
+        if (!mensaje) {
+          toastErr('Debes escribir el mensaje de ayuda.');
+          return;
+        }
+
+        try {
+          btnSend.disabled = true;
+          if (hint) hint.textContent = 'Enviando solicitud...';
+
+          await apiFetch('api/help_create.php', {
+            method: 'POST',
+            body: {
+              tiId: Number(tiId),
+              taTipo: tipo,
+              taMensaje: mensaje,
+              taRequiereMeet: requiereMeet,
+              taPlataformaPreferida: plataforma
+            }
+          });
+
+          if (hint) hint.textContent = '';
+          toastOk('Tu solicitud de ayuda fue enviada.');
+          await openHelp(tiId);
+          await loadTickets();
+        } catch (e) {
+          if (hint) hint.textContent = '';
+          toastErr(e.message || 'No se pudo enviar la solicitud de ayuda.');
+        } finally {
+          btnSend.disabled = false;
+        }
+      });
+    }
+
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('offHelp')).show();
+  } catch (e) {
+    toastErr(e.message || 'No se pudo abrir ayuda.');
+  }
+}
+
+
 async function openTicket(tiId) {
   try {
     const [detail, historial] = await Promise.all([
@@ -1160,11 +1417,50 @@ async function openTicket(tiId) {
         <div class="muted mb-3">${esc(action.desc)}</div>
         <div class="d-flex flex-wrap gap-2">
           ${actionButtonHtml(t)}
-          <button class="btn btn-sm btn-outline-secondary" type="button">
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-open-help="${t.tiId}">
             <i class="bi bi-question-circle"></i> Ayuda
           </button>
         </div>
       `;
+      offAccionActual?.querySelectorAll('[data-open-help]').forEach(el => {
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openHelp(Number(el.dataset.openHelp));
+        });
+      });
+
+      offAccionActual?.querySelectorAll('[data-open-logs]').forEach(el => {
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openLogs(Number(el.dataset.openLogs));
+        });
+      });
+
+      offAccionActual?.querySelectorAll('[data-open-meet]').forEach(el => {
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openMeet(Number(el.dataset.openMeet));
+        });
+      });
+
+      offAccionActual?.querySelectorAll('[data-open-visita]').forEach(el => {
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openVisita(Number(el.dataset.openVisita));
+        });
+      });
+
+      offAccionActual?.querySelectorAll('[data-open-encuesta]').forEach(el => {
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openEncuesta(Number(el.dataset.openEncuesta));
+        });
+      });
     }
 
     if (offPasoActual) offPasoActual.textContent = t.tiProceso || '—';
@@ -1825,7 +2121,7 @@ function bindUI() {
       renderTickets();
     });
   });
-
+  
   const searchInput = document.getElementById('searchTickets');
   if (searchInput) {
     searchInput.addEventListener('input', e => {
