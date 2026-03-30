@@ -34,8 +34,7 @@ try {
     $mail->isSMTP();
     $mail->Host = 'smtp.hostinger.com';
     $mail->SMTPAuth = true;
-    $mail->Username = 'compras@refaccionariazapata.com';
-    $mail->Password = 'Ref4cc10nes*23';
+
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
     
