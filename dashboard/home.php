@@ -29,6 +29,11 @@ $nombreUsuario = $_SESSION['usUsername'] ?? $_SESSION['usNombre'] ?? 'Cliente';
 
   <script>
     window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
+
+    window.MRS_SESSION = {
+      usId: <?= (int)($_SESSION['usId'] ?? 0) ?>,
+      usRol: <?= json_encode($_SESSION['usRol'] ?? '') ?>
+    };
   </script>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">

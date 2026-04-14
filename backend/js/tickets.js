@@ -91,78 +91,17 @@ function helpAdminRenderItems(items) {
     const $box = $('#helpAdminList');
 
     if (!items || !items.length) {
-        $box.html('<div class="text-muted">No hay solicitudes de ayuda para este ticket.</div>');
+        $box.html('<div class="help-empty">No hay solicitudes de ayuda para este ticket.</div>');
         return;
     }
 
-    $box.html(items.map(item => {
-        const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
+    const currentUserId = window.MRS_SESSION?.usId || 0;
 
-        return `
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start gap-2">
-                        <div>
-                            <div class="fw-bold">
-                                #${Number(item.taId)} · ${escapeHtml(fmtHelpType(item.taTipo))}
-                                ${Number(item.taNoLeidoAdmin || 0) === 1
-                ? '<span class="badge text-bg-danger ms-2">Nuevo mensaje</span>'
-                : ''}
-                                </div>
-                            <div class="text-muted" style="font-size:.85rem;">
-                                ${escapeHtml(item.usuarioNombre || ('Usuario ' + item.usId))} · ${escapeHtml(item.taCreadoEn || '')}
-                            </div>
-                        </div>
-                        <div>${fmtHelpStatusBadge(item.taEstado)}</div>
-                    </div>
-
-                    <div class="mt-3">
-                        <div class="small text-muted mb-1">Mensaje del cliente</div>
-                        <div>${escapeHtml(item.taMensaje || '')}</div>
-                    </div>
-
-                    ${Number(item.taRequiereMeet || 0) === 1
-                ? `<div class="mt-2 small text-muted">
-                              <i class="bi bi-camera-video"></i>
-                              Solicitó apoyo por Meet${item.taPlataformaPreferida ? ' · Preferencia: ' + escapeHtml(item.taPlataformaPreferida) : ''}
-                           </div>`
-                : ''
-            }
-
-                    <div class="mt-3">
-                        <div class="small text-muted mb-2">Respuestas</div>
-                        ${respuestas.length
-                ? respuestas.map(r => `
-                                <div class="rounded border p-2 mb-2">
-                                    <div class="d-flex justify-content-between align-items-start gap-2">
-                                        <div class="fw-semibold">
-                                            ${escapeHtml(r.usuarioNombre || ('Usuario ' + r.usId))}
-                                            ${Number(r.tarEsInterno || 0) === 1 ? '<span class="badge text-bg-dark ms-2">Interno</span>' : ''}
-                                        </div>
-                                        <div class="text-muted" style="font-size:.8rem;">${escapeHtml(r.tarCreadoEn || '')}</div>
-                                    </div>
-                                    <div class="mt-1">${escapeHtml(r.tarMensaje || '')}</div>
-                                </div>
-                            `).join('')
-                : '<div class="text-muted">Sin respuestas aún.</div>'
-            }
-                    </div>
-
-                    <div class="mt-3 d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm btn-outline-primary btn-help-admin-select" data-ta="${Number(item.taId)}">
-                            Responder aquí
-                        </button>
-                        <button class="btn btn-sm btn-outline-success btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="atendida">
-                            Marcar atendida
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="cerrada">
-                            Cerrar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join(''));
+    $box.html(`
+        <div class="help-thread-wrap">
+            ${items.map(item => renderAdminHelpConversation(item, currentUserId)).join('')}
+        </div>
+    `);
 }
 
 async function openHelpAdmin(tiId) {
@@ -265,6 +204,104 @@ async function helpAdminSetState(taId, taEstado) {
         $('#helpAdminHint').text('');
         mostrarToast('error', e.message || 'No se pudo actualizar el estado.');
     }
+}
+
+function buildAdminHelpConversation(item, currentUserId) {
+    const messages = [];
+
+    messages.push({
+        side: 'client',
+        internal: false,
+        author: item.usuarioNombre || 'Cliente',
+        when: item.taCreadoEn || '',
+        body: item.taMensaje || '',
+        mine: Number(item.usId || 0) === Number(currentUserId || 0)
+    });
+
+    const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
+    respuestas.forEach(r => {
+        const mine = Number(r.usId || 0) === Number(currentUserId || 0);
+        messages.push({
+            side: Number(r.tarEsInterno || 0) === 1 ? 'internal' : (mine ? 'mr' : 'client'),
+            internal: Number(r.tarEsInterno || 0) === 1,
+            author: Number(r.tarEsInterno || 0) === 1 ? 'Interno' : (mine ? 'MR Solutions' : (r.usuarioNombre || 'Cliente')),
+            when: r.tarCreadoEn || '',
+            body: r.tarMensaje || '',
+            mine
+        });
+    });
+
+    return messages;
+}
+
+function renderAdminHelpConversation(item, currentUserId) {
+    const messages = buildAdminHelpConversation(item, currentUserId);
+
+    return `
+        <div class="help-case">
+            <div class="help-case-head">
+                <div class="help-case-title">
+                    <h6>
+                        #${Number(item.taId)} · ${escapeHtml(fmtHelpType(item.taTipo))}
+                        ${Number(item.taNoLeidoAdmin || 0) === 1
+                            ? '<span class="badge text-bg-danger ms-2">Nuevo mensaje</span>'
+                            : ''}
+                    </h6>
+                    ${fmtHelpStatusBadge(item.taEstado)}
+                </div>
+
+                <div class="help-case-meta">
+                    <span class="help-chip">
+                        <i class="bi bi-person"></i>
+                        ${escapeHtml(item.usuarioNombre || ('Usuario ' + item.usId))}
+                    </span>
+                    <span class="help-chip">
+                        <i class="bi bi-clock-history"></i>
+                        ${escapeHtml(item.taCreadoEn || '')}
+                    </span>
+                    ${
+                        Number(item.taRequiereMeet || 0) === 1
+                            ? `<span class="help-chip meet">
+                                  <i class="bi bi-camera-video"></i>
+                                  Requiere Meet${item.taPlataformaPreferida ? ' · ' + escapeHtml(item.taPlataformaPreferida) : ''}
+                               </span>`
+                            : ''
+                    }
+                </div>
+            </div>
+
+            <div class="help-conversation">
+                ${messages.map(msg => `
+                    <div class="help-msg-row ${msg.side === 'client' ? 'is-client' : msg.side === 'mr' ? 'is-mr' : 'is-internal'}">
+                        <div class="help-msg ${msg.side === 'client' ? 'is-client' : msg.side === 'mr' ? 'is-mr' : 'is-internal'}">
+                            <div class="help-msg-top">
+                                <div class="help-msg-author">${escapeHtml(msg.author)}</div>
+                                <div class="help-msg-time">${escapeHtml(msg.when || '')}</div>
+                            </div>
+                            <div class="help-msg-body">${escapeHtml(msg.body || '')}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="help-reply-box">
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <div class="small muted">Selecciona esta solicitud para responder o cambiar su estado.</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-primary btn-help-admin-select" data-ta="${Number(item.taId)}">
+                            Responder aquí
+                        </button>
+                        <button class="btn btn-sm btn-outline-success btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="atendida">
+                            Marcar atendida
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary btn-help-admin-state" data-ta="${Number(item.taId)}" data-state="cerrada">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function csrf() {

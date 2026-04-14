@@ -1215,87 +1215,17 @@ async function openHelp(tiId) {
 
         <div class="off-section">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="fw-bold">Solicitudes recientes</div>
+            <div class="fw-bold">Conversaciones de ayuda</div>
             <div class="small muted">${items.length}</div>
           </div>
 
-          ${items.length
-          ? `<div class="timeline-mini">
-                  ${items.map(item => {
-            const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
-            const estado = String(item.taEstado || '').toLowerCase();
-            const badgeClass =
-              estado === 'pendiente' ? 'text-bg-warning'
-                : estado === 'atendida' ? 'text-bg-success'
-                  : 'text-bg-secondary';
-
-            return `
-    <li>
-      <div class="d-flex justify-content-between align-items-start gap-2">
-        <div class="flex-grow-1">
-          <div class="small fw-semibold">${esc(helpTypeLabel(item.taTipo))}</div>
-          <div class="small">${esc(item.taMensaje || '')}</div>
-
-          ${Number(item.taRequiereMeet || 0) === 1
-                ? `<div class="small muted mt-1"><i class="bi bi-camera-video"></i> Solicitó apoyo por Meet</div>`
-                : ''}
-
-          <div class="small muted mt-1">
-            Enviado el ${esc(formatDateTime(item.taCreadoEn || item.fecha || ''))}
-          </div>
-
-          ${respuestas.length
-                ? `
-                <div class="mt-2 ps-2 border-start">
-                  <div class="small fw-semibold mb-1">Respuesta de MR Solutions</div>
-                  ${respuestas.map(r => `
-                    <div class="rounded p-2 mb-2" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);">
-                      <div class="small">${esc(r.tarMensaje || '')}</div>
-                      <div class="small muted mt-1">
-                        ${esc(r.usuarioNombre || 'MR Solutions')} · ${esc(formatDateTime(r.tarCreadoEn || ''))}
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              `
-                : `
-                <div class="small muted mt-2">
-                  Aún no hay respuesta de MR Solutions.
-                </div>
-              `
-
-              }
-          ${estado !== 'cerrada'
-                ? `
-      <div class="mt-2">
-        <textarea
-          class="form-control form-control-sm help-reply-text"
-          rows="2"
-          data-ta-id="${Number(item.taId)}"
-          placeholder="Escribe una respuesta o comentario adicional..."></textarea>
-        <button
-          class="btn btn-sm btn-outline-primary mt-2 help-reply-send"
-          data-ta-id="${Number(item.taId)}">
-          <i class="bi bi-reply"></i> Responder
-        </button>
-      </div>
-    `
-                : `
-      <div class="small muted mt-2">Esta solicitud ya fue cerrada.</div>
-    `
-              }
-        </div>
-
-        <span class="badge rounded-pill ${badgeClass}">
-          ${esc(item.taEstado || 'pendiente')}
-        </span>
-      </div>
-    </li>
-  `;
-          }).join('')}
+          ${
+            items.length
+              ? `<div class="help-thread-wrap">
+                  ${items.map(item => renderHelpConversation(item, window.MRS_SESSION?.usId || 0, true)).join('')}
                 </div>`
-          : `<div class="muted">Todavía no has enviado solicitudes de ayuda para este ticket.</div>`
-        }
+              : `<div class="help-empty">Todavía no has enviado solicitudes de ayuda para este ticket.</div>`
+          }
         </div>
       `;
     }
@@ -1486,6 +1416,129 @@ async function openTicket(tiId) {
     toastErr(e.message || 'No se pudo abrir el ticket.');
   }
 }
+
+function helpStatusBadge(estado) {
+  const e = String(estado || '').toLowerCase();
+  const cls =
+    e === 'pendiente' ? 'text-bg-warning' :
+    e === 'atendida' ? 'text-bg-success' :
+    'text-bg-secondary';
+
+  return `<span class="badge ${cls} help-status-badge">${esc(estado || 'pendiente')}</span>`;
+}
+
+function helpActorLabel(isMine, fallbackName) {
+  return isMine ? 'Tú' : (fallbackName || 'MR Solutions');
+}
+
+function buildHelpConversation(item, currentUserId) {
+  const messages = [];
+
+  messages.push({
+    side: 'client',
+    internal: false,
+    author: 'Tú',
+    when: item.taCreadoEn || '',
+    body: item.taMensaje || '',
+    mine: true
+  });
+
+  const respuestas = Array.isArray(item.respuestas) ? item.respuestas : [];
+  respuestas.forEach(r => {
+    const mine = Number(r.usId || 0) === Number(currentUserId || 0);
+    messages.push({
+      side: Number(r.tarEsInterno || 0) === 1 ? 'internal' : (mine ? 'client' : 'mr'),
+      internal: Number(r.tarEsInterno || 0) === 1,
+      author: Number(r.tarEsInterno || 0) === 1 ? 'Nota interna' : helpActorLabel(mine, r.usuarioNombre),
+      when: r.tarCreadoEn || '',
+      body: r.tarMensaje || '',
+      mine
+    });
+  });
+
+  return messages;
+}
+
+function renderHelpConversation(item, currentUserId, allowReply = true) {
+  const estado = String(item.taEstado || '').toLowerCase();
+  const messages = buildHelpConversation(item, currentUserId);
+
+  return `
+    <div class="help-case">
+      <div class="help-case-head">
+        <div class="help-case-title">
+          <h6>${esc(helpTypeLabel(item.taTipo))}</h6>
+          ${helpStatusBadge(item.taEstado || 'pendiente')}
+        </div>
+
+        <div class="help-case-meta">
+          <span class="help-chip">
+            <i class="bi bi-clock-history"></i>
+            ${esc(formatDateTime(item.taCreadoEn || ''))}
+          </span>
+
+          ${
+            Number(item.taRequiereMeet || 0) === 1
+              ? `<span class="help-chip meet">
+                   <i class="bi bi-camera-video"></i>
+                   Requiere Meet${item.taPlataformaPreferida ? ` · ${esc(item.taPlataformaPreferida)}` : ''}
+                 </span>`
+              : ''
+          }
+
+          ${
+            Number(item.taNoLeidoCliente || 0) === 1
+              ? `<span class="help-chip">
+                   <i class="bi bi-bell"></i>
+                   Nuevo mensaje
+                 </span>`
+              : ''
+          }
+        </div>
+      </div>
+
+      <div class="help-conversation">
+        ${messages.map(msg => `
+          <div class="help-msg-row ${msg.side === 'client' ? 'is-client' : msg.side === 'mr' ? 'is-mr' : 'is-internal'}">
+            <div class="help-msg ${msg.side === 'client' ? 'is-client' : msg.side === 'mr' ? 'is-mr' : 'is-internal'}">
+              <div class="help-msg-top">
+                <div class="help-msg-author">${esc(msg.author)}</div>
+                <div class="help-msg-time">${esc(formatDateTime(msg.when || ''))}</div>
+              </div>
+              <div class="help-msg-body">${esc(msg.body || '')}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${
+        allowReply && estado !== 'cerrada'
+          ? `
+            <div class="help-reply-box">
+              <textarea
+                class="form-control form-control-sm help-reply-text"
+                rows="2"
+                data-ta-id="${Number(item.taId)}"
+                placeholder="Escribe una respuesta o comentario adicional..."></textarea>
+              <div class="d-flex justify-content-end mt-2">
+                <button
+                  class="btn btn-sm btn-outline-primary help-reply-send"
+                  data-ta-id="${Number(item.taId)}">
+                  <i class="bi bi-reply"></i> Responder
+                </button>
+              </div>
+            </div>
+          `
+          : `
+            <div class="help-reply-box">
+              <div class="small muted">Esta solicitud ya fue cerrada.</div>
+            </div>
+          `
+      }
+    </div>
+  `;
+}
+
 
 /* ===========================
 

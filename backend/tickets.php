@@ -38,6 +38,11 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
 <head>
     <script>
         window.MRS_CSRF = <?= json_encode(['csrf' => $csrf], JSON_UNESCAPED_UNICODE) ?>;
+
+        window.MRS_SESSION = {
+            usId: <?= (int)($_SESSION['usId'] ?? 0) ?>,
+            usRol: <?= json_encode($_SESSION['usRol'] ?? '') ?>
+        };
     </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -679,38 +684,42 @@ $theme = $_COOKIE['mrs_theme'] ?? 'light';
             <div class="mb-3">
                 <div class="fw-bold mb-2">Responder</div>
 
-                <div class="mb-2">
-                    <label class="form-label">Solicitud seleccionada</label>
-                    <select class="form-select" id="helpAdminTaId">
-                        <option value="">Selecciona una solicitud</option>
-                    </select>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label class="form-label">Solicitud seleccionada</label>
+                            <select class="form-select" id="helpAdminTaId">
+                                <option value="">Selecciona una solicitud</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Mensaje de respuesta</label>
+                            <textarea
+                                class="form-control"
+                                id="helpAdminReply"
+                                rows="4"
+                                maxlength="2000"
+                                placeholder="Escribe una respuesta clara para el cliente..."></textarea>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <button class="btn btn-primary" id="btnHelpAdminReply">
+                                <i class="bi bi-send"></i> Enviar respuesta
+                            </button>
+
+                            <button class="btn btn-outline-success" id="btnHelpAdminAtender">
+                                <i class="bi bi-check2-circle"></i> Marcar atendida
+                            </button>
+
+                            <button class="btn btn-outline-secondary" id="btnHelpAdminCerrar">
+                                <i class="bi bi-check2-all"></i> Cerrar solicitud
+                            </button>
+                        </div>
+
+                        <div class="text-muted mt-2 small" id="helpAdminHint"></div>
+                    </div>
                 </div>
-
-                <div class="mb-2">
-                    <label class="form-label">Mensaje de respuesta</label>
-                    <textarea
-                        class="form-control"
-                        id="helpAdminReply"
-                        rows="4"
-                        maxlength="2000"
-                        placeholder="Ej: Ya revisamos tu solicitud. Te apoyaremos con una sesión remota y en breve te proponemos horario."></textarea>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary" id="btnHelpAdminReply">
-                        <i class="bi bi-reply"></i> Enviar respuesta
-                    </button>
-
-                    <button class="btn btn-outline-success" id="btnHelpAdminAtender">
-                        <i class="bi bi-check2-circle"></i> Marcar atendida
-                    </button>
-
-                    <button class="btn btn-outline-secondary" id="btnHelpAdminCerrar">
-                        <i class="bi bi-check2-all"></i> Cerrar solicitud
-                    </button>
-                </div>
-
-                <div class="text-muted mt-2" style="font-size:.85rem;" id="helpAdminHint"></div>
             </div>
         </div>
     </div>
